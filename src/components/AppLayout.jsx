@@ -32,12 +32,11 @@ export default function AppLayout({ children, title, subtitle }) {
         {/* Logo */}
         <div className="px-4 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           <img
-            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/f2c763236_generated_image.png"
+            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
             alt="Marketing iO"
             className="w-full max-w-[168px] object-contain"
-            style={{ filter: "brightness(0) invert(1)" }}
+            style={{ filter: "invert(1) brightness(2)", mixBlendMode: "screen" }}
           />
-          <p className="text-[10px] mt-1" style={{ color: "#6b6b85" }}>CRM Platform</p>
         </div>
 
         {/* Nav */}
