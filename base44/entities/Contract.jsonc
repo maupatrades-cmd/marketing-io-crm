@@ -102,7 +102,40 @@
     },
     "document_url": {
       "type": "string",
-      "description": "Signed contract file URL"
+      "description": "Generated contract PDF URL"
+    },
+    "signing_token": {
+      "type": "string",
+      "description": "Unique 32-char token for public signing link"
+    },
+    "signing_status": {
+      "type": "string",
+      "enum": [
+        "not_sent",
+        "sent",
+        "viewed",
+        "partially_signed",
+        "fully_signed",
+        "expired"
+      ],
+      "default": "not_sent"
+    },
+    "signing_link_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the signing link expires (default 30 days)"
+    },
+    "client_signed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "marketing_io_signed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "final_signed_pdf_url": {
+      "type": "string",
+      "description": "URL of fully signed PDF with embedded signatures"
     },
     "notes": {
       "type": "string"

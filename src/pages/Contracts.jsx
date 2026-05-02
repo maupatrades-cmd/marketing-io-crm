@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Download, Send, CheckCircle, FileText, Clock } from "lucide-react";
+import { Search, Download, Send, CheckCircle, FileText, Clock, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { format, parseISO } from "date-fns";
 
@@ -18,6 +19,15 @@ const STATUS_COLORS = {
   terminated: "bg-destructive/15 text-destructive border-destructive/30",
 };
 
+const SIGNING_STATUS_COLORS = {
+  not_sent: "bg-slate-100 text-slate-800",
+  sent: "bg-blue-100 text-blue-800",
+  viewed: "bg-amber-100 text-amber-800",
+  partially_signed: "bg-orange-100 text-orange-800",
+  fully_signed: "bg-green-100 text-green-800",
+  expired: "bg-red-100 text-red-800"
+};
+
 const STATUS_ICONS = {
   draft: Clock,
   sent: Send,
@@ -27,6 +37,7 @@ const STATUS_ICONS = {
 };
 
 export default function Contracts() {
+  const navigate = useNavigate();
   const [contracts, setContracts] = useState([]);
   const [clients, setClients] = useState([]);
   const [deals, setDeals] = useState([]);
@@ -136,15 +147,31 @@ export default function Contracts() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge className={`border text-xs capitalize ${STATUS_COLORS[c.status] || "bg-muted/40 border-border/40"}`}>
-                    {c.status}
-                  </Badge>
-                  {c.document_url && (
-                    <a href={c.document_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                      <Download className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
+                   <Badge className={`border text-xs capitalize ${STATUS_COLORS[c.status] || "bg-muted/40 border-border/40"}`}>
+                     {c.status}
+                   </Badge>
+                   {c.signing_status && c.signing_status !== "not_sent" && (
+                     <Badge className={`border text-xs capitalize ${SIGNING_STATUS_COLORS[c.signing_status] || "bg-muted/40"}`}>
+                       {c.signing_status}
+                     </Badge>
+                   )}
+                   {c.document_url && (
+                     <a href={c.document_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                       <Download className="w-4 h-4" />
+                     </a>
+                   )}
+                   <Button
+                     variant="ghost"
+                     size="icon"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       navigate(`/contracts/${c.id}`);
+                     }}
+                     className="text-muted-foreground hover:text-foreground h-6 w-6"
+                   >
+                     <Eye className="w-4 h-4" />
+                   </Button>
+                 </div>
               </div>
             );
           })}

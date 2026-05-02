@@ -32,6 +32,8 @@ import Contracts from './pages/Contracts';
 import ClientOnboardingFormPublic from './pages/ClientOnboardingFormPublic';
 import ClientOnboardingReview from './pages/ClientOnboardingReview';
 import MonthlyReports from './pages/MonthlyReports';
+import ContractSigningPublic from './pages/ContractSigningPublic';
+import ContractView from './pages/ContractView';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -87,6 +89,8 @@ const AuthenticatedApp = () => {
       <Route path="/onboarding-submissions" element={<ClientOnboardingReview />} />
       <Route path="/client-onboarding/:token" element={<ClientOnboardingFormPublic />} />
       <Route path="/monthly-reports" element={<MonthlyReports />} />
+      <Route path="/sign-contract" element={<ContractSigningPublic />} />
+      <Route path="/contracts/:id" element={<ContractView />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

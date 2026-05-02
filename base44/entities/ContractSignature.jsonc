@@ -1,0 +1,65 @@
+{
+  "name": "ContractSignature",
+  "type": "object",
+  "properties": {
+    "contract_id": {
+      "type": "string",
+      "description": "Reference to Contract entity"
+    },
+    "signer_role": {
+      "type": "string",
+      "enum": [
+        "client",
+        "marketing_io_director",
+        "witness_1",
+        "witness_2"
+      ],
+      "description": "Role of the signer"
+    },
+    "signer_full_name": {
+      "type": "string",
+      "description": "Full legal name of signer"
+    },
+    "signer_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "signer_id_number": {
+      "type": "string",
+      "description": "ID number (for client signer)"
+    },
+    "typed_signature": {
+      "type": "string",
+      "description": "Typed name as signature"
+    },
+    "signed_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signed_ip_address": {
+      "type": "string"
+    },
+    "signed_user_agent": {
+      "type": "string",
+      "description": "Browser/device information"
+    },
+    "signature_method": {
+      "type": "string",
+      "enum": [
+        "typed",
+        "drawn"
+      ],
+      "default": "typed"
+    },
+    "drawn_signature_data_url": {
+      "type": "string",
+      "description": "Base64 data URL of drawn signature"
+    }
+  },
+  "required": [
+    "contract_id",
+    "signer_role",
+    "signer_full_name",
+    "typed_signature"
+  ]
+}
