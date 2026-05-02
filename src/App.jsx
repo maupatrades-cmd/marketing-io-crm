@@ -20,6 +20,8 @@ import CalendarPage from './pages/CalendarPage';
 import PayrollReport from './pages/PayrollReport';
 import StaffProfile from './pages/StaffProfile';
 import InternalMail from './pages/InternalMail';
+import StaffHR from './pages/StaffHR';
+import Products from './pages/Products';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -62,6 +64,8 @@ const AuthenticatedApp = () => {
       <Route path="/payroll" element={<PayrollReport />} />
       <Route path="/profile" element={<StaffProfile />} />
       <Route path="/mail" element={<InternalMail />} />
+      <Route path="/staff" element={<StaffHR />} />
+      <Route path="/products" element={<Products />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

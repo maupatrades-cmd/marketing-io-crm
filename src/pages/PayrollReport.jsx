@@ -3,8 +3,15 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, FileSpreadsheet, Users, DollarSign, CheckCircle2 } from "lucide-react";
+import { FileText, FileSpreadsheet, Users, DollarSign, CheckCircle2, Minus } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+
+// Guaranteed salary packages from compensation doc v2
+const SALARY_PACKAGES = {
+  field_agent: { gross: 6500, nett: 6500, deductions: 0 },
+  cpc:         { gross: 5890, nett: 4490, deductions: 1400 },
+  admin:       { gross: 5890, nett: 5890, deductions: 0 },
+};
 
 function getMonthOptions() {
   const options = [];
@@ -18,8 +25,21 @@ function getMonthOptions() {
   return options;
 }
 
-function groupByStaff(commissions) {
+function groupByStaff(commissions, users) {
   const map = {};
+  // Add all users with known packages first so salary shows even with no commission
+  users.forEach(u => {
+    if (!SALARY_PACKAGES[u.role]) return;
+    const key = u.id;
+    map[key] = {
+      staff_id: u.id,
+      staff_name: u.full_name || u.email,
+      staff_role: u.role,
+      items: [],
+      commission_total: 0,
+      salary_pkg: SALARY_PACKAGES[u.role],
+    };
+  });
   commissions.forEach(c => {
     const key = c.staff_id || c.staff_name || "unknown";
     if (!map[key]) {
@@ -28,13 +48,14 @@ function groupByStaff(commissions) {
         staff_name: c.staff_name || "Unknown",
         staff_role: c.staff_role || "—",
         items: [],
-        total: 0,
+        commission_total: 0,
+        salary_pkg: SALARY_PACKAGES[c.staff_role] || null,
       };
     }
     map[key].items.push(c);
-    map[key].total += c.commission_amount || 0;
+    map[key].commission_total += c.commission_amount || 0;
   });
-  return Object.values(map).sort((a, b) => b.total - a.total);
+  return Object.values(map).sort((a, b) => (b.commission_total + (b.salary_pkg?.nett || 0)) - (a.commission_total + (a.salary_pkg?.nett || 0)));
 }
 
 function exportCSV(groups, month) {
@@ -108,8 +129,13 @@ export default function PayrollReport() {
   const monthOptions = getMonthOptions();
   const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].val);
   const [commissions, setCommissions] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState({});
+
+  useEffect(() => {
+    base44.entities.User.list().then(setUsers);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -118,8 +144,8 @@ export default function PayrollReport() {
       .catch(() => setLoading(false));
   }, [selectedMonth]);
 
-  const groups = groupByStaff(commissions);
-  const grandTotal = groups.reduce((s, g) => s + g.total, 0);
+  const groups = groupByStaff(commissions, users);
+  const grandTotal = groups.reduce((s, g) => s + g.commission_total + (g.salary_pkg?.nett || 0), 0);
   const toggleExpand = (key) => setExpanded(e => ({ ...e, [key]: !e[key] }));
 
   return (
@@ -155,15 +181,15 @@ export default function PayrollReport() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
         <div className="glass rounded-xl p-4 text-center">
           <p className="text-xl font-bold text-success">R{grandTotal.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground mt-1">Grand Total</p>
+          <p className="text-xs text-muted-foreground mt-1">Total Payroll (Salary + Comm)</p>
         </div>
         <div className="glass rounded-xl p-4 text-center">
           <p className="text-xl font-bold text-primary">{groups.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">Consultants</p>
+          <p className="text-xs text-muted-foreground mt-1">Staff Members</p>
         </div>
         <div className="glass rounded-xl p-4 text-center col-span-2 sm:col-span-1">
           <p className="text-xl font-bold text-foreground">{commissions.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">Line Items</p>
+          <p className="text-xs text-muted-foreground mt-1">Commission Lines</p>
         </div>
       </div>
 
@@ -181,6 +207,8 @@ export default function PayrollReport() {
           {groups.map(g => {
             const key = g.staff_id || g.staff_name;
             const open = expanded[key];
+            const pkg = g.salary_pkg;
+            const grandPay = (pkg?.nett || 0) + g.commission_total;
             return (
               <div key={key} className="glass rounded-xl overflow-hidden">
                 <button
@@ -196,17 +224,44 @@ export default function PayrollReport() {
                       <Badge className={`border text-xs capitalize ${ROLE_COLORS[g.staff_role] || ROLE_COLORS.other}`}>
                         {g.staff_role?.replace(/_/g, " ")}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">{g.items.length} line{g.items.length !== 1 ? "s" : ""}</span>
+                      {pkg && <span className="text-xs text-muted-foreground">Salary R{pkg.nett.toLocaleString()}</span>}
+                      {g.items.length > 0 && <span className="text-xs text-muted-foreground">+ {g.items.length} comm line{g.items.length !== 1 ? "s" : ""}</span>}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-lg font-bold text-success">R{g.total.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-success">R{grandPay.toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground">{open ? "▲ hide" : "▼ show"}</p>
                   </div>
                 </button>
 
                 {open && (
                   <div className="border-t border-border/30 divide-y divide-border/20">
+                    {/* Salary breakdown */}
+                    {pkg && (
+                      <div className="px-4 py-3 bg-white/3">
+                        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Guaranteed Package</p>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Gross CTC</span>
+                          <span className="text-foreground">R{pkg.gross.toLocaleString()}</span>
+                        </div>
+                        {pkg.deductions > 0 && (
+                          <div className="flex justify-between text-sm mt-1">
+                            <span className="text-muted-foreground flex items-center gap-1"><Minus className="w-3 h-3 text-destructive" />Equipment deductions</span>
+                            <span className="text-destructive">-R{pkg.deductions.toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm font-semibold mt-2 pt-1 border-t border-white/10">
+                          <span className="text-foreground">Nett Salary</span>
+                          <span className="text-success">R{pkg.nett.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Commission lines */}
+                    {g.items.length > 0 && (
+                      <div className="px-4 pt-3 pb-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Commission</p>
+                      </div>
+                    )}
                     {g.items.map(c => (
                       <div key={c.id} className="flex items-center gap-3 px-4 py-3">
                         <div className="flex-1 min-w-0">
@@ -219,10 +274,12 @@ export default function PayrollReport() {
                         </div>
                       </div>
                     ))}
-                    <div className="flex justify-end px-4 py-3 bg-success/5">
-                      <div className="flex items-center gap-2 text-success font-semibold text-sm">
-                        <CheckCircle2 className="w-4 h-4" /> Subtotal: R{g.total.toLocaleString()}
+                    <div className="flex justify-between px-4 py-3 bg-success/5">
+                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-success" />
+                        Salary R{(pkg?.nett || 0).toLocaleString()} + Comm R{g.commission_total.toLocaleString()}
                       </div>
+                      <p className="text-success font-bold text-sm">R{grandPay.toLocaleString()}</p>
                     </div>
                   </div>
                 )}
