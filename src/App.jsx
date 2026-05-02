@@ -9,6 +9,11 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import DesignPreview from './pages/DesignPreview';
 import OwnerDashboard from './pages/OwnerDashboard';
 import ClientPortal from './pages/ClientPortal';
+import Clients from './pages/Clients';
+import Deals from './pages/Deals';
+import Leads from './pages/Leads';
+import Commissions from './pages/Commissions';
+import Invoices from './pages/Invoices';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -40,6 +45,11 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<OwnerDashboard />} />
       <Route path="/design-preview" element={<DesignPreview />} />
       <Route path="/client-portal" element={<ClientPortal />} />
+      <Route path="/clients" element={<Clients />} />
+      <Route path="/deals" element={<Deals />} />
+      <Route path="/leads" element={<Leads />} />
+      <Route path="/commissions" element={<Commissions />} />
+      <Route path="/invoices" element={<Invoices />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,6 +8,7 @@ import {
   CheckCircle2, Clock, ArrowRight, Zap, FileText, Target
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import AppLayout from "@/components/AppLayout";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 const revenueData = [
@@ -74,33 +75,8 @@ export default function OwnerDashboard() {
   ].slice(0, 6);
 
   return (
-    <div className="min-h-screen bg-background font-inter">
-      {/* Header */}
-      <div className="border-b border-border/40 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold gradient-text">Marketing iO</h1>
-          <p className="text-xs text-muted-foreground">Owner Dashboard</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {overdueInvoices > 0 && (
-            <Badge className="bg-destructive/15 text-destructive border border-destructive/30">
-              <AlertTriangle className="w-3 h-3 mr-1" /> {overdueInvoices} Overdue
-            </Badge>
-          )}
-          {pendingLeads > 0 && (
-            <Badge className="bg-warning/15 text-warning border border-warning/30">
-              <Clock className="w-3 h-3 mr-1" /> {pendingLeads} Leads Pending
-            </Badge>
-          )}
-          <Link to="/clients">
-            <Button size="sm" className="gradient-bg text-white hover:opacity-90">
-              <Users className="w-4 h-4 mr-1" /> Clients
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <AppLayout title="Dashboard" subtitle="Owner overview">
+      <div className="space-y-6">
         {/* KPI Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard icon={Users} label="Active Clients" value={loading ? "—" : activeClients} sub={`${onboardingClients} onboarding`} color="bg-primary/20" />
@@ -226,7 +202,7 @@ export default function OwnerDashboard() {
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
 
