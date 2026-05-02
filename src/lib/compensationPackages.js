@@ -1,6 +1,7 @@
 // Shared compensation package config — single source of truth for all salary/deduction views
 
 export const EQUIPMENT_DEDUCTIONS = {
+  owner: [],
   field_agent: [],
   cpc: [
     { name: "PC / Software", amount: 650 },
