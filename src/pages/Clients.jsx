@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Users, AlertTriangle, ChevronRight, CheckCircle2, ClipboardList } from "lucide-react";
+import { Search, Plus, Users, AlertTriangle, ChevronRight, CheckCircle2, ClipboardList, History } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { notifyOnboardingMilestone } from "@/lib/notifications.js";
 import { useToast } from "@/components/ui/use-toast";
 import ClientTaskChecklist, { ONBOARDING_TASKS } from "@/components/clients/ClientTaskChecklist";
+import ClientActivityFeed from "@/components/clients/ClientActivityFeed";
 
 const STATUS_COLORS = {
   lead: "bg-warning/15 text-warning border-warning/30",
@@ -60,6 +61,17 @@ export default function Clients() {
   const openCreate = () => { setEditing(null); setForm(EMPTY_CLIENT); setShowForm(true); };
   const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_CLIENT, ...c }); setShowForm(true); };
 
+  const logActivity = (clientId, clientName, event_type, event_label, from_value = null, to_value = null) => {
+    base44.entities.ClientActivityLog.create({
+      client_id: clientId,
+      client_name: clientName,
+      event_type,
+      event_label,
+      ...(from_value ? { from_value } : {}),
+      ...(to_value ? { to_value } : {}),
+    }).catch(() => {});
+  };
+
   const createOnboardingTasks = async (clientId, clientName) => {
     const existing = await base44.entities.Task.filter({ client_id: clientId });
     if (existing.length > 0) return; // already created
@@ -79,8 +91,32 @@ export default function Clients() {
     const data = { ...form, monthly_retainer: Number(form.monthly_retainer) || 0, setup_fee_amount: Number(form.setup_fee_amount) || 0 };
     const justMovedToOnboarding = editing && editing.status !== "onboarding" && data.status === "onboarding";
 
+    const MILESTONE_LABELS = {
+      setup_fee_paid: "Setup Fee Paid",
+      onboarding_form_returned: "Onboarding Form Returned",
+      debit_mandate_signed: "Debit Mandate Signed",
+      brand_assets_received: "Brand Assets Received",
+      go_live_acknowledged: "Go-Live Acknowledged",
+    };
+
     if (editing) {
       await base44.entities.Client.update(editing.id, data);
+
+      // Log status change
+      if (editing.status !== data.status) {
+        logActivity(editing.id, data.business_name, "status_change",
+          `Status changed from "${editing.status?.replace(/_/g, " ")}" to "${data.status?.replace(/_/g, " ")}"`,
+          editing.status, data.status);
+      }
+
+      // Log milestone changes
+      ONBOARDING_FIELDS.forEach(field => {
+        if (!editing[field] && data[field]) {
+          logActivity(editing.id, data.business_name, "milestone",
+            `Milestone reached: ${MILESTONE_LABELS[field] || field.replace(/_/g, " ")}`);
+        }
+      });
+
       if (justMovedToOnboarding) {
         await createOnboardingTasks(editing.id, data.business_name);
         toast({ title: "Onboarding checklist created", description: `${ONBOARDING_TASKS.length} tasks added for ${data.business_name}` });
@@ -94,9 +130,14 @@ export default function Clients() {
       });
     } else {
       const created = await base44.entities.Client.create(data);
-      if (data.status === "onboarding" && created?.id) {
-        await createOnboardingTasks(created.id, data.business_name);
-        toast({ title: "Onboarding checklist created", description: `${ONBOARDING_TASKS.length} tasks added for ${data.business_name}` });
+      if (created?.id) {
+        // Log initial status on creation
+        logActivity(created.id, data.business_name, "status_change",
+          `Client created with status "${data.status?.replace(/_/g, " ")}"`, null, data.status);
+        if (data.status === "onboarding") {
+          await createOnboardingTasks(created.id, data.business_name);
+          toast({ title: "Onboarding checklist created", description: `${ONBOARDING_TASKS.length} tasks added for ${data.business_name}` });
+        }
       }
     }
     setSaving(false);
@@ -193,6 +234,15 @@ export default function Clients() {
               <h4 className="text-sm font-semibold text-foreground">Onboarding Tasks</h4>
             </div>
             <ClientTaskChecklist client={selected} />
+          </div>
+
+          {/* Activity Log */}
+          <div className="pt-3 border-t border-border/30">
+            <div className="flex items-center gap-2 mb-3">
+              <History className="w-4 h-4 text-primary" />
+              <h4 className="text-sm font-semibold text-foreground">Activity Log</h4>
+            </div>
+            <ClientActivityFeed clientId={selected.id} />
           </div>
         </div>
       )}

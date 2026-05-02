@@ -1,0 +1,43 @@
+{
+  "name": "ClientActivityLog",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "status_change",
+        "milestone",
+        "note",
+        "task_completed"
+      ],
+      "default": "note"
+    },
+    "event_label": {
+      "type": "string",
+      "description": "Short human-readable description"
+    },
+    "from_value": {
+      "type": "string"
+    },
+    "to_value": {
+      "type": "string"
+    },
+    "logged_by": {
+      "type": "string"
+    },
+    "logged_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "event_type",
+    "event_label"
+  ]
+}
