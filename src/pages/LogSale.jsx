@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { autoCreateDeliverables } from "@/lib/fulfilmentAutomation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -291,6 +292,10 @@ export default function LogSale() {
         auto_generated: true,
       }] : []),
     ]);
+
+    // 9. Auto-create deliverables from FulfilmentTemplate
+    const client = clients.find(c => c.id === clientId) || { business_name: clientName };
+    await autoCreateDeliverables(deal, client, null);
 
     setSaving(false);
     setDone(true);

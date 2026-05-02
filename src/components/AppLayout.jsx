@@ -22,6 +22,7 @@ const NAV = [
   { path: "/products", label: "Products", icon: Package },
   { path: "/mail", label: "Internal Mail", icon: Mail },
   { path: "/profile", label: "My Profile", icon: UserCircle },
+  { path: "/deliverables", label: "Deliverables", icon: CheckSquare },
 ];
 
 export default function AppLayout({ children, title, subtitle }) {

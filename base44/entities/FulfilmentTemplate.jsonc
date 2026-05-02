@@ -1,0 +1,105 @@
+{
+  "name": "FulfilmentTemplate",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Unique internal identifier (e.g., 'ai_chatbot')"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable template name"
+    },
+    "bucket": {
+      "type": "string",
+      "enum": [
+        "bucket_a_once_off",
+        "bucket_b_setup_recurring",
+        "bucket_c_pure_recurring",
+        "bucket_d_paid_ads",
+        "bucket_e_passive"
+      ],
+      "description": "Commission bucket classification"
+    },
+    "pricing_setup_zar": {
+      "type": "number",
+      "default": 0,
+      "description": "Once-off setup fee in ZAR"
+    },
+    "pricing_recurring_zar": {
+      "type": "number",
+      "default": 0,
+      "description": "Monthly recurring fee in ZAR (0 if once-off)"
+    },
+    "term_months": {
+      "type": "number",
+      "default": 0,
+      "description": "Contract term in months (0 for month-to-month)"
+    },
+    "soft_sla_days": {
+      "type": "number",
+      "description": "Soft SLA target (when to alert)"
+    },
+    "hard_sla_days": {
+      "type": "number",
+      "description": "Hard SLA deadline"
+    },
+    "internal_owner_role": {
+      "type": "string",
+      "enum": [
+        "head_of_tech",
+        "admin",
+        "founder",
+        "freelancer",
+        "driver",
+        "field_agent"
+      ],
+      "description": "Default role to assign deliverables to"
+    },
+    "setup_deliverables": {
+      "type": "string",
+      "description": "JSON array of setup deliverable titles"
+    },
+    "recurring_deliverables": {
+      "type": "string",
+      "description": "JSON array of monthly recurring deliverable titles (empty if once-off)"
+    },
+    "client_obligations": {
+      "type": "string",
+      "description": "What the client must provide/do"
+    },
+    "scope_exclusions": {
+      "type": "string",
+      "description": "What is NOT included"
+    },
+    "tools_used": {
+      "type": "string",
+      "description": "Systems/tools required (e.g., Shopify, HubSpot)"
+    },
+    "sign_off_criteria": {
+      "type": "string",
+      "description": "Conditions for marking deliverables complete"
+    },
+    "exit_fee_zar": {
+      "type": "number",
+      "default": 0,
+      "description": "Early exit fee in ZAR (for Bucket B/C)"
+    },
+    "exit_fee_window_months": {
+      "type": "number",
+      "default": 0,
+      "description": "Window in which exit fee applies (typically 6)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this template is currently available"
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "bucket",
+    "internal_owner_role"
+  ]
+}
