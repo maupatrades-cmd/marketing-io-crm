@@ -59,6 +59,11 @@ import OwnerClientDetail from './pages/OwnerClientDetail';
 import OwnerFinancials from './pages/OwnerFinancials';
 import OwnerReports from './pages/OwnerReports';
 import OwnerSettings from './pages/OwnerSettings';
+import ClientOrderAddOns from './pages/ClientOrderAddOns';
+import ClientOrderDomain from './pages/ClientOrderDomain';
+import ClientOrderEmail from './pages/ClientOrderEmail';
+import ClientOrders from './pages/ClientOrders';
+import AdminServiceOrders from './pages/AdminServiceOrders';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -134,6 +139,7 @@ const AuthenticatedApp = () => {
       <Route path="/owner/financials" element={<OwnerFinancials />} />
       <Route path="/owner/reports" element={<OwnerReports />} />
       <Route path="/owner/settings" element={<OwnerSettings />} />
+      <Route path="/admin/service-orders" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/"><AdminServiceOrders /></RouteGuard>} />
 
       {/* Staff Portal Routes */}
       <Route path="/staff" element={<StaffMyDay />} />
@@ -151,6 +157,10 @@ const AuthenticatedApp = () => {
       <Route path="/client/uploads" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientUploads /></RouteGuard>} />
       <Route path="/client/messages" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientMessages /></RouteGuard>} />
       <Route path="/client/profile" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientProfile /></RouteGuard>} />
+      <Route path="/client/order-addons" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderAddOns /></RouteGuard>} />
+      <Route path="/client/order-domain" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderDomain /></RouteGuard>} />
+      <Route path="/client/order-email" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderEmail /></RouteGuard>} />
+      <Route path="/client/orders" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrders /></RouteGuard>} />
       
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />

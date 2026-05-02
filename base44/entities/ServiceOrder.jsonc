@@ -1,0 +1,99 @@
+{
+  "name": "ServiceOrder",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client entity"
+    },
+    "requested_by_id": {
+      "type": "string",
+      "description": "Reference to User \u2014 the client themselves"
+    },
+    "order_type": {
+      "type": "string",
+      "enum": [
+        "addon",
+        "domain_registration",
+        "business_email_setup",
+        "package_upgrade"
+      ],
+      "description": "Type of service being ordered"
+    },
+    "product_code": {
+      "type": "string",
+      "description": "For add-ons, matches FulfilmentTemplate.code"
+    },
+    "product_name": {
+      "type": "string",
+      "description": "Display name of the service"
+    },
+    "price_zar_setup": {
+      "type": "number",
+      "default": 0,
+      "description": "Setup fee in ZAR"
+    },
+    "price_zar_recurring": {
+      "type": "number",
+      "default": 0,
+      "description": "Monthly recurring price in ZAR"
+    },
+    "domain_requested": {
+      "type": "string",
+      "description": "For domain orders \u2014 the domain name with extensions"
+    },
+    "email_addresses_requested": {
+      "type": "string",
+      "description": "For email orders \u2014 comma-separated list of email addresses"
+    },
+    "additional_notes": {
+      "type": "string",
+      "description": "Client's free text notes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "requested",
+        "under_review",
+        "contract_pending",
+        "approved",
+        "rejected",
+        "fulfilment_started",
+        "completed"
+      ],
+      "default": "requested",
+      "description": "Order processing status"
+    },
+    "assigned_staff_id": {
+      "type": "string",
+      "description": "Reference to User \u2014 staff member handling the order"
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When order was requested"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When order was reviewed"
+    },
+    "contract_id": {
+      "type": "string",
+      "description": "Reference to Contract \u2014 if one was generated"
+    },
+    "deal_id": {
+      "type": "string",
+      "description": "Reference to Deal \u2014 if added to pipeline"
+    },
+    "decline_reason": {
+      "type": "string",
+      "description": "If rejected, reason for decline"
+    }
+  },
+  "required": [
+    "client_id",
+    "requested_by_id",
+    "order_type"
+  ]
+}

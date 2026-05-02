@@ -42,6 +42,7 @@ export default function ClientPortal() {
    const [activeTab, setActiveTab] = useState("overview");
    const [showNotifications, setShowNotifications] = useState(false);
    const [lastUpdated, setLastUpdated] = useState(new Date());
+   const [templates, setTemplates] = useState([]);
 
   const fetchData = async (me, clientId) => {
     const [d, inv, rep, ao, notif, activity] = await Promise.all([
@@ -66,9 +67,12 @@ export default function ClientPortal() {
       setUser(me);
       const clients = await base44.entities.Client.filter({ email: me.email });
       if (clients.length > 0) {
-        const c = clients[0];
+        const c = Array.isArray(clients) ? clients[0] : clients;
         setClient(c);
         await fetchData(me, c.id);
+        // Fetch templates for cross-sell suggestions
+        const temps = await base44.entities.FulfilmentTemplate.list();
+        setTemplates(Array.isArray(temps) ? temps : temps ? [temps] : []);
         // Update last login
         base44.entities.Client.update(c.id, { portal_last_active_at: new Date().toISOString() });
       }
@@ -77,13 +81,47 @@ export default function ClientPortal() {
   }, []);
 
   // Real-time polling every 30 seconds
-  useEffect(() => {
-    if (!client) return;
-    const interval = setInterval(() => {
-      fetchData(user, client.id);
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [client, user]);
+   useEffect(() => {
+     if (!client) return;
+     const interval = setInterval(() => {
+       fetchData(user, client.id);
+     }, 30000);
+     return () => clearInterval(interval);
+   }, [client, user]);
+
+   // Get cross-sell suggestions
+   const getSuggestions = () => {
+     const suggestions = [];
+     const activeAddOns = addOns.filter(a => a.status === "active").map(a => a.add_on);
+
+     // Package-based suggestions
+     if (client.package === "ignite") {
+       ["reputation_management", "ai_chatbot", "email_newsletter"].forEach(code => {
+         if (!activeAddOns.includes(code)) {
+           const template = templates.find(t => t.code === code);
+           if (template) suggestions.push({ template, value: "Answer customer questions on your website 24/7" });
+         }
+       });
+     } else if (client.package === "accelerate") {
+       ["whatsapp_automation", "short_form_video", "google_business_profile"].forEach(code => {
+         if (!activeAddOns.includes(code)) {
+           const template = templates.find(t => t.code === code);
+           if (template) suggestions.push({ template, value: "Reach customers where they actually message" });
+         }
+       });
+     } else if (client.package === "dominate") {
+       ["ecommerce_setup", "paid_ads_management"].forEach(code => {
+         if (!activeAddOns.includes(code)) {
+           const template = templates.find(t => t.code === code);
+           if (template) suggestions.push({ template, value: "Automate your sales and boost revenue" });
+         }
+       });
+     }
+
+     return suggestions.slice(0, 3);
+   };
+
+   const suggestions = getSuggestions();
 
   if (loading) {
     return (
@@ -260,8 +298,38 @@ export default function ClientPortal() {
           </div>
         )}
 
+        {/* Cross-Sell Suggestions */}
+        {suggestions.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-lg mb-3">Suggested for {client.business_name}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {suggestions.map(s => (
+                <div key={s.template.code} className="glass rounded-xl p-4 border border-accent/30 bg-accent/5">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="font-semibold text-foreground">{s.template.name}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">{s.value}</p>
+                  <div className="mb-3">
+                    <p className="text-sm font-bold text-accent">
+                      R{(s.template.pricing_setup_zar || 0).toLocaleString()}
+                      {s.template.pricing_recurring_zar > 0 && <span className="text-xs font-normal text-muted-foreground ml-1">+ R{s.template.pricing_recurring_zar.toLocaleString()}/mo</span>}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <a href={`/client/order-addons`} className="flex-1">
+                      <Button size="sm" className="w-full gradient-bg text-white text-xs">
+                        Order Now
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
-        <div className="flex gap-1 p-1 bg-muted/30 rounded-xl w-full overflow-x-auto">
+         <div className="flex gap-1 p-1 bg-muted/30 rounded-xl w-full overflow-x-auto">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -341,20 +409,47 @@ export default function ClientPortal() {
         </div>
 
         {/* Sidebar */}
-        <div className="w-72 hidden lg:block space-y-4">
-          {/* Quick Links */}
-          <div className="glass rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Quick Access</h3>
-            <div className="space-y-2">
-              {quickLinks.map(link => (
-                <a key={link.label} href={link.path} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary/40 transition-colors text-muted-foreground hover:text-foreground group">
-                  <link.icon className="w-4 h-4 group-hover:text-primary transition-colors" />
-                  {link.label}
-                  <ChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-all" />
-                </a>
-              ))}
-            </div>
-          </div>
+         <div className="w-72 hidden lg:block space-y-4">
+           {/* Order More */}
+           <div className="glass rounded-xl p-4">
+             <h3 className="text-sm font-semibold text-foreground mb-3">Order More</h3>
+             <div className="space-y-2">
+               <a href="/client/order-addons" className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary/40 transition-colors text-muted-foreground hover:text-foreground group">
+                 <span className="w-4 h-4 group-hover:text-primary transition-colors">➕</span>
+                 Add-ons
+                 <ChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-all" />
+               </a>
+               <a href="/client/order-domain" className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary/40 transition-colors text-muted-foreground hover:text-foreground group">
+                 <span className="w-4 h-4 group-hover:text-primary transition-colors">🌐</span>
+                 Domain
+                 <ChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-all" />
+               </a>
+               <a href="/client/order-email" className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary/40 transition-colors text-muted-foreground hover:text-foreground group">
+                 <span className="w-4 h-4 group-hover:text-primary transition-colors">📧</span>
+                 Business Email
+                 <ChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-all" />
+               </a>
+               <a href="/client/orders" className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary/40 transition-colors text-muted-foreground hover:text-foreground group">
+                 <span className="w-4 h-4 group-hover:text-primary transition-colors">📦</span>
+                 My Orders
+                 <ChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-all" />
+               </a>
+             </div>
+           </div>
+
+           {/* Quick Links */}
+           <div className="glass rounded-xl p-4">
+             <h3 className="text-sm font-semibold text-foreground mb-3">Quick Access</h3>
+             <div className="space-y-2">
+               {quickLinks.map(link => (
+                 <a key={link.label} href={link.path} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary/40 transition-colors text-muted-foreground hover:text-foreground group">
+                   <link.icon className="w-4 h-4 group-hover:text-primary transition-colors" />
+                   {link.label}
+                   <ChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-all" />
+                 </a>
+               ))}
+             </div>
+           </div>
 
           {/* Recent Activity */}
           <div className="glass rounded-xl p-4">
