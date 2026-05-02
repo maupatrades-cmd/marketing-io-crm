@@ -28,6 +28,7 @@ import LogSale from './pages/LogSale';
 import ClientOnboarding from './pages/ClientOnboarding';
 import Tasks from './pages/Tasks';
 import TeamOversight from './pages/TeamOversight';
+import Contracts from './pages/Contracts';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -79,6 +80,7 @@ const AuthenticatedApp = () => {
       <Route path="/onboarding" element={<ClientOnboarding />} />
       <Route path="/tasks" element={<Tasks />} />
       <Route path="/team-oversight" element={<TeamOversight />} />
+      <Route path="/contracts" element={<Contracts />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

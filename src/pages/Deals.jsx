@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, TrendingUp, ChevronRight, Bell, BellOff, CheckSquare } from "lucide-react";
+import { Search, Plus, TrendingUp, ChevronRight, Bell, BellOff, CheckSquare, FileText } from "lucide-react";
+import { generateContractPDF } from "@/lib/contractGenerator";
 import AppLayout from "@/components/AppLayout";
 import { notifyDealStageChange } from "@/lib/notifications.js";
 import { useToast } from "@/components/ui/use-toast";
@@ -101,6 +102,9 @@ export default function Deals() {
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [notifyClient, setNotifyClient] = useState(true);
+  const [selectedDeal, setSelectedDeal] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [generatingContract, setGeneratingContract] = useState(false);
   const { toast } = useToast();
 
   const load = () => Promise.all([
@@ -119,6 +123,43 @@ export default function Deals() {
 
   const openCreate = () => { setEditing(null); setForm(EMPTY); setShowForm(true); };
   const openEdit = (d) => { setEditing(d); setForm({ ...EMPTY, ...d, setup_fee: d.setup_fee || "", monthly_retainer: d.monthly_retainer || "" }); setShowForm(true); };
+  
+  const generateContract = async (deal) => {
+    setGeneratingContract(true);
+    try {
+      const client = clients.find(c => c.id === deal.client_id);
+      if (!client) throw new Error("Client not found");
+      
+      // Package data for the generator
+      const packageLabel = deal.package !== "none" ? deal.package : deal.add_on_name || "Custom Package";
+      const packageData = { label: packageLabel, softSLA: "5", hardSLA: "10", deliverables: [] };
+      
+      // Generate PDF
+      const pdfBlob = await generateContractPDF(deal, client, packageData);
+      
+      // Create Contract record
+      const contractRef = `MIO-MSA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
+      const contract = await base44.entities.Contract.create({
+        client_id: deal.client_id,
+        client_name: client.business_name,
+        deal_id: deal.id,
+        package: deal.package,
+        status: "draft",
+        document_url: URL.createObjectURL(pdfBlob),
+      });
+      
+      // Open PDF in new tab
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      window.open(pdfUrl, "_blank");
+      
+      toast({ title: "Contract generated", description: "PDF opened in a new tab. Contract saved." });
+      setShowDetail(false);
+      load();
+    } catch (err) {
+      toast({ title: "Error generating contract", description: err.message, variant: "destructive" });
+    }
+    setGeneratingContract(false);
+  };
 
   const save = async () => {
     setSaving(true);
@@ -201,21 +242,21 @@ export default function Deals() {
       ) : (
         <div className="space-y-2">
           {filtered.map(d => (
-            <div key={d.id} className="glass rounded-xl p-4 flex items-center gap-4 hover:shadow-card-hover transition-all">
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground truncate">{d.client_name || "Unknown Client"}</p>
-                <p className="text-xs text-muted-foreground capitalize">{d.deal_type?.replace(/_/g, " ")} · {d.package !== "none" ? d.package : d.add_on_name || "—"}{d.closer_name ? ` · ${d.closer_name}` : ""}</p>
-              </div>
-              <div className="hidden sm:flex items-center gap-3 shrink-0">
-                {d.monthly_retainer > 0 && <span className="text-sm font-semibold text-foreground">R{d.monthly_retainer?.toLocaleString()}/mo</span>}
-                {d.probability > 0 && <span className="text-xs text-muted-foreground">{d.probability}%</span>}
-                {d.client_onboarded && <Badge className="border text-xs bg-success/15 text-success border-success/30">Onboarded</Badge>}
-                <Badge className={`border text-xs capitalize ${STAGE_COLORS[d.stage] || "bg-muted/40 text-muted-foreground border-border/40"}`}>{d.stage?.replace(/_/g, " ")}</Badge>
-              </div>
-              <Button size="sm" variant="ghost" className="shrink-0 text-muted-foreground hover:text-foreground" onClick={() => openEdit(d)}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
+           <div key={d.id} className="glass rounded-xl p-4 flex items-center gap-4 hover:shadow-card-hover transition-all cursor-pointer" onClick={() => { setSelectedDeal(d); setShowDetail(true); }}>
+             <div className="flex-1 min-w-0">
+               <p className="font-semibold text-foreground truncate">{d.client_name || "Unknown Client"}</p>
+               <p className="text-xs text-muted-foreground capitalize">{d.deal_type?.replace(/_/g, " ")} · {d.package !== "none" ? d.package : d.add_on_name || "—"}{d.closer_name ? ` · ${d.closer_name}` : ""}</p>
+             </div>
+             <div className="hidden sm:flex items-center gap-3 shrink-0">
+               {d.monthly_retainer > 0 && <span className="text-sm font-semibold text-foreground">R{d.monthly_retainer?.toLocaleString()}/mo</span>}
+               {d.probability > 0 && <span className="text-xs text-muted-foreground">{d.probability}%</span>}
+               {d.client_onboarded && <Badge className="border text-xs bg-success/15 text-success border-success/30">Onboarded</Badge>}
+               <Badge className={`border text-xs capitalize ${STAGE_COLORS[d.stage] || "bg-muted/40 text-muted-foreground border-border/40"}`}>{d.stage?.replace(/_/g, " ")}</Badge>
+             </div>
+             <Button size="sm" variant="ghost" className="shrink-0 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); openEdit(d); }}>
+               <ChevronRight className="w-4 h-4" />
+             </Button>
+           </div>
           ))}
         </div>
       )}
@@ -333,6 +374,52 @@ export default function Deals() {
               <Button onClick={save} disabled={saving} className="gradient-bg text-white hover:opacity-90">{saving ? "Saving…" : "Save Deal"}</Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deal Detail Modal */}
+      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+        <DialogContent className="bg-card border-border/50 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="gradient-text">Deal Details</DialogTitle>
+          </DialogHeader>
+          {selectedDeal && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label className="text-xs text-muted-foreground">Client</Label>
+                <p className="text-sm text-foreground font-semibold">{selectedDeal.client_name}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Package</Label>
+                <p className="text-sm text-foreground">{selectedDeal.package !== "none" ? selectedDeal.package : selectedDeal.add_on_name}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Setup Fee</Label>
+                  <p className="text-sm text-foreground font-semibold">R{(selectedDeal.setup_fee || 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Monthly Retainer</Label>
+                  <p className="text-sm text-foreground font-semibold">R{(selectedDeal.monthly_retainer || 0).toLocaleString()}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Stage</Label>
+                <Badge className={`border text-xs capitalize ${STAGE_COLORS[selectedDeal.stage]}`}>{selectedDeal.stage?.replace(/_/g, " ")}</Badge>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  onClick={() => generateContract(selectedDeal)} 
+                  disabled={generatingContract}
+                  className="gradient-bg text-white hover:opacity-90"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  {generatingContract ? "Generating..." : "Generate Contract"}
+                </Button>
+                <Button variant="ghost" onClick={() => setShowDetail(false)}>Close</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </AppLayout>

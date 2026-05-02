@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -14,6 +14,7 @@ const NAV = [
   { path: "/commissions", label: "Commissions", icon: DollarSign },
   { path: "/invoices", label: "Invoices", icon: FileText },
   { path: "/receipts", label: "Receipts", icon: Receipt },
+  { path: "/contracts", label: "Contracts", icon: File },
   { path: "/activity", label: "Activity Log", icon: MessageSquare },
   { path: "/calendar", label: "Calendar", icon: Calendar },
   { path: "/payroll", label: "Payroll Report", icon: ClipboardList },
