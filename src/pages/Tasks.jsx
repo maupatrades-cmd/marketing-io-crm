@@ -100,11 +100,15 @@ export default function Tasks() {
   });
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const openTasks = tasks.filter(t => t.status === "open" || t.status === "in_progress");
-  const myOpen = openTasks.filter(t => !currentUser || t.assigned_to === currentUser.id);
-  const dueToday = myOpen.filter(t => isDueToday(t.due_date));
-  const overdue = myOpen.filter(t => isOverdue(t.due_date));
-  const completedWeek = tasks.filter(completedThisWeek);
+   const openTasks = tasks.filter(t => t.status === "open" || t.status === "in_progress");
+   const myOpen = openTasks.filter(t => !currentUser || t.assigned_to === currentUser.id);
+   const dueToday = myOpen.filter(t => isDueToday(t.due_date));
+   const overdue = myOpen.filter(t => isOverdue(t.due_date));
+   const completedWeek = tasks.filter(completedThisWeek);
+
+   const myTasks = tasks.filter(t => !currentUser || t.assigned_to === currentUser.id);
+   const myCompleted = myTasks.filter(t => t.status === "done");
+   const completionPct = myTasks.length ? Math.round((myCompleted.length / myTasks.length) * 100) : 0;
 
   const handleUpdate = (updated) => {
     setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
@@ -121,14 +125,14 @@ export default function Tasks() {
   const openEdit = (t) => { setEditingTask(t); setShowModal(true); };
 
   return (
-    <AppLayout title="Tasks" subtitle={`${myOpen.length} open`}>
+     <AppLayout title="Tasks" subtitle={`${myOpen.length} open · ${completionPct}% complete`}>
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
+          { label: "Completion", value: `${completionPct}%`, icon: CheckSquare, color: "bg-success/20", click: () => { setStatusFilter("done"); } },
           { label: "Open Tasks", value: myOpen.length, icon: Circle, color: "bg-primary/20", click: () => { setStatusFilter("open"); setShowMode("mine"); } },
           { label: "Due Today", value: dueToday.length, icon: Clock, color: "bg-warning/20", click: () => { setStatusFilter("open"); setShowMode("mine"); } },
           { label: "Overdue", value: overdue.length, icon: AlertCircle, color: "bg-destructive/20", click: () => { setStatusFilter("open"); setShowMode("mine"); } },
-          { label: "Done This Week", value: completedWeek.length, icon: CheckSquare, color: "bg-success/20", click: () => { setStatusFilter("done"); } },
         ].map(card => (
           <button key={card.label} onClick={card.click} className="glass rounded-xl p-4 text-left hover:shadow-card-hover transition-all">
             <div className="flex items-start justify-between">
