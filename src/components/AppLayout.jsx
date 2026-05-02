@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import ClientSidebar from "@/components/ClientSidebar";
 
 const STAFF_NAV = {
   field_agent: [
@@ -104,6 +105,27 @@ export default function AppLayout({ children, title, subtitle }) {
       setSwitchedRole(role);
     }
   };
+
+  // Client sidebar for client role
+  if (user?.role === "client") {
+    return (
+      <div className="min-h-screen flex font-inter" style={{ background: "transparent" }}>
+        <ClientSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} user={user} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="px-4 lg:px-6 py-4 flex items-center gap-4"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(10,10,20,0.6)", backdropFilter: "blur(10px)" }}>
+            <div>
+              <h1 className="text-base font-bold" style={{ color: "#f4f4fa" }}>{title}</h1>
+              {subtitle && <p className="text-xs" style={{ color: "#6b6b85" }}>{subtitle}</p>}
+            </div>
+          </header>
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+            {children}
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex font-inter" style={{ background: "transparent" }}>
@@ -221,9 +243,22 @@ export default function AppLayout({ children, title, subtitle }) {
         <div className="p-3 border-t space-y-2" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
           {user?.role === "owner" && (
             <div className="bg-primary/10 rounded-lg p-2">
-              <p className="text-xs text-muted-foreground mb-2 font-semibold">Switch View</p>
+              <p className="text-xs text-muted-foreground mb-2 font-semibold">View as:</p>
               <div className="flex flex-col gap-1">
-                {["field_agent", "cpc", "admin"].map(role => (
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("__owner_switched_role");
+                    setSwitchedRole(null);
+                  }}
+                  className={`text-xs py-1.5 px-2 rounded-md transition-all text-left capitalize ${
+                    !switchedRole
+                      ? "bg-primary text-white"
+                      : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Owner (Full Access)
+                </button>
+                {["field_agent", "cpc", "admin", "head_of_tech", "driver", "client"].map(role => (
                   <button
                     key={role}
                     onClick={() => toggleSwitchView(role)}
@@ -237,6 +272,11 @@ export default function AppLayout({ children, title, subtitle }) {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+          {switchedRole && user?.role === "owner" && (
+            <div className="bg-accent/10 border border-accent/30 rounded-lg p-2 text-xs text-accent">
+              Viewing as <strong>{switchedRole.replace(/_/g, " ")}</strong> — Click "Owner (Full Access)" above to return
             </div>
           )}
           <Link to="/client-portal"

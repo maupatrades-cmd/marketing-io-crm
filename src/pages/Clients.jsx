@@ -38,22 +38,31 @@ const EMPTY_CLIENT = {
 };
 
 export default function Clients() {
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(EMPTY_CLIENT);
-  const [saving, setSaving] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [sendingWelcomePack, setSendingWelcomePack] = useState(false);
-  const { toast } = useToast();
+   const [clients, setClients] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [search, setSearch] = useState("");
+   const [statusFilter, setStatusFilter] = useState("all");
+   const [showForm, setShowForm] = useState(false);
+   const [editing, setEditing] = useState(null);
+   const [form, setForm] = useState(EMPTY_CLIENT);
+   const [saving, setSaving] = useState(false);
+   const [selected, setSelected] = useState(null);
+   const [sendingWelcomePack, setSendingWelcomePack] = useState(false);
+   const { toast } = useToast();
 
-  const ONBOARDING_FIELDS = ["onboarding_form_returned", "debit_mandate_signed", "brand_assets_received", "setup_fee_paid", "go_live_acknowledged"];
+   const ONBOARDING_FIELDS = ["onboarding_form_returned", "debit_mandate_signed", "brand_assets_received", "setup_fee_paid", "go_live_acknowledged"];
 
-  const load = () => base44.entities.Client.list("-created_date", 200).then(d => { setClients(d); setLoading(false); });
-  useEffect(() => { load(); }, []);
+   const load = async () => {
+     const user = await base44.auth.me();
+     if (user?.role !== "owner" && user?.role !== "admin") {
+       window.location.href = "/staff/clients";
+       return;
+     }
+     const d = await base44.entities.Client.list("-created_date", 200);
+     setClients(d);
+     setLoading(false);
+   };
+   useEffect(() => { load(); }, []);
 
   const filtered = clients.filter(c => {
     const matchSearch = !search || c.business_name?.toLowerCase().includes(search.toLowerCase()) || c.contact_person?.toLowerCase().includes(search.toLowerCase()) || c.email?.toLowerCase().includes(search.toLowerCase());

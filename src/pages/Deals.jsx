@@ -91,35 +91,61 @@ async function generateCloserCommissions(deal) {
 }
 
 export default function Deals() {
-  const [deals, setDeals] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState("all");
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(EMPTY);
-  const [saving, setSaving] = useState(false);
-  const [notifyClient, setNotifyClient] = useState(true);
-  const [selectedDeal, setSelectedDeal] = useState(null);
-  const [showDetail, setShowDetail] = useState(false);
-  const [generatingContract, setGeneratingContract] = useState(false);
-  const { toast } = useToast();
+   const [deals, setDeals] = useState([]);
+   const [clients, setClients] = useState([]);
+   const [users, setUsers] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [search, setSearch] = useState("");
+   const [stageFilter, setStageFilter] = useState("all");
+   const [showForm, setShowForm] = useState(false);
+   const [editing, setEditing] = useState(null);
+   const [form, setForm] = useState(EMPTY);
+   const [saving, setSaving] = useState(false);
+   const [notifyClient, setNotifyClient] = useState(true);
+   const [selectedDeal, setSelectedDeal] = useState(null);
+   const [showDetail, setShowDetail] = useState(false);
+   const [generatingContract, setGeneratingContract] = useState(false);
+   const [currentUser, setCurrentUser] = useState(null);
+   const { toast } = useToast();
 
-  const load = () => Promise.all([
-    base44.entities.Deal.list("-created_date", 200),
-    base44.entities.Client.list("-created_date", 200),
-    base44.entities.User.list(),
-  ]).then(([d, c, u]) => { setDeals(d); setClients(c); setUsers(u); setLoading(false); });
+   const load = async () => {
+     const user = await base44.auth.me();
+     setCurrentUser(user);
 
-  useEffect(() => { load(); }, []);
+     // Role-based redirects
+     if (user?.role === "head_of_tech" || user?.role === "driver") {
+       window.location.href = "/staff";
+       return;
+     }
+     if (user?.role === "client") {
+       window.location.href = "/client-portal";
+       return;
+     }
 
-  const filtered = deals.filter(d => {
-    const matchSearch = !search || d.client_name?.toLowerCase().includes(search.toLowerCase());
-    const matchStage = stageFilter === "all" || d.stage === stageFilter;
-    return matchSearch && matchStage;
-  });
+     const [d, c, u] = await Promise.all([
+       base44.entities.Deal.list("-created_date", 200),
+       base44.entities.Client.list("-created_date", 200),
+       base44.entities.User.list(),
+     ]);
+
+     setDeals(d); 
+     setClients(c); 
+     setUsers(u); 
+     setLoading(false);
+   };
+
+   useEffect(() => { load(); }, []);
+
+   const filtered = deals.filter(d => {
+     const matchSearch = !search || d.client_name?.toLowerCase().includes(search.toLowerCase());
+     const matchStage = stageFilter === "all" || d.stage === stageFilter;
+
+     // Role-based filter
+     if (currentUser?.role === "field_agent" && d.closer_id !== currentUser.id) return false;
+     if (currentUser?.role === "cpc" && d.cpc_id !== currentUser.id) return false;
+
+     return matchSearch && matchStage;
+   });
 
   const openCreate = () => { setEditing(null); setForm(EMPTY); setShowForm(true); };
   const openEdit = (d) => { setEditing(d); setForm({ ...EMPTY, ...d, setup_fee: d.setup_fee || "", monthly_retainer: d.monthly_retainer || "" }); setShowForm(true); };
@@ -209,6 +235,11 @@ export default function Deals() {
 
   return (
     <AppLayout title="Deals" subtitle={`${deals.filter(d => d.stage === "closed_won").length} won`}>
+      {(currentUser?.role === "field_agent" || currentUser?.role === "cpc") && (
+        <div className="mb-4 p-3 rounded-lg border border-primary/30 bg-primary/10 text-primary text-sm">
+          Showing your deals only
+        </div>
+      )}
       {/* Pipeline strip */}
       <div className="flex gap-2 overflow-x-auto pb-3 mb-6">
         {pipeline.map(p => (

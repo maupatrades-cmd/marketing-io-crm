@@ -134,15 +134,15 @@ const AuthenticatedApp = () => {
       <Route path="/staff/verify-leads" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/staff"><StaffVerifyLeads /></RouteGuard>} />
       <Route path="/staff/communications" element={<StaffCommunications />} />
       
-      {/* Client Portal Routes */}
-      <Route path="/client/onboarding-form" element={<ClientOnboardingFormFull />} />
-      <Route path="/client/invoices" element={<ClientInvoices />} />
-      <Route path="/client/deliverables" element={<ClientDeliverables />} />
-      <Route path="/client/reports" element={<ClientReports />} />
-      <Route path="/client/contracts" element={<ClientContracts />} />
-      <Route path="/client/uploads" element={<ClientUploads />} />
-      <Route path="/client/messages" element={<ClientMessages />} />
-      <Route path="/client/profile" element={<ClientProfile />} />
+      {/* Client Portal Routes — require client role */}
+      <Route path="/client/onboarding-form" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOnboardingFormFull /></RouteGuard>} />
+      <Route path="/client/invoices" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientInvoices /></RouteGuard>} />
+      <Route path="/client/deliverables" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientDeliverables /></RouteGuard>} />
+      <Route path="/client/reports" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientReports /></RouteGuard>} />
+      <Route path="/client/contracts" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientContracts /></RouteGuard>} />
+      <Route path="/client/uploads" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientUploads /></RouteGuard>} />
+      <Route path="/client/messages" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientMessages /></RouteGuard>} />
+      <Route path="/client/profile" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientProfile /></RouteGuard>} />
       
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
