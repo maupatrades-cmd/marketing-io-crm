@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import ClientSidebar from "@/components/ClientSidebar";
@@ -216,8 +216,47 @@ export default function AppLayout({ children, title, subtitle }) {
                 <MailIcon className="w-4 h-4 shrink-0" />
                 Email Templates
               </Link>
-            </>
-          )}
+              <Link
+                to="/owner/financials"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/owner/financials"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/owner/financials" ? {} : { color: "#a8a8c0" }}
+              >
+                <DollarSign className="w-4 h-4 shrink-0" />
+                Financials
+              </Link>
+              <Link
+                to="/owner/reports"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/owner/reports"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/owner/reports" ? {} : { color: "#a8a8c0" }}
+              >
+                <BarChart2 className="w-4 h-4 shrink-0" />
+                Reports
+              </Link>
+              <Link
+                to="/owner/settings"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/owner/settings"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/owner/settings" ? {} : { color: "#a8a8c0" }}
+              >
+                <Settings className="w-4 h-4 shrink-0" />
+                Settings
+              </Link>
+              </>
+              )}
           {(STAFF_NAV[displayRole] || OWNER_NAV).map(({ path, label, icon: Icon }) => {
             const active = location.pathname === path;
             return (

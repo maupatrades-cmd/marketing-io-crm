@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ export default function Clients() {
    const [saving, setSaving] = useState(false);
    const [selected, setSelected] = useState(null);
    const [sendingWelcomePack, setSendingWelcomePack] = useState(false);
+   const navigate = useNavigate();
    const { toast } = useToast();
 
    const ONBOARDING_FIELDS = ["onboarding_form_returned", "debit_mandate_signed", "brand_assets_received", "setup_fee_paid", "go_live_acknowledged"];
@@ -213,9 +215,9 @@ export default function Clients() {
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(c => (
-            <div key={c.id} onClick={() => setSelected(selected?.id === c.id ? null : c)}
-              className="glass rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-card-hover transition-all">
+           {filtered.map(c => (
+             <div key={c.id} onClick={() => navigate(`/clients/${c.id}`)}
+               className="glass rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-card-hover transition-all">
               <div className="w-10 h-10 rounded-lg gradient-bg flex items-center justify-center shrink-0">
                 <span className="text-white font-bold text-sm">{c.business_name?.charAt(0)}</span>
               </div>
@@ -235,8 +237,8 @@ export default function Clients() {
         </div>
       )}
 
-      {/* Expanded client detail */}
-      {selected && (
+      {/* Detail moved to /clients/:id */}
+       {false && (
         <div className="mt-2 glass rounded-xl p-5 space-y-4 animate-fade-in">
          <div className="flex items-center justify-between">
            <h3 className="font-semibold text-foreground">{selected.business_name}</h3>

@@ -10,20 +10,35 @@ export default function ClientMessages() {
   const [user, setUser] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  const fetchMessages = async (clientId) => {
+    const msgs = await base44.entities.ClientActivityLog.filter({ client_id: clientId }, "-created_date", 100);
+    setMessages(Array.isArray(msgs) ? msgs : [msgs]);
+    setLastUpdated(new Date());
+  };
 
   useEffect(() => {
     base44.auth.me().then(async (me) => {
       setUser(me);
       const clients = await base44.entities.Client.filter({ email: me.email });
       if (clients.length > 0) {
-        const c = clients[0];
+        const c = Array.isArray(clients) ? clients[0] : clients;
         setClient(c);
-        const msgs = await base44.entities.ClientActivityLog.filter({ client_id: c.id }, "-created_date", 100);
-        setMessages(msgs);
+        await fetchMessages(c.id);
       }
       setLoading(false);
     });
   }, []);
+
+  // Real-time polling every 30 seconds
+  useEffect(() => {
+    if (!client) return;
+    const interval = setInterval(() => {
+      fetchMessages(client.id);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [client]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !client) return;
@@ -35,9 +50,7 @@ export default function ClientMessages() {
       logged_by_name: user.full_name,
     });
     setNewMessage("");
-    // Refresh
-    const msgs = await base44.entities.ClientActivityLog.filter({ client_id: client.id }, "-created_date", 100);
-    setMessages(msgs);
+    await fetchMessages(client.id);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -55,8 +68,11 @@ export default function ClientMessages() {
           </div>
         </div>
 
+        {/* Last Updated Indicator */}
+        <p className="text-xs text-muted-foreground text-center mb-4">Last updated: {lastUpdated.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}</p>
+
         {/* Messages List */}
-        <div className="space-y-3">
+         <div className="space-y-3">
           {messages.length === 0 ? (
             <div className="glass rounded-xl p-8 text-center"><MessageSquare className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" /><p className="text-muted-foreground">No messages</p></div>
           ) : (

@@ -55,6 +55,10 @@ import ClientContracts from './pages/ClientContracts';
 import ClientUploads from './pages/ClientUploads';
 import ClientMessages from './pages/ClientMessages';
 import ClientProfile from './pages/ClientProfile';
+import OwnerClientDetail from './pages/OwnerClientDetail';
+import OwnerFinancials from './pages/OwnerFinancials';
+import OwnerReports from './pages/OwnerReports';
+import OwnerSettings from './pages/OwnerSettings';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -99,6 +103,7 @@ const AuthenticatedApp = () => {
       <Route path="/design-preview" element={<DesignPreview />} />
       <Route path="/client-portal" element={<ClientPortal />} />
       <Route path="/clients" element={<Clients />} />
+      <Route path="/clients/:id" element={<OwnerClientDetail />} />
       <Route path="/deals" element={<Deals />} />
       <Route path="/leads" element={<Leads />} />
       <Route path="/commissions" element={<Commissions />} />
@@ -126,7 +131,10 @@ const AuthenticatedApp = () => {
       <Route path="/my-kpis" element={<MyKPIs />} />
       <Route path="/team-kpis" element={<TeamKPIs />} />
       <Route path="/playbooks" element={<Playbooks />} />
-      
+      <Route path="/owner/financials" element={<OwnerFinancials />} />
+      <Route path="/owner/reports" element={<OwnerReports />} />
+      <Route path="/owner/settings" element={<OwnerSettings />} />
+
       {/* Staff Portal Routes */}
       <Route path="/staff" element={<StaffMyDay />} />
       <Route path="/staff/pipeline" element={<RouteGuard allowedRoles={["field_agent", "cpc"]} fallbackPath="/staff"><StaffMyPipeline /></RouteGuard>} />
