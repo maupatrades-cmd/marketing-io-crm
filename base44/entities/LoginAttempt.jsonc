@@ -1,0 +1,57 @@
+{
+  "name": "LoginAttempt",
+  "type": "object",
+  "properties": {
+    "email_attempted": {
+      "type": "string",
+      "description": "Email address that was attempted"
+    },
+    "success": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if login succeeded"
+    },
+    "failure_reason": {
+      "type": "string",
+      "enum": [
+        "wrong_password",
+        "account_not_found",
+        "account_locked",
+        "captcha_failed",
+        "otp_failed",
+        "account_disabled",
+        "other"
+      ],
+      "description": "Reason for failure if success=false"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "IP address from request"
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Browser/device user agent string"
+    },
+    "country": {
+      "type": "string",
+      "description": "Derived from IP if possible"
+    },
+    "city": {
+      "type": "string",
+      "description": "Derived from IP if possible"
+    },
+    "attempted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of attempt"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Reference to User if known, null if email doesn't exist"
+    }
+  },
+  "required": [
+    "email_attempted",
+    "success"
+  ]
+}
