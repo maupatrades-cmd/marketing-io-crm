@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Users, AlertTriangle, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Search, Plus, Users, AlertTriangle, ChevronRight, CheckCircle2, ClipboardList } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { notifyOnboardingMilestone } from "@/lib/notifications.js";
 import { useToast } from "@/components/ui/use-toast";
+import ClientTaskChecklist, { ONBOARDING_TASKS } from "@/components/clients/ClientTaskChecklist";
 
 const STATUS_COLORS = {
   lead: "bg-warning/15 text-warning border-warning/30",
@@ -59,11 +60,31 @@ export default function Clients() {
   const openCreate = () => { setEditing(null); setForm(EMPTY_CLIENT); setShowForm(true); };
   const openEdit = (c) => { setEditing(c); setForm({ ...EMPTY_CLIENT, ...c }); setShowForm(true); };
 
+  const createOnboardingTasks = async (clientId, clientName) => {
+    const existing = await base44.entities.Task.filter({ client_id: clientId });
+    if (existing.length > 0) return; // already created
+    await base44.entities.Task.bulkCreate(
+      ONBOARDING_TASKS.map(t => ({
+        title: t.title,
+        client_id: clientId,
+        client_name: clientName,
+        priority: t.priority,
+        status: "todo",
+      }))
+    );
+  };
+
   const save = async () => {
     setSaving(true);
     const data = { ...form, monthly_retainer: Number(form.monthly_retainer) || 0, setup_fee_amount: Number(form.setup_fee_amount) || 0 };
+    const justMovedToOnboarding = editing && editing.status !== "onboarding" && data.status === "onboarding";
+
     if (editing) {
       await base44.entities.Client.update(editing.id, data);
+      if (justMovedToOnboarding) {
+        await createOnboardingTasks(editing.id, data.business_name);
+        toast({ title: "Onboarding checklist created", description: `${ONBOARDING_TASKS.length} tasks added for ${data.business_name}` });
+      }
       ONBOARDING_FIELDS.forEach(field => {
         if (!editing[field] && data[field] && data.email) {
           notifyOnboardingMilestone(data, field).then(() => {
@@ -72,7 +93,11 @@ export default function Clients() {
         }
       });
     } else {
-      await base44.entities.Client.create(data);
+      const created = await base44.entities.Client.create(data);
+      if (data.status === "onboarding" && created?.id) {
+        await createOnboardingTasks(created.id, data.business_name);
+        toast({ title: "Onboarding checklist created", description: `${ONBOARDING_TASKS.length} tasks added for ${data.business_name}` });
+      }
     }
     setSaving(false);
     setShowForm(false);
@@ -160,6 +185,15 @@ export default function Clients() {
             ))}
           </div>
           {selected.notes && <p className="text-xs text-muted-foreground italic">{selected.notes}</p>}
+
+          {/* Task Checklist */}
+          <div className="pt-3 border-t border-border/30">
+            <div className="flex items-center gap-2 mb-3">
+              <ClipboardList className="w-4 h-4 text-primary" />
+              <h4 className="text-sm font-semibold text-foreground">Onboarding Tasks</h4>
+            </div>
+            <ClientTaskChecklist client={selected} />
+          </div>
         </div>
       )}
 
