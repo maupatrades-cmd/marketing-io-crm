@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, Zap, CheckCircle2, XCircle, Clock } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import InteractionNotesPanel from "@/components/notes/InteractionNotesPanel";
 
 const STATUS_COLORS = {
   pending_verification: "bg-warning/15 text-warning border-warning/30",
@@ -50,6 +51,7 @@ export default function Leads() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [selected, setSelected] = useState(null);
 
   const load = () => base44.entities.Lead.list("-created_date", 200).then(d => { setLeads(d); setLoading(false); });
   useEffect(() => { load(); }, []);
@@ -121,7 +123,7 @@ export default function Leads() {
           {filtered.map(l => {
             const score = criteriaScore(l);
             return (
-              <div key={l.id} className="glass rounded-xl p-4 flex items-center gap-4 hover:shadow-card-hover transition-all">
+              <div key={l.id} onClick={() => setSelected(selected?.id === l.id ? null : l)} className="glass rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-card-hover transition-all">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-foreground truncate">{l.business_name}</p>
                   <p className="text-xs text-muted-foreground truncate">{l.contact_person} · {l.phone} · <span className="capitalize">{l.source?.replace(/_/g, " ")}</span></p>
@@ -146,12 +148,36 @@ export default function Leads() {
                     </Button>
                   </div>
                 )}
-                <Button size="sm" variant="ghost" className="shrink-0 text-muted-foreground hover:text-foreground" onClick={() => openEdit(l)}>
+                <Button size="sm" variant="ghost" className="shrink-0 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); openEdit(l); }}>
                   Edit
                 </Button>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Expanded lead detail */}
+      {selected && (
+        <div className="mt-2 glass rounded-xl p-5 space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-foreground">{selected.business_name}</h3>
+            <Button size="sm" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10" onClick={() => openEdit(selected)}>Edit</Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+            <Info label="Contact" value={selected.contact_person} />
+            <Info label="Phone" value={selected.phone} />
+            <Info label="Email" value={selected.email} />
+            <Info label="Industry" value={selected.industry} />
+            <Info label="Source" value={selected.source?.replace(/_/g, " ")} />
+            <Info label="Status" value={selected.status?.replace(/_/g, " ")} />
+          </div>
+          {selected.notes && <p className="text-xs text-muted-foreground italic">{selected.notes}</p>}
+
+          {/* Interaction Notes */}
+          <div className="pt-3 border-t border-border/30">
+            <InteractionNotesPanel leadId={selected.id} />
+          </div>
         </div>
       )}
 
@@ -219,6 +245,15 @@ function LField({ label, value, onChange }) {
     <div>
       <Label className="text-xs text-muted-foreground mb-1 block">{label}</Label>
       <Input value={value || ""} onChange={e => onChange(e.target.value)} className="bg-secondary/50 border-border/50" />
+    </div>
+  );
+}
+
+function Info({ label, value }) {
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-sm text-foreground">{value || "—"}</p>
     </div>
   );
 }

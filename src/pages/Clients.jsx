@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import ClientTaskChecklist, { ONBOARDING_TASKS } from "@/components/clients/ClientTaskChecklist";
 import ClientActivityFeed from "@/components/clients/ClientActivityFeed";
 import TaskWidget from "@/components/tasks/TaskWidget";
+import InteractionNotesPanel from "@/components/notes/InteractionNotesPanel";
 
 const STATUS_COLORS = {
   lead: "bg-warning/15 text-warning border-warning/30",
@@ -274,16 +275,21 @@ export default function Clients() {
             <TaskWidget clientId={selected.id} title="Open Tasks" limit={5} />
           </div>
 
+          {/* Interaction Notes */}
+           <div className="pt-3 border-t border-border/30">
+             <InteractionNotesPanel clientId={selected.id} />
+           </div>
+
           {/* Activity Log */}
-          <div className="pt-3 border-t border-border/30">
-            <div className="flex items-center gap-2 mb-3">
-              <History className="w-4 h-4 text-primary" />
-              <h4 className="text-sm font-semibold text-foreground">Activity Log</h4>
-            </div>
-            <ClientActivityFeed clientId={selected.id} />
+           <div className="pt-3 border-t border-border/30">
+             <div className="flex items-center gap-2 mb-3">
+               <History className="w-4 h-4 text-primary" />
+               <h4 className="text-sm font-semibold text-foreground">Activity Log</h4>
+             </div>
+             <ClientActivityFeed clientId={selected.id} />
+           </div>
           </div>
-        </div>
-      )}
+          )}
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>

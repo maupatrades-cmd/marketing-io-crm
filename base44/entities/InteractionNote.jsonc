@@ -1,0 +1,48 @@
+{
+  "name": "InteractionNote",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client entity (null if note is for a lead)"
+    },
+    "lead_id": {
+      "type": "string",
+      "description": "Reference to Lead entity (null if note is for a client)"
+    },
+    "content": {
+      "type": "string",
+      "description": "The note content (can include details about interaction)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "discovery_note",
+        "objection_note",
+        "follow_up_note",
+        "proposal_note",
+        "closing_note",
+        "onboarding_note",
+        "general_note"
+      ],
+      "description": "Category of the interaction note"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of staff member who created the note"
+    },
+    "author_email": {
+      "type": "string",
+      "description": "Email of staff member who created the note"
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false,
+      "description": "Pinned notes appear at the top"
+    }
+  },
+  "required": [
+    "content",
+    "category"
+  ]
+}
