@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Save, Instagram, Facebook } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import MyKPIsWidget from "@/components/kpi/MyKPIsWidget";
 
 export default function StaffProfile() {
   const [me, setMe] = useState(null);
@@ -52,6 +53,8 @@ export default function StaffProfile() {
   return (
     <AppLayout title="My Profile" subtitle="Manage your personal info & social links">
       <div className="max-w-2xl mx-auto space-y-6">
+        {/* KPI Widget */}
+        <MyKPIsWidget />
 
         {/* Avatar */}
         <div className="glass rounded-2xl p-6 flex items-center gap-6">

@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import TaskWidget from "@/components/tasks/TaskWidget";
+import TeamKPIsWidget from "@/components/kpi/TeamKPIsWidget";
 
 const revenueData = [
   { month: "Nov", revenue: 68000, target: 75000 },
@@ -92,7 +93,10 @@ export default function OwnerDashboard() {
           <KpiCard icon={BarChart2} label="Pending Commissions" value={loading ? "—" : `R${pendingCommissions.toLocaleString()}`} sub="Awaiting payout" color="bg-success/20" />
         </div>
 
-        {/* Reports Due This Week */}
+        {/* Team KPIs Widget */}
+        <TeamKPIsWidget />
+
+         {/* Reports Due This Week */}
          {reports.filter(r => r.status === "draft").length > 0 && (
           <div className="glass rounded-xl p-4 border-primary/30 border flex items-center gap-3">
             <LineChart className="w-5 h-5 text-primary shrink-0" />

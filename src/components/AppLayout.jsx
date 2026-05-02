@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 
 const NAV = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
   { path: "/log-sale", label: "Log a Sale", icon: PlusCircle },
   { path: "/tasks", label: "Tasks", icon: CheckSquare },
   { path: "/onboarding", label: "Onboarding", icon: ListChecks },
@@ -54,6 +55,19 @@ export default function AppLayout({ children, title, subtitle }) {
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {(user?.role === "owner" || user?.role === "admin") && (
             <>
+              <Link
+                to="/team-kpis"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/team-kpis"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/team-kpis" ? {} : { color: "#a8a8c0" }}
+              >
+                <BarChart2 className="w-4 h-4 shrink-0" />
+                Team KPIs
+              </Link>
               <Link
                 to="/onboarding-submissions"
                 onClick={() => setMobileOpen(false)}

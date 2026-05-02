@@ -1,0 +1,70 @@
+{
+  "name": "KPITarget",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "field_agent",
+        "cpc",
+        "admin",
+        "founder",
+        "head_of_tech",
+        "driver"
+      ],
+      "description": "Role for which this target applies"
+    },
+    "metric_code": {
+      "type": "string",
+      "description": "Unique internal identifier (e.g., 'new_deals_closed')"
+    },
+    "metric_name": {
+      "type": "string",
+      "description": "Human-readable metric name"
+    },
+    "target_value": {
+      "type": "number",
+      "description": "Target numeric value"
+    },
+    "target_period": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "weekly",
+        "monthly",
+        "quarterly"
+      ],
+      "description": "Period over which target applies"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "minimum",
+        "maximum"
+      ],
+      "description": "Minimum = must be \u2265 target, Maximum = must be \u2264 target"
+    },
+    "unit": {
+      "type": "string",
+      "description": "Unit of measurement (e.g., 'deals', 'visits', 'ZAR', '%', 'hours')"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this target is currently tracked"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional context about the metric"
+    }
+  },
+  "required": [
+    "role",
+    "metric_code",
+    "metric_name",
+    "target_value",
+    "target_period",
+    "direction",
+    "unit"
+  ]
+}
