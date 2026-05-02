@@ -27,6 +27,7 @@ import BuildSummary from './pages/BuildSummary';
 import LogSale from './pages/LogSale';
 import ClientOnboarding from './pages/ClientOnboarding';
 import Tasks from './pages/Tasks';
+import TeamOversight from './pages/TeamOversight';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -77,6 +78,7 @@ const AuthenticatedApp = () => {
       <Route path="/log-sale" element={<LogSale />} />
       <Route path="/onboarding" element={<ClientOnboarding />} />
       <Route path="/tasks" element={<Tasks />} />
+      <Route path="/team-oversight" element={<TeamOversight />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

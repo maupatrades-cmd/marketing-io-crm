@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/lib/AuthContext";
 
 const NAV = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -25,6 +26,7 @@ const NAV = [
 export default function AppLayout({ children, title, subtitle }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen flex font-inter" style={{ background: "transparent" }}>
@@ -48,6 +50,21 @@ export default function AppLayout({ children, title, subtitle }) {
 
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+          {user?.role === "owner" && (
+            <Link
+              to="/team-oversight"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                location.pathname === "/team-oversight"
+                  ? "gradient-bg text-white shadow-glow-purple"
+                  : "hover:bg-white/5"
+              }`}
+              style={location.pathname === "/team-oversight" ? {} : { color: "#a8a8c0" }}
+            >
+              <Eye className="w-4 h-4 shrink-0" />
+              Team Performance
+            </Link>
+          )}
           {NAV.map(({ path, label, icon: Icon }) => {
             const active = location.pathname === path;
             return (
