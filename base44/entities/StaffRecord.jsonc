@@ -1,0 +1,440 @@
+{
+  "name": "StaffRecord",
+  "type": "object",
+  "properties": {
+    "full_legal_name": {
+      "type": "string",
+      "description": "Full legal name as per ID document"
+    },
+    "preferred_name": {
+      "type": "string",
+      "description": "Preferred first name / nickname"
+    },
+    "id_number": {
+      "type": "string",
+      "description": "SA ID number (13 digits)"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other",
+        "prefer_not_to_say"
+      ]
+    },
+    "race": {
+      "type": "string",
+      "enum": [
+        "African",
+        "Coloured",
+        "Indian",
+        "White",
+        "Other",
+        "Prefer not to say"
+      ],
+      "description": "For BBBEE reporting"
+    },
+    "nationality": {
+      "type": "string",
+      "default": "South African"
+    },
+    "marital_status": {
+      "type": "string",
+      "enum": [
+        "single",
+        "married",
+        "divorced",
+        "widowed",
+        "life_partner"
+      ]
+    },
+    "number_of_dependants": {
+      "type": "number",
+      "default": 0
+    },
+    "cell_phone_primary": {
+      "type": "string"
+    },
+    "cell_phone_alternative": {
+      "type": "string"
+    },
+    "personal_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "whatsapp_number": {
+      "type": "string"
+    },
+    "residential_address": {
+      "type": "string",
+      "description": "Full residential address"
+    },
+    "postal_address": {
+      "type": "string"
+    },
+    "postal_same_as_residential": {
+      "type": "boolean",
+      "default": true
+    },
+    "nok1_full_name": {
+      "type": "string",
+      "description": "Next of kin 1 full name"
+    },
+    "nok1_relationship": {
+      "type": "string"
+    },
+    "nok1_cell_phone": {
+      "type": "string"
+    },
+    "nok1_alternative_phone": {
+      "type": "string"
+    },
+    "nok1_address": {
+      "type": "string"
+    },
+    "nok1_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "nok2_full_name": {
+      "type": "string",
+      "description": "Next of kin 2 full name"
+    },
+    "nok2_relationship": {
+      "type": "string"
+    },
+    "nok2_cell_phone": {
+      "type": "string"
+    },
+    "position_role": {
+      "type": "string",
+      "enum": [
+        "Field Agent",
+        "CPC",
+        "Admin",
+        "Driver",
+        "Head of Tech",
+        "Other"
+      ]
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "employment_type": {
+      "type": "string",
+      "enum": [
+        "Permanent",
+        "Fixed-term contract",
+        "Independent contractor"
+      ]
+    },
+    "monthly_ctc": {
+      "type": "number",
+      "description": "Agreed monthly CTC in ZAR"
+    },
+    "probation_months": {
+      "type": "number",
+      "default": 3
+    },
+    "hours_per_week": {
+      "type": "number",
+      "default": 45
+    },
+    "reporting_to": {
+      "type": "string",
+      "default": "Founder / GM"
+    },
+    "bank_name": {
+      "type": "string",
+      "enum": [
+        "ABSA",
+        "Standard Bank",
+        "FNB",
+        "Nedbank",
+        "Capitec",
+        "TymeBank",
+        "Discovery Bank",
+        "Other"
+      ]
+    },
+    "branch_code": {
+      "type": "string"
+    },
+    "account_number": {
+      "type": "string"
+    },
+    "account_type": {
+      "type": "string",
+      "enum": [
+        "Cheque",
+        "Savings",
+        "Transmission"
+      ]
+    },
+    "account_holder_name": {
+      "type": "string"
+    },
+    "tax_number": {
+      "type": "string"
+    },
+    "tax_status": {
+      "type": "string",
+      "enum": [
+        "Registered",
+        "Not registered",
+        "Exempt"
+      ]
+    },
+    "uif_number": {
+      "type": "string"
+    },
+    "has_medical_aid": {
+      "type": "boolean",
+      "default": false
+    },
+    "medical_aid_provider": {
+      "type": "string"
+    },
+    "has_pension": {
+      "type": "boolean",
+      "default": false
+    },
+    "highest_qualification": {
+      "type": "string",
+      "enum": [
+        "Below Matric",
+        "Matric",
+        "Certificate",
+        "Diploma",
+        "Degree",
+        "Honours",
+        "Masters",
+        "Doctorate"
+      ]
+    },
+    "institution_name": {
+      "type": "string"
+    },
+    "year_completed": {
+      "type": "number"
+    },
+    "additional_qualifications": {
+      "type": "string"
+    },
+    "languages_spoken": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "English",
+          "Sepedi",
+          "Afrikaans",
+          "isiZulu",
+          "isiXhosa",
+          "Setswana",
+          "Sesotho",
+          "Tshivenda",
+          "Xitsonga",
+          "isiNdebele",
+          "siSwati",
+          "Other"
+        ]
+      }
+    },
+    "has_drivers_licence": {
+      "type": "boolean",
+      "default": false
+    },
+    "drivers_licence_code": {
+      "type": "string",
+      "enum": [
+        "Code A",
+        "Code B",
+        "Code C1",
+        "Code C",
+        "Code EB",
+        "Code EC",
+        "None"
+      ],
+      "default": "None"
+    },
+    "has_own_vehicle": {
+      "type": "boolean",
+      "default": false
+    },
+    "prev_employer_1_name": {
+      "type": "string"
+    },
+    "prev_employer_1_role": {
+      "type": "string"
+    },
+    "prev_employer_1_start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prev_employer_1_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prev_employer_1_reason_for_leaving": {
+      "type": "string"
+    },
+    "prev_employer_2_name": {
+      "type": "string"
+    },
+    "prev_employer_2_role": {
+      "type": "string"
+    },
+    "prev_employer_2_start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prev_employer_2_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "sales_marketing_experience_summary": {
+      "type": "string"
+    },
+    "notable_achievements": {
+      "type": "string"
+    },
+    "id_copy_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "Uploaded ID copy (image or PDF)"
+    },
+    "bank_confirmation_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "Bank confirmation letter (image or PDF)"
+    },
+    "qualification_certificate_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "Highest qualification certificate"
+    },
+    "drivers_licence_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "Driver's licence copy"
+    },
+    "recent_payslip_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "Most recent payslip"
+    },
+    "reference_letter_1_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "Reference letter 1"
+    },
+    "reference_letter_2_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "Reference letter 2"
+    },
+    "profile_photo_file": {
+      "type": "string",
+      "format": "uri",
+      "description": "Profile photo"
+    },
+    "information_is_true": {
+      "type": "boolean",
+      "default": false,
+      "description": "Applicant confirms all info is true"
+    },
+    "consent_to_background_check": {
+      "type": "boolean",
+      "default": false
+    },
+    "popia_consent": {
+      "type": "boolean",
+      "default": false
+    },
+    "digital_signature_name": {
+      "type": "string",
+      "description": "Typed full name as digital signature"
+    },
+    "signature_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "application_status": {
+      "type": "string",
+      "enum": [
+        "Submitted",
+        "Under Review",
+        "Approved",
+        "Rejected",
+        "On Hold"
+      ],
+      "default": "Submitted",
+      "description": "INTERNAL \u2014 admin/owner only"
+    },
+    "internal_notes": {
+      "type": "string",
+      "description": "INTERNAL \u2014 admin/owner only"
+    },
+    "interview_score": {
+      "type": "number",
+      "description": "INTERNAL \u2014 score out of 10"
+    },
+    "reference_check_status": {
+      "type": "string",
+      "enum": [
+        "Not started",
+        "In progress",
+        "Completed",
+        "Failed"
+      ],
+      "default": "Not started",
+      "description": "INTERNAL"
+    },
+    "background_check_status": {
+      "type": "string",
+      "enum": [
+        "Not started",
+        "In progress",
+        "Completed",
+        "Failed"
+      ],
+      "default": "Not started",
+      "description": "INTERNAL"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "User ID of approver"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "full_legal_name",
+    "id_number",
+    "date_of_birth",
+    "cell_phone_primary",
+    "personal_email",
+    "residential_address",
+    "nok1_full_name",
+    "nok1_relationship",
+    "nok1_cell_phone",
+    "account_number",
+    "account_holder_name",
+    "id_copy_file",
+    "bank_confirmation_file",
+    "profile_photo_file",
+    "information_is_true",
+    "consent_to_background_check",
+    "popia_consent",
+    "digital_signature_name"
+  ]
+}
