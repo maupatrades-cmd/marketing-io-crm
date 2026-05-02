@@ -1,0 +1,87 @@
+{
+  "name": "MonthlyReport",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "report_month": {
+      "type": "string",
+      "description": "YYYY-MM"
+    },
+    "package": {
+      "type": "string"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": [
+        "social_performance",
+        "website_health",
+        "reputation",
+        "paid_ads",
+        "email_newsletter",
+        "video_performance",
+        "sms_campaign",
+        "deployment_photo",
+        "combined"
+      ],
+      "default": "social_performance"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "drafted",
+        "delivered",
+        "acknowledged"
+      ],
+      "default": "pending"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "5th of following month"
+    },
+    "delivered_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "delivered_via": {
+      "type": "string",
+      "enum": [
+        "whatsapp",
+        "email",
+        "in_person"
+      ],
+      "default": "whatsapp"
+    },
+    "report_url": {
+      "type": "string",
+      "description": "PDF report file URL"
+    },
+    "social_posts_published": {
+      "type": "number"
+    },
+    "engagement_summary": {
+      "type": "string"
+    },
+    "top_performing_content": {
+      "type": "string"
+    },
+    "recommendations": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "report_month",
+    "report_type",
+    "status"
+  ]
+}

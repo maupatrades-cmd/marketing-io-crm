@@ -1,0 +1,113 @@
+{
+  "name": "Deal",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client entity"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Denormalised client business name"
+    },
+    "deal_type": {
+      "type": "string",
+      "enum": [
+        "core_package",
+        "add_on"
+      ],
+      "default": "core_package"
+    },
+    "package": {
+      "type": "string",
+      "enum": [
+        "ignite",
+        "accelerate",
+        "dominate",
+        "street_pulse",
+        "township_pulse",
+        "none"
+      ],
+      "default": "none"
+    },
+    "add_on_name": {
+      "type": "string",
+      "description": "Name of add-on if deal_type is add_on"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "new_lead",
+        "discovery_visit",
+        "proposal_sent",
+        "negotiation",
+        "closed_won",
+        "closed_lost",
+        "onboarding"
+      ],
+      "default": "new_lead"
+    },
+    "setup_fee": {
+      "type": "number",
+      "description": "Setup fee in ZAR"
+    },
+    "monthly_retainer": {
+      "type": "number",
+      "description": "Monthly retainer in ZAR"
+    },
+    "probability": {
+      "type": "number",
+      "description": "Close probability percentage 0-100"
+    },
+    "closer_id": {
+      "type": "string",
+      "description": "User ID of deal closer"
+    },
+    "closer_name": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "cpc_outbound",
+        "field_agent_direct",
+        "fnc_referral",
+        "inbound",
+        "referral",
+        "other"
+      ]
+    },
+    "cpc_id": {
+      "type": "string",
+      "description": "CPC who sourced this lead (if Path A)"
+    },
+    "setup_fee_cleared": {
+      "type": "boolean",
+      "default": false
+    },
+    "setup_fee_cleared_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "first_debit_cleared": {
+      "type": "boolean",
+      "default": false
+    },
+    "first_debit_cleared_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "lost_reason": {
+      "type": "string",
+      "description": "Reason if closed_lost"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "deal_type",
+    "stage"
+  ]
+}

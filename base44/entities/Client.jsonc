@@ -1,0 +1,142 @@
+{
+  "name": "Client",
+  "type": "object",
+  "properties": {
+    "business_name": {
+      "type": "string",
+      "description": "Client business name"
+    },
+    "contact_person": {
+      "type": "string",
+      "description": "Primary contact full name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Business email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "WhatsApp / mobile number"
+    },
+    "id_reg_number": {
+      "type": "string",
+      "description": "ID number or CIPC registration number"
+    },
+    "address": {
+      "type": "string",
+      "description": "Physical business address"
+    },
+    "industry": {
+      "type": "string",
+      "description": "Business industry / sector"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "lead",
+        "prospect",
+        "onboarding",
+        "active",
+        "suspended",
+        "cancelled",
+        "churned"
+      ],
+      "default": "lead"
+    },
+    "package": {
+      "type": "string",
+      "enum": [
+        "ignite",
+        "accelerate",
+        "dominate",
+        "street_pulse",
+        "township_pulse",
+        "none"
+      ],
+      "default": "none"
+    },
+    "setup_fee_paid": {
+      "type": "boolean",
+      "default": false
+    },
+    "setup_fee_amount": {
+      "type": "number",
+      "description": "Setup fee amount in ZAR"
+    },
+    "monthly_retainer": {
+      "type": "number",
+      "description": "Monthly retainer amount in ZAR"
+    },
+    "debit_order_date": {
+      "type": "string",
+      "enum": [
+        "1st",
+        "15th"
+      ],
+      "description": "Debit order date"
+    },
+    "go_live_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "contract_start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "contract_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "failed_debits_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of failed debits in rolling 12 months"
+    },
+    "acceleration_triggered": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if 3 failed debits triggered acceleration clause"
+    },
+    "onboarding_form_returned": {
+      "type": "boolean",
+      "default": false
+    },
+    "debit_mandate_signed": {
+      "type": "boolean",
+      "default": false
+    },
+    "brand_assets_received": {
+      "type": "boolean",
+      "default": false
+    },
+    "go_live_acknowledged": {
+      "type": "boolean",
+      "default": false
+    },
+    "assigned_field_agent": {
+      "type": "string",
+      "description": "User ID of assigned Field Agent"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "cpc_outbound",
+        "field_agent_direct",
+        "fnc_referral",
+        "inbound",
+        "referral",
+        "other"
+      ],
+      "description": "Lead source path"
+    }
+  },
+  "required": [
+    "business_name",
+    "contact_person",
+    "email"
+  ]
+}

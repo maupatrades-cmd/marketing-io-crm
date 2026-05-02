@@ -1,0 +1,110 @@
+{
+  "name": "Commission",
+  "type": "object",
+  "properties": {
+    "staff_id": {
+      "type": "string",
+      "description": "User ID of staff member earning commission"
+    },
+    "staff_name": {
+      "type": "string"
+    },
+    "staff_role": {
+      "type": "string",
+      "enum": [
+        "field_agent",
+        "cpc",
+        "admin",
+        "founder",
+        "other"
+      ]
+    },
+    "commission_type": {
+      "type": "string",
+      "enum": [
+        "setup_commission",
+        "retainer_commission",
+        "cpc_lead_fee",
+        "cpc_closure_bonus",
+        "fnc_referral",
+        "paid_ads_trickle",
+        "admin_contract_load",
+        "add_on_once_off",
+        "add_on_retainer"
+      ]
+    },
+    "deal_id": {
+      "type": "string",
+      "description": "Reference to Deal"
+    },
+    "client_id": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "package_or_addon": {
+      "type": "string",
+      "description": "Package or add-on name"
+    },
+    "base_amount": {
+      "type": "number",
+      "description": "Amount the commission is calculated from"
+    },
+    "rate_percent": {
+      "type": "number",
+      "description": "Commission rate percentage"
+    },
+    "commission_amount": {
+      "type": "number",
+      "description": "Calculated commission in ZAR"
+    },
+    "qualifying_event": {
+      "type": "string",
+      "description": "What triggered this commission"
+    },
+    "qualifying_event_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "paid",
+        "withheld",
+        "clawback"
+      ],
+      "default": "pending"
+    },
+    "payroll_month": {
+      "type": "string",
+      "description": "YYYY-MM pay period"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "milestone_batch": {
+      "type": "number",
+      "description": "Which 5-deal milestone batch this belongs to"
+    },
+    "is_backdated": {
+      "type": "boolean",
+      "default": false
+    },
+    "clawback_reason": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "staff_id",
+    "commission_type",
+    "commission_amount",
+    "status"
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "name": "ClientAddOn",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "add_on": {
+      "type": "string",
+      "enum": [
+        "ai_chatbot",
+        "whatsapp_automation",
+        "reputation_management",
+        "google_business_profile",
+        "email_newsletter",
+        "short_form_video",
+        "sms_marketing",
+        "staff_training_workshop",
+        "marketing_audit",
+        "competitor_analysis",
+        "ai_content_writing",
+        "crm_training_setup",
+        "print_signage",
+        "domain_hosting_email",
+        "website_maintenance",
+        "paid_ads_management",
+        "ecommerce_setup",
+        "business_plan",
+        "website_design_only",
+        "business_plan_website_bundle"
+      ]
+    },
+    "bucket": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "description": "Commission bucket A=once-off, B=setup+recurring, C=pure recurring, D=paid ads, E=passive"
+    },
+    "setup_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "monthly_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "setup_pending",
+        "active",
+        "paused",
+        "cancelled",
+        "completed"
+      ],
+      "default": "setup_pending"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "go_live_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "go_live_acknowledged": {
+      "type": "boolean",
+      "default": false
+    },
+    "early_exit_eligible": {
+      "type": "boolean",
+      "default": false,
+      "description": "Within first 6 months"
+    },
+    "months_active": {
+      "type": "number",
+      "default": 0
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Owner user ID"
+    },
+    "owner_role": {
+      "type": "string",
+      "enum": [
+        "head_of_tech",
+        "admin",
+        "founder",
+        "freelancer"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "add_on",
+    "status"
+  ]
+}

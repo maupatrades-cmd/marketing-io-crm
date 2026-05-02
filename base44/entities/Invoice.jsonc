@@ -1,0 +1,107 @@
+{
+  "name": "Invoice",
+  "type": "object",
+  "properties": {
+    "invoice_number": {
+      "type": "string"
+    },
+    "client_id": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "invoice_type": {
+      "type": "string",
+      "enum": [
+        "setup_fee",
+        "monthly_retainer",
+        "add_on_setup",
+        "add_on_monthly",
+        "once_off",
+        "per_sms",
+        "cancellation_fee",
+        "acceleration_amount"
+      ],
+      "default": "monthly_retainer"
+    },
+    "description": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Invoice amount in ZAR"
+    },
+    "vat_applicable": {
+      "type": "boolean",
+      "default": false
+    },
+    "vat_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "total_amount": {
+      "type": "number"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "paid",
+        "overdue",
+        "failed",
+        "cancelled",
+        "partial"
+      ],
+      "default": "draft"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "debit_order",
+        "eft",
+        "yoco",
+        "payfast",
+        "cash",
+        "other"
+      ]
+    },
+    "payment_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "debit_run_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "failed_debit_count": {
+      "type": "number",
+      "default": 0
+    },
+    "last_failed_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "deal_id": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "invoice_type",
+    "amount",
+    "status"
+  ]
+}

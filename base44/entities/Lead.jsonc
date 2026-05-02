@@ -1,0 +1,115 @@
+{
+  "name": "Lead",
+  "type": "object",
+  "properties": {
+    "business_name": {
+      "type": "string"
+    },
+    "contact_person": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "industry": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "cpc_outbound",
+        "field_agent_direct",
+        "fnc_referral",
+        "inbound",
+        "referral",
+        "other"
+      ],
+      "default": "cpc_outbound"
+    },
+    "submitted_by": {
+      "type": "string",
+      "description": "User ID of CPC or Field Agent who submitted"
+    },
+    "submitted_by_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending_verification",
+        "verified",
+        "rejected",
+        "converted",
+        "duplicate"
+      ],
+      "default": "pending_verification"
+    },
+    "verified_by": {
+      "type": "string",
+      "description": "Admin user ID who verified"
+    },
+    "verified_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "rejection_reason": {
+      "type": "string"
+    },
+    "converted_to_deal_id": {
+      "type": "string"
+    },
+    "cpc_r87_paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "R87 lead payment to CPC"
+    },
+    "warm_lead_criteria": {
+      "type": "object",
+      "description": "7 warm-lead qualification criteria",
+      "properties": {
+        "has_business_premises": {
+          "type": "boolean",
+          "default": false
+        },
+        "has_trading_history": {
+          "type": "boolean",
+          "default": false
+        },
+        "decision_maker_contacted": {
+          "type": "boolean",
+          "default": false
+        },
+        "expressed_interest": {
+          "type": "boolean",
+          "default": false
+        },
+        "has_budget_indication": {
+          "type": "boolean",
+          "default": false
+        },
+        "not_existing_client": {
+          "type": "boolean",
+          "default": false
+        },
+        "valid_contact_details": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "business_name",
+    "contact_person",
+    "phone"
+  ]
+}

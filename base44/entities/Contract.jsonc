@@ -1,0 +1,116 @@
+{
+  "name": "Contract",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "deal_id": {
+      "type": "string"
+    },
+    "package": {
+      "type": "string",
+      "enum": [
+        "ignite",
+        "accelerate",
+        "dominate",
+        "street_pulse",
+        "township_pulse",
+        "add_on"
+      ]
+    },
+    "add_on_name": {
+      "type": "string"
+    },
+    "setup_fee": {
+      "type": "number"
+    },
+    "monthly_retainer": {
+      "type": "number"
+    },
+    "initial_term_months": {
+      "type": "number"
+    },
+    "debit_order_date": {
+      "type": "string",
+      "enum": [
+        "1st",
+        "15th"
+      ]
+    },
+    "contract_start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "contract_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "auto_renews": {
+      "type": "boolean",
+      "default": true
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "signed",
+        "active",
+        "cancelled",
+        "expired"
+      ],
+      "default": "draft"
+    },
+    "signed_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "signed_by_client": {
+      "type": "boolean",
+      "default": false
+    },
+    "signed_by_mio": {
+      "type": "boolean",
+      "default": false
+    },
+    "popia_signed": {
+      "type": "boolean",
+      "default": false
+    },
+    "cancellation_notice_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "cancellation_effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "cancellation_fee_applied": {
+      "type": "number"
+    },
+    "loaded_by_admin": {
+      "type": "string",
+      "description": "Admin user ID who loaded this contract"
+    },
+    "loaded_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "document_url": {
+      "type": "string",
+      "description": "Signed contract file URL"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "package",
+    "status"
+  ]
+}

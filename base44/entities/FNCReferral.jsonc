@@ -1,0 +1,84 @@
+{
+  "name": "FNCReferral",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "The client being referred to FNC"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "logged_by": {
+      "type": "string",
+      "description": "User ID of first logger \u2014 owns the R800"
+    },
+    "logged_by_name": {
+      "type": "string"
+    },
+    "logged_by_role": {
+      "type": "string",
+      "enum": [
+        "field_agent",
+        "cpc",
+        "admin",
+        "founder",
+        "part_time_agent",
+        "other"
+      ]
+    },
+    "log_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "mio_to_fnc",
+        "fnc_to_mio"
+      ],
+      "default": "mio_to_fnc"
+    },
+    "fnc_deal_status": {
+      "type": "string",
+      "enum": [
+        "logged",
+        "in_review",
+        "approved",
+        "funded",
+        "rejected"
+      ],
+      "default": "logged"
+    },
+    "fnc_funded_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "funding_amount": {
+      "type": "number",
+      "description": "FNC funding amount if known"
+    },
+    "r800_commission_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "paid",
+        "not_applicable"
+      ],
+      "default": "pending"
+    },
+    "r800_paid_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "logged_by",
+    "direction"
+  ]
+}

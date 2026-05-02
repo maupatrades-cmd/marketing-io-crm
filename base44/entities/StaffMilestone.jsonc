@@ -1,0 +1,56 @@
+{
+  "name": "StaffMilestone",
+  "type": "object",
+  "properties": {
+    "staff_id": {
+      "type": "string"
+    },
+    "staff_name": {
+      "type": "string"
+    },
+    "staff_role": {
+      "type": "string",
+      "enum": [
+        "field_agent",
+        "cpc"
+      ]
+    },
+    "milestone_batch": {
+      "type": "number",
+      "description": "Batch number: 1=deals 1-5, 2=deals 6-10, etc."
+    },
+    "deals_in_batch": {
+      "type": "number",
+      "description": "Count of deals in this batch (max 5)"
+    },
+    "batch_start_deal": {
+      "type": "string",
+      "description": "Deal ID of first deal in batch"
+    },
+    "milestone_reached": {
+      "type": "boolean",
+      "default": false
+    },
+    "milestone_reached_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "retainer_commission_unlocked": {
+      "type": "boolean",
+      "default": false,
+      "description": "Retainer comm backdated to deal 1 of batch"
+    },
+    "retainer_commission_amount": {
+      "type": "number",
+      "description": "Total backdated retainer commission for this batch"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "staff_id",
+    "staff_role",
+    "milestone_batch"
+  ]
+}

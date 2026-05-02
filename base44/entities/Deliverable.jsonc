@@ -1,0 +1,99 @@
+{
+  "name": "Deliverable",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "deal_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "Name of the deliverable"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "setup",
+        "monthly_recurring",
+        "once_off"
+      ],
+      "description": "Which phase this deliverable belongs to"
+    },
+    "product": {
+      "type": "string",
+      "description": "Package or add-on this belongs to"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "User ID of staff member responsible"
+    },
+    "assigned_to_name": {
+      "type": "string"
+    },
+    "owner_role": {
+      "type": "string",
+      "enum": [
+        "head_of_tech",
+        "admin",
+        "founder",
+        "freelancer",
+        "field_agent"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "in_progress",
+        "awaiting_client",
+        "client_reviewing",
+        "approved",
+        "deemed_approved",
+        "completed",
+        "blocked"
+      ],
+      "default": "not_started"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "submitted_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "review_deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "5 business day window expires"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "month_year": {
+      "type": "string",
+      "description": "YYYY-MM for recurring deliverables"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "file_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Uploaded deliverable files"
+    }
+  },
+  "required": [
+    "client_id",
+    "title",
+    "status"
+  ]
+}
