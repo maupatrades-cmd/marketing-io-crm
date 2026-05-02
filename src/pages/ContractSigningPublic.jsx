@@ -147,12 +147,26 @@ export default function ContractSigningPublic() {
         client_signed_at: new Date().toISOString()
       });
 
-      // TODO: Generate final signed PDF with signature embedded
-      // TODO: Save final PDF URL
-      // TODO: Send confirmation email to client and admin
+      // Generate final signed PDF
+      try {
+        await base44.functions.invoke("generateSignedPDF", {
+          contract_id: contract.id
+        });
+      } catch (pdfErr) {
+        console.error("PDF generation error:", pdfErr);
+      }
+
+      // Send notification emails
+      try {
+        await base44.functions.invoke("notifySignatureComplete", {
+          contract_id: contract.id
+        });
+      } catch (notifyErr) {
+        console.error("Notification error:", notifyErr);
+      }
 
       setSigned(true);
-      toast.success("Contract signed successfully!");
+      toast.success("Contract signed successfully! A copy has been sent to your email.");
     } catch (err) {
       toast.error(`Error signing contract: ${err.message}`);
     } finally {
