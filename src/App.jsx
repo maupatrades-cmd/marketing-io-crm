@@ -23,6 +23,7 @@ import InternalMail from './pages/InternalMail';
 import StaffHR from './pages/StaffHR';
 import Products from './pages/Products';
 import StaffOnboardingForm from './pages/StaffOnboardingForm';
+import BuildSummary from './pages/BuildSummary';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -52,6 +53,7 @@ const AuthenticatedApp = () => {
     <Routes>
       {/* Public routes — no auth required */}
       <Route path="/onboarding-form" element={<StaffOnboardingForm />} />
+      <Route path="/build-summary" element={<BuildSummary />} />
       {/* Add your page Route elements here */}
       <Route path="/" element={<OwnerDashboard />} />
       <Route path="/design-preview" element={<DesignPreview />} />
