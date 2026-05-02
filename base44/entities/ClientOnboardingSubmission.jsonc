@@ -1,0 +1,285 @@
+{
+  "name": "ClientOnboardingSubmission",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client entity"
+    },
+    "deal_id": {
+      "type": "string",
+      "description": "Reference to Deal entity"
+    },
+    "submission_token": {
+      "type": "string",
+      "description": "Unique 32-char alphanumeric token for URL"
+    },
+    "submission_status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "in_progress",
+        "submitted",
+        "reviewed"
+      ],
+      "default": "not_started"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reminder_sent_3days": {
+      "type": "boolean",
+      "default": false
+    },
+    "business_legal_name": {
+      "type": "string"
+    },
+    "trading_name": {
+      "type": "string"
+    },
+    "cipc_registration_number": {
+      "type": "string"
+    },
+    "vat_number": {
+      "type": "string"
+    },
+    "year_business_started": {
+      "type": "number"
+    },
+    "number_of_employees": {
+      "type": "string",
+      "enum": [
+        "1-5",
+        "6-10",
+        "11-20",
+        "21-50",
+        "51+"
+      ]
+    },
+    "business_description": {
+      "type": "string"
+    },
+    "target_customer_description": {
+      "type": "string"
+    },
+    "main_competitors": {
+      "type": "string"
+    },
+    "biggest_business_challenge": {
+      "type": "string"
+    },
+    "growth_goals_12_months": {
+      "type": "string"
+    },
+    "physical_address": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "province": {
+      "type": "string",
+      "enum": [
+        "Limpopo",
+        "Gauteng",
+        "Western Cape",
+        "KZN",
+        "Eastern Cape",
+        "Mpumalanga",
+        "North West",
+        "Free State",
+        "Northern Cape"
+      ]
+    },
+    "operating_hours": {
+      "type": "string"
+    },
+    "primary_contact_name": {
+      "type": "string"
+    },
+    "primary_contact_role": {
+      "type": "string"
+    },
+    "primary_contact_phone": {
+      "type": "string"
+    },
+    "primary_contact_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "primary_contact_whatsapp": {
+      "type": "string"
+    },
+    "billing_contact_name": {
+      "type": "string"
+    },
+    "billing_contact_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "has_logo": {
+      "type": "boolean",
+      "default": false
+    },
+    "logo_file": {
+      "type": "string",
+      "format": "uri"
+    },
+    "brand_colours_primary": {
+      "type": "string"
+    },
+    "brand_colours_secondary": {
+      "type": "string"
+    },
+    "brand_voice_tone": {
+      "type": "string",
+      "enum": [
+        "Professional",
+        "Friendly",
+        "Bold",
+        "Premium",
+        "Casual",
+        "Authoritative",
+        "Caring"
+      ]
+    },
+    "existing_brand_guidelines_file": {
+      "type": "string",
+      "format": "uri"
+    },
+    "example_content_you_like": {
+      "type": "string"
+    },
+    "existing_website_url": {
+      "type": "string"
+    },
+    "preferred_domain_name": {
+      "type": "string"
+    },
+    "needs_email_setup": {
+      "type": "boolean",
+      "default": false
+    },
+    "preferred_email_addresses": {
+      "type": "string"
+    },
+    "existing_social_media_handles": {
+      "type": "string"
+    },
+    "existing_google_business_profile": {
+      "type": "boolean",
+      "default": false
+    },
+    "video_filming_locations_preferred": {
+      "type": "string"
+    },
+    "product_or_service_for_video_focus": {
+      "type": "string"
+    },
+    "preferred_distribution_zones": {
+      "type": "string"
+    },
+    "target_demographic": {
+      "type": "string"
+    },
+    "promotional_offers_for_flyers": {
+      "type": "string"
+    },
+    "preferred_distribution_days": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat",
+          "Sun"
+        ]
+      }
+    },
+    "target_township_areas": {
+      "type": "string"
+    },
+    "preferred_poster_locations": {
+      "type": "string"
+    },
+    "addon_chatbot_top_questions": {
+      "type": "string"
+    },
+    "addon_whatsapp_customer_db_size": {
+      "type": "string"
+    },
+    "addon_whatsapp_broadcast_contacts": {
+      "type": "string"
+    },
+    "addon_sms_customer_list_ready": {
+      "type": "boolean",
+      "default": false
+    },
+    "addon_sms_popia_consent": {
+      "type": "boolean",
+      "default": false
+    },
+    "addon_newsletter_subscriber_list_size": {
+      "type": "string"
+    },
+    "addon_newsletter_content_topics": {
+      "type": "string"
+    },
+    "addon_reputation_review_logins": {
+      "type": "string"
+    },
+    "cipc_certificate_file": {
+      "type": "string",
+      "format": "uri"
+    },
+    "vat_certificate_file": {
+      "type": "string",
+      "format": "uri"
+    },
+    "bank_confirmation_file": {
+      "type": "string",
+      "format": "uri"
+    },
+    "existing_website_login_username": {
+      "type": "string"
+    },
+    "existing_website_login_password": {
+      "type": "string"
+    },
+    "google_business_profile_login": {
+      "type": "string"
+    },
+    "social_media_login_credentials": {
+      "type": "string"
+    },
+    "information_accurate_and_complete": {
+      "type": "boolean",
+      "default": false
+    },
+    "popia_consent_for_data_processing": {
+      "type": "boolean",
+      "default": false
+    },
+    "digital_signature_full_name": {
+      "type": "string"
+    },
+    "submission_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "client_id",
+    "deal_id",
+    "submission_token"
+  ]
+}

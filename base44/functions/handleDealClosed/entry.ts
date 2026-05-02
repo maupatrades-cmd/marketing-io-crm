@@ -36,9 +36,14 @@ Deno.serve(async (req) => {
       clientId: deal.client_id
     });
 
+    // Create onboarding submission
+    await base44.functions.invoke("createOnboardingSubmission", {
+      dealId: deal.id
+    });
+
     return Response.json({
       success: true,
-      message: "Welcome Pack sent automatically",
+      message: "Deal closed — Welcome Pack and onboarding form sent",
       client: client.email
     });
 

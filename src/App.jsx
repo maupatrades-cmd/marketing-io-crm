@@ -29,6 +29,8 @@ import ClientOnboarding from './pages/ClientOnboarding';
 import Tasks from './pages/Tasks';
 import TeamOversight from './pages/TeamOversight';
 import Contracts from './pages/Contracts';
+import ClientOnboardingFormPublic from './pages/ClientOnboardingFormPublic';
+import ClientOnboardingReview from './pages/ClientOnboardingReview';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -81,6 +83,8 @@ const AuthenticatedApp = () => {
       <Route path="/tasks" element={<Tasks />} />
       <Route path="/team-oversight" element={<TeamOversight />} />
       <Route path="/contracts" element={<Contracts />} />
+      <Route path="/onboarding-submissions" element={<ClientOnboardingReview />} />
+      <Route path="/client-onboarding/:token" element={<ClientOnboardingFormPublic />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
