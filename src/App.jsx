@@ -34,6 +34,8 @@ import ClientOnboardingReview from './pages/ClientOnboardingReview';
 import MonthlyReports from './pages/MonthlyReports';
 import ContractSigningPublic from './pages/ContractSigningPublic';
 import ContractView from './pages/ContractView';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -91,6 +93,8 @@ const AuthenticatedApp = () => {
       <Route path="/monthly-reports" element={<MonthlyReports />} />
       <Route path="/sign-contract" element={<ContractSigningPublic />} />
       <Route path="/contracts/:id" element={<ContractView />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
