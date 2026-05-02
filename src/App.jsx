@@ -108,7 +108,7 @@ const AuthenticatedApp = () => {
       <Route path="/design-preview" element={<DesignPreview />} />
       <Route path="/client-portal" element={<ClientPortal />} />
       <Route path="/clients" element={<Clients />} />
-      <Route path="/clients/:id" element={<OwnerClientDetail />} />
+      <Route path="/clients/:id" element={<RouteGuard allowedRoles={["owner", "admin"]} fallbackPath="/"><OwnerClientDetail /></RouteGuard>} />
       <Route path="/deals" element={<Deals />} />
       <Route path="/leads" element={<Leads />} />
       <Route path="/commissions" element={<Commissions />} />
@@ -139,6 +139,8 @@ const AuthenticatedApp = () => {
       <Route path="/owner/financials" element={<OwnerFinancials />} />
       <Route path="/owner/reports" element={<OwnerReports />} />
       <Route path="/owner/settings" element={<OwnerSettings />} />
+      <Route path="/owner/financials" element={<OwnerFinancials />} />
+      <Route path="/owner/reports" element={<OwnerReports />} />
       <Route path="/admin/service-orders" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/"><AdminServiceOrders /></RouteGuard>} />
 
       {/* Staff Portal Routes */}

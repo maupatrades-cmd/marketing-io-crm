@@ -18,13 +18,13 @@ export default function ClientInvoices() {
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [selectedInv, setSelectedInv] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setInvoices(prev => [...prev]); // Force re-render for aging updates
-    }, 60000); // Update every minute
-    return () => clearInterval(interval);
-  }, []);
+  const fetchInvoices = async (clientId) => {
+    const invs = await base44.entities.Invoice.filter({ client_id: clientId }, "-created_date", 100);
+    setInvoices(Array.isArray(invs) ? invs : invs ? [invs] : []);
+    setLastUpdated(new Date());
+  };
 
   useEffect(() => {
     base44.auth.me().then(async (me) => {
@@ -32,12 +32,20 @@ export default function ClientInvoices() {
       if (clients.length > 0) {
         const c = Array.isArray(clients) ? clients[0] : clients;
         setClient(c);
-        const invs = await base44.entities.Invoice.filter({ client_id: c.id }, "-created_date", 100);
-        setInvoices(Array.isArray(invs) ? invs : [invs]);
+        await fetchInvoices(c.id);
       }
       setLoading(false);
     });
   }, []);
+
+  // Real-time polling every 30 seconds
+  useEffect(() => {
+    if (!client) return;
+    const interval = setInterval(() => {
+      fetchInvoices(client.id);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [client]);
 
   const getAgingStatus = (dueDate) => {
     const today = new Date();
@@ -118,6 +126,8 @@ export default function ClientInvoices() {
             ))
           )}
         </div>
+
+        <p className="text-xs text-muted-foreground text-center mt-6">Last updated: {lastUpdated.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}</p>
       </div>
 
       {/* Invoice Detail Modal */}

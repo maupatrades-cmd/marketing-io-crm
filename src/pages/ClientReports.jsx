@@ -8,6 +8,13 @@ export default function ClientReports() {
   const [reports, setReports] = useState([]);
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  const fetchReports = async (clientId) => {
+    const reps = await base44.entities.MonthlyReport.filter({ client_id: clientId }, "-month_year", 50);
+    setReports(Array.isArray(reps) ? reps : reps ? [reps] : []);
+    setLastUpdated(new Date());
+  };
 
   useEffect(() => {
     base44.auth.me().then(async (me) => {
@@ -15,12 +22,20 @@ export default function ClientReports() {
       if (clients.length > 0) {
         const c = Array.isArray(clients) ? clients[0] : clients;
         setClient(c);
-        const reps = await base44.entities.MonthlyReport.filter({ client_id: c.id }, "-month_year", 50);
-        setReports(Array.isArray(reps) ? reps : [reps]);
+        await fetchReports(c.id);
       }
       setLoading(false);
     });
   }, []);
+
+  // Real-time polling every 30 seconds
+  useEffect(() => {
+    if (!client) return;
+    const interval = setInterval(() => {
+      fetchReports(client.id);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [client]);
 
   const handleDownload = (pdfUrl) => {
     if (pdfUrl) {
@@ -93,6 +108,8 @@ export default function ClientReports() {
             })}
           </div>
         )}
+
+        <p className="text-xs text-muted-foreground text-center mt-6">Last updated: {lastUpdated.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}</p>
       </div>
     </div>
   );
