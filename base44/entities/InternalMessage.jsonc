@@ -1,0 +1,46 @@
+{
+  "name": "InternalMessage",
+  "type": "object",
+  "properties": {
+    "from_id": {
+      "type": "string",
+      "description": "Sender user ID"
+    },
+    "from_name": {
+      "type": "string"
+    },
+    "from_email": {
+      "type": "string"
+    },
+    "to_id": {
+      "type": "string",
+      "description": "Recipient user ID"
+    },
+    "to_name": {
+      "type": "string"
+    },
+    "to_email": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    },
+    "read_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "from_id",
+    "to_id",
+    "subject",
+    "body"
+  ]
+}

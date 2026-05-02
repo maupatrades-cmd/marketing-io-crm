@@ -1,0 +1,50 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "admin",
+        "user",
+        "field_agent",
+        "cpc"
+      ]
+    },
+    "profile_photo_url": {
+      "type": "string",
+      "description": "Profile photo URL"
+    },
+    "birthday": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of birth"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "job_title": {
+      "type": "string"
+    },
+    "tiktok": {
+      "type": "string",
+      "description": "TikTok username or URL"
+    },
+    "facebook": {
+      "type": "string",
+      "description": "Facebook profile URL"
+    },
+    "instagram": {
+      "type": "string",
+      "description": "Instagram username or URL"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Short personal bio"
+    }
+  },
+  "required": [
+    "role"
+  ]
+}

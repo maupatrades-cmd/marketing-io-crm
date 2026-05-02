@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle } from "lucide-react";
 import { useState } from "react";
 
 const NAV = [
@@ -13,6 +13,8 @@ const NAV = [
   { path: "/activity", label: "Activity Log", icon: MessageSquare },
   { path: "/calendar", label: "Calendar", icon: Calendar },
   { path: "/payroll", label: "Payroll Report", icon: ClipboardList },
+  { path: "/mail", label: "Internal Mail", icon: Mail },
+  { path: "/profile", label: "My Profile", icon: UserCircle },
 ];
 
 export default function AppLayout({ children, title, subtitle }) {
