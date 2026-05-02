@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Users, AlertTriangle, ChevronRight, CheckCircle2, ClipboardList, History } from "lucide-react";
+import { Search, Plus, Users, AlertTriangle, ChevronRight, CheckCircle2, ClipboardList, History, Mail } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { notifyOnboardingMilestone } from "@/lib/notifications.js";
 import { useToast } from "@/components/ui/use-toast";
@@ -46,6 +46,7 @@ export default function Clients() {
   const [form, setForm] = useState(EMPTY_CLIENT);
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [sendingWelcomePack, setSendingWelcomePack] = useState(false);
   const { toast } = useToast();
 
   const ONBOARDING_FIELDS = ["onboarding_form_returned", "debit_mandate_signed", "brand_assets_received", "setup_fee_paid", "go_live_acknowledged"];
@@ -146,6 +147,32 @@ export default function Clients() {
     load();
   };
 
+  const resendWelcomePack = async (client) => {
+    setSendingWelcomePack(true);
+    try {
+      // Find the client's deal
+      const deals = await base44.entities.Deal.filter({ client_id: client.id, stage: "closed_won" });
+      const deal = Array.isArray(deals) ? deals[0] : deals;
+      
+      if (!deal) {
+        toast({ title: "No closed deal found", description: "Welcome Pack can only be sent for closed-won deals", variant: "destructive" });
+        setSendingWelcomePack(false);
+        return;
+      }
+
+      // Send welcome pack via function
+      await base44.functions.invoke("sendWelcomePack", {
+        dealId: deal.id,
+        clientId: client.id
+      });
+
+      toast({ title: "Welcome Pack sent", description: `Email sent to ${client.email}` });
+    } catch (err) {
+      toast({ title: "Error sending Welcome Pack", description: err.message, variant: "destructive" });
+    }
+    setSendingWelcomePack(false);
+  };
+
   return (
     <AppLayout title="Clients" subtitle={`${clients.filter(c => c.status === "active").length} active`}>
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -201,10 +228,15 @@ export default function Clients() {
       {/* Expanded client detail */}
       {selected && (
         <div className="mt-2 glass rounded-xl p-5 space-y-4 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-foreground">{selected.business_name}</h3>
-            <Button size="sm" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10" onClick={() => openEdit(selected)}>Edit</Button>
-          </div>
+         <div className="flex items-center justify-between">
+           <h3 className="font-semibold text-foreground">{selected.business_name}</h3>
+           <div className="flex gap-2">
+             <Button size="sm" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10 gap-1" onClick={() => resendWelcomePack(selected)} disabled={sendingWelcomePack}>
+               <Mail className="w-3 h-3" /> {sendingWelcomePack ? "Sending..." : "Resend Welcome Pack"}
+             </Button>
+             <Button size="sm" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10" onClick={() => openEdit(selected)}>Edit</Button>
+           </div>
+         </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <Info label="Phone" value={selected.phone} />
             <Info label="Industry" value={selected.industry} />
