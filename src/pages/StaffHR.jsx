@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { UserPlus, Users, Minus } from "lucide-react";
+import { UserPlus, Users, Minus, ClipboardList, CheckCircle2, Bell } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { calcPackage, ROLE_LABELS } from "@/lib/compensationPackages";
@@ -20,16 +20,55 @@ const ROLE_COLORS = {
 
 export default function StaffHR() {
   const [staff, setStaff] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showHire, setShowHire] = useState(false);
   const [selected, setSelected] = useState(null);
   const [hireForm, setHireForm] = useState({ email: "", role: "field_agent" });
   const [hiring, setHiring] = useState(false);
+  const [approvingId, setApprovingId] = useState(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    base44.entities.User.list().then(d => { setStaff(d); setLoading(false); });
+    Promise.all([
+      base44.entities.User.list(),
+      base44.entities.StaffRecord.list("-created_date", 50),
+    ]).then(([users, records]) => {
+      setStaff(users);
+      setApplications(records);
+      setLoading(false);
+    });
   }, []);
+
+  // Approval workflow: fires when a StaffRecord is approved
+  const handleApproveApplication = async (record) => {
+    setApprovingId(record.id);
+
+    // 1. Mark record as Approved
+    await base44.entities.StaffRecord.update(record.id, {
+      application_status: "Approved",
+      approved_date: new Date().toISOString().split("T")[0],
+    });
+
+    // 2. Welcome + onboarding email to applicant
+    await base44.integrations.Core.SendEmail({
+      to: record.personal_email,
+      subject: `Welcome to Marketing iO — Your Application Has Been Approved! 🎉`,
+      body: `Dear ${record.preferred_name || record.full_legal_name},\n\nCongratulations! We are thrilled to inform you that your application to join Marketing iO has been approved.\n\nHere's what happens next:\n\n1. COMPANY EMAIL SETUP\nYour company email address will be created within 1–2 business days. You will receive login details separately.\n\n2. ONBOARDING DOCUMENTS\nPlease look out for your employment contract, POPIA agreement and company policy documents which will be sent to this email address.\n\n3. SYSTEM PROFILE SETUP\nOur payroll and operations team will set up your profile in our internal systems.\n\n4. START DATE\nYour confirmed start date: ${record.start_date || "To be confirmed by your manager"}.\n\nWelcome to the team! We're excited to have you on board.\n\nWarm regards,\nMarketing iO HR Team`,
+    });
+
+    // 3. Notify payroll / admin team
+    await base44.integrations.Core.SendEmail({
+      to: "admin@marketingio.co.za",
+      subject: `[PAYROLL ACTION REQUIRED] New Employee Approved — ${record.full_legal_name}`,
+      body: `Hi Team,\n\nA new staff member has been approved and requires immediate setup in our systems.\n\nEMPLOYEE DETAILS:\n- Name: ${record.full_legal_name} (${record.preferred_name || ""})\n- Role: ${record.position_role || "Not specified"}\n- Start Date: ${record.start_date || "TBC"}\n- Employment Type: ${record.employment_type || "TBC"}\n- Monthly CTC: R${record.monthly_ctc || "TBC"}\n- Personal Email: ${record.personal_email}\n- SA ID: ${record.id_number}\n\nACTION ITEMS:\n☐ Create company email account (firstname.lastname@marketingio.co.za)\n☐ Add employee to payroll system\n☐ Set up UIF registration\n☐ Issue employment contract\n☐ Send bank details to payroll\n☐ Add to company WhatsApp groups\n☐ Set up system access & credentials\n\nBanking Details:\n- Bank: ${record.bank_name || "See record"}\n- Account Holder: ${record.account_holder_name}\n- Account Number: ${record.account_number}\n- Account Type: ${record.account_type || "See record"}\n\nThis is an automated notification from Marketing iO CRM.\nPlease log in to view the full staff record.`,
+    });
+
+    // Update local state
+    setApplications(prev => prev.map(a => a.id === record.id ? { ...a, application_status: "Approved" } : a));
+    setApprovingId(null);
+    toast({ title: `✓ ${record.preferred_name || record.full_legal_name} approved`, description: "Welcome email & payroll notification sent." });
+  };
 
   const handleHire = async () => {
     if (!hireForm.email) return;
@@ -45,14 +84,62 @@ export default function StaffHR() {
 
   return (
     <AppLayout title="Staff & HR" subtitle="Team members, compensation packages & hiring">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Users className="w-4 h-4" /> {staff.length} team member{staff.length !== 1 ? "s" : ""}
         </div>
-        <Button onClick={() => setShowHire(true)} className="gradient-bg text-white border-0">
-          <UserPlus className="w-4 h-4 mr-2" /> Hire Staff
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <a
+            href="/onboarding-form"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/40 text-sm transition-all"
+          >
+            <ClipboardList className="w-4 h-4" /> Share Onboarding Form ↗
+          </a>
+          <Button onClick={() => setShowHire(true)} className="gradient-bg text-white border-0">
+            <UserPlus className="w-4 h-4 mr-2" /> Hire Staff
+          </Button>
+        </div>
       </div>
+
+      {/* Pending Applications */}
+      {applications.filter(a => a.application_status !== "Approved" && a.application_status !== "Rejected").length > 0 && (
+        <div className="mb-6 glass rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+            <Bell className="w-4 h-4 text-warning" />
+            <span className="text-sm font-semibold text-foreground">Pending Applications</span>
+            <span className="ml-auto text-xs text-muted-foreground">{applications.filter(a => a.application_status !== "Approved" && a.application_status !== "Rejected").length} pending</span>
+          </div>
+          <div className="divide-y divide-white/5">
+            {applications.filter(a => a.application_status !== "Approved" && a.application_status !== "Rejected").map(app => (
+              <div key={app.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-primary">{app.full_legal_name?.charAt(0)}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{app.full_legal_name}</p>
+                  <p className="text-xs text-muted-foreground">{app.position_role || "Role not specified"} · {app.personal_email}</p>
+                </div>
+                <Badge className={`border text-xs shrink-0 ${
+                  app.application_status === "Under Review" ? "bg-warning/15 text-warning border-warning/30" :
+                  app.application_status === "On Hold" ? "bg-muted/40 text-muted-foreground border-border" :
+                  "bg-info/15 text-info border-info/30"
+                }`}>{app.application_status}</Badge>
+                <Button
+                  size="sm"
+                  disabled={approvingId === app.id}
+                  onClick={() => handleApproveApplication(app)}
+                  className="gradient-bg text-white border-0 text-xs shrink-0"
+                >
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  {approvingId === app.id ? "Approving…" : "Approve"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Staff Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
