@@ -12,6 +12,7 @@ import AppLayout from "@/components/AppLayout";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import TaskWidget from "@/components/tasks/TaskWidget";
 import TeamKPIsWidget from "@/components/kpi/TeamKPIsWidget";
+import QuickScriptsWidget from "@/components/playbook/QuickScriptsWidget";
 
 const revenueData = [
   { month: "Nov", revenue: 68000, target: 75000 },
@@ -95,6 +96,9 @@ export default function OwnerDashboard() {
 
         {/* Team KPIs Widget */}
         <TeamKPIsWidget />
+
+        {/* Quick Scripts Widget */}
+        <QuickScriptsWidget />
 
          {/* Reports Due This Week */}
          {reports.filter(r => r.status === "draft").length > 0 && (

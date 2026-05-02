@@ -1,0 +1,83 @@
+{
+  "name": "Playbook",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Unique internal identifier (e.g., 'cold_door_to_door')"
+    },
+    "title": {
+      "type": "string",
+      "description": "Human-readable playbook title"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "cold_outreach",
+        "discovery",
+        "objection_handler",
+        "closing",
+        "follow_up",
+        "upsell",
+        "escalation",
+        "daily_routine"
+      ],
+      "description": "Playbook category"
+    },
+    "visible_to_roles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "field_agent",
+          "cpc",
+          "admin",
+          "founder",
+          "head_of_tech",
+          "driver"
+        ]
+      },
+      "description": "Roles that can access this playbook"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "script",
+        "framework",
+        "checklist",
+        "template"
+      ],
+      "description": "Type of content"
+    },
+    "short_description": {
+      "type": "string",
+      "description": "Brief one-liner about this playbook"
+    },
+    "full_content": {
+      "type": "string",
+      "description": "Complete playbook content (can include markdown)"
+    },
+    "related_objection": {
+      "type": "string",
+      "description": "The objection this handler addresses (for objection_handler type only)"
+    },
+    "usage_notes": {
+      "type": "string",
+      "description": "When to use this, what NOT to do, context"
+    },
+    "is_favorite_eligible": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether staff can save as favorite"
+    }
+  },
+  "required": [
+    "code",
+    "title",
+    "category",
+    "visible_to_roles",
+    "content_type",
+    "short_description",
+    "full_content"
+  ]
+}

@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 
 const NAV = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
+  { path: "/playbooks", label: "Playbooks", icon: BookOpen },
   { path: "/log-sale", label: "Log a Sale", icon: PlusCircle },
   { path: "/tasks", label: "Tasks", icon: CheckSquare },
   { path: "/onboarding", label: "Onboarding", icon: ListChecks },

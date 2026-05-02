@@ -40,6 +40,7 @@ import EmailTemplates from './pages/EmailTemplates';
 import Deliverables from './pages/Deliverables';
 import MyKPIs from './pages/MyKPIs';
 import TeamKPIs from './pages/TeamKPIs';
+import Playbooks from './pages/Playbooks';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -101,6 +102,7 @@ const AuthenticatedApp = () => {
       <Route path="/deliverables" element={<Deliverables />} />
       <Route path="/my-kpis" element={<MyKPIs />} />
       <Route path="/team-kpis" element={<TeamKPIs />} />
+      <Route path="/playbooks" element={<Playbooks />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<PageNotFound />} />
