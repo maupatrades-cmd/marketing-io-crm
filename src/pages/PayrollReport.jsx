@@ -5,14 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { FileText, FileSpreadsheet, Users, DollarSign, CheckCircle2, Minus } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-
-// Guaranteed salary packages from compensation doc v2
-const SALARY_PACKAGES = {
-  field_agent: { gross: 6500, nett: 6500, deductions: 0 },
-  cpc:         { gross: 5890, nett: 4490, deductions: 1400 },
-  admin:       { gross: 5890, nett: 5890, deductions: 0 },
-  founder:     { gross: 10000, nett: 10000, deductions: 0 },
-};
+import { calcPackage } from "@/lib/compensationPackages";
 
 function getMonthOptions() {
   const options = [];
@@ -28,17 +21,15 @@ function getMonthOptions() {
 
 function groupByStaff(commissions, users) {
   const map = {};
-  // Add all users with known packages first so salary shows even with no commission
   users.forEach(u => {
-    if (!SALARY_PACKAGES[u.role]) return;
-    const key = u.id;
-    map[key] = {
+    if (!calcPackage(u.role)) return;
+    map[u.id] = {
       staff_id: u.id,
       staff_name: u.full_name || u.email,
       staff_role: u.role,
       items: [],
       commission_total: 0,
-      salary_pkg: SALARY_PACKAGES[u.role],
+      salary_pkg: calcPackage(u.role),
     };
   });
   commissions.forEach(c => {
@@ -50,7 +41,7 @@ function groupByStaff(commissions, users) {
         staff_role: c.staff_role || "—",
         items: [],
         commission_total: 0,
-        salary_pkg: SALARY_PACKAGES[c.staff_role] || null,
+        salary_pkg: calcPackage(c.staff_role),
       };
     }
     map[key].items.push(c);
@@ -245,12 +236,12 @@ export default function PayrollReport() {
                           <span className="text-muted-foreground">Gross CTC</span>
                           <span className="text-foreground">R{pkg.gross.toLocaleString()}</span>
                         </div>
-                        {pkg.deductions > 0 && (
-                          <div className="flex justify-between text-sm mt-1">
-                            <span className="text-muted-foreground flex items-center gap-1"><Minus className="w-3 h-3 text-destructive" />Equipment deductions</span>
-                            <span className="text-destructive">-R{pkg.deductions.toLocaleString()}</span>
+                        {pkg.deductionItems?.map(d => (
+                          <div key={d.name} className="flex justify-between text-sm mt-1">
+                            <span className="text-muted-foreground flex items-center gap-1"><Minus className="w-3 h-3 text-destructive" />{d.name}</span>
+                            <span className="text-destructive">-R{d.amount.toLocaleString()}</span>
                           </div>
-                        )}
+                        ))}
                         <div className="flex justify-between text-sm font-semibold mt-2 pt-1 border-t border-white/10">
                           <span className="text-foreground">Nett Salary</span>
                           <span className="text-success">R{pkg.nett.toLocaleString()}</span>

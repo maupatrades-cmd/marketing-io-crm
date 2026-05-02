@@ -6,60 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { UserPlus, Users, DollarSign, Minus, Phone, Laptop, Shirt, Zap } from "lucide-react";
+import { UserPlus, Users, Minus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
-
-// Compensation packages from V2 document
-const PACKAGES = {
-  field_agent: {
-    label: "Field Agent",
-    components: [
-      { name: "Basic Salary", amount: 4410 },
-      { name: "Travel Allowance", amount: 1200 },
-      { name: "Airtime Allowance", amount: 500 },
-      { name: "Meal Allowance", amount: 390 },
-    ],
-    deductions: [],
-    total_ctc: 6500,
-    nett: 6500,
-  },
-  cpc: {
-    label: "CPC",
-    components: [
-      { name: "Basic Salary", amount: 2500 },
-      { name: "Airtime Allowance", amount: 500 },
-      { name: "Performance Allowance", amount: 2890 },
-    ],
-    deductions: [
-      { name: "PC / Software", amount: 650 },
-      { name: "Work Phone", amount: 350 },
-      { name: "Airtime", amount: 250 },
-      { name: "Uniform", amount: 150 },
-    ],
-    total_ctc: 5890,
-    nett: 4490,
-  },
-  admin: {
-    label: "Admin",
-    components: [
-      { name: "Basic Salary", amount: 4890 },
-      { name: "Office Allowance", amount: 1000 },
-    ],
-    deductions: [],
-    total_ctc: 5890,
-    nett: 5890,
-  },
-  founder: {
-    label: "Founder / Owner",
-    components: [
-      { name: "Owner CTC", amount: 10000 },
-    ],
-    deductions: [],
-    total_ctc: 10000,
-    nett: 10000,
-  },
-};
+import { calcPackage, ROLE_LABELS } from "@/lib/compensationPackages";
 
 const ROLE_COLORS = {
   field_agent: "bg-primary/15 text-primary border-primary/30",
@@ -91,7 +41,7 @@ export default function StaffHR() {
     setHiring(false);
   };
 
-  const pkg = selected ? PACKAGES[selected.role] : null;
+  const pkg = selected ? calcPackage(selected.role) : null;
 
   return (
     <AppLayout title="Staff & HR" subtitle="Team members, compensation packages & hiring">
@@ -130,8 +80,8 @@ export default function StaffHR() {
                 <Badge className={`border text-xs capitalize ${ROLE_COLORS[s.role] || ROLE_COLORS.user}`}>
                   {s.role?.replace(/_/g, " ")}
                 </Badge>
-                {PACKAGES[s.role] && (
-                  <span className="text-xs text-success font-semibold">R{PACKAGES[s.role].nett.toLocaleString()} nett</span>
+                {calcPackage(s.role) && (
+                  <span className="text-xs text-success font-semibold">R{calcPackage(s.role).nett.toLocaleString()} nett</span>
                 )}
               </div>
               {s.job_title && <p className="text-xs text-muted-foreground mt-1">{s.job_title}</p>}
@@ -191,7 +141,7 @@ export default function StaffHR() {
                         <span className="text-sm text-success font-medium">+ R{c.amount.toLocaleString()}</span>
                       </div>
                     ))}
-                    {pkg.deductions.map(d => (
+                    {pkg.deductionItems.map(d => (
                       <div key={d.name} className="flex justify-between items-center px-4 py-2.5">
                         <span className="text-sm text-foreground flex items-center gap-1.5">
                           <Minus className="w-3 h-3 text-destructive" />{d.name}
@@ -201,9 +151,9 @@ export default function StaffHR() {
                     ))}
                     <div className="flex justify-between items-center px-4 py-3 bg-white/5">
                       <span className="text-sm font-bold text-foreground">Gross CTC</span>
-                      <span className="text-sm font-bold text-foreground">R{pkg.total_ctc.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-foreground">R{pkg.gross.toLocaleString()}</span>
                     </div>
-                    {pkg.deductions.length > 0 && (
+                    {pkg.deductionItems.length > 0 && (
                       <div className="flex justify-between items-center px-4 py-3 bg-success/5">
                         <span className="text-sm font-bold text-success">Nett Take-Home</span>
                         <span className="text-sm font-bold text-success">R{pkg.nett.toLocaleString()}</span>
@@ -241,36 +191,50 @@ export default function StaffHR() {
               <Select value={hireForm.role} onValueChange={v => setHireForm(f => ({ ...f, role: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="field_agent">Field Agent — R6,500 CTC</SelectItem>
-                  <SelectItem value="cpc">CPC — R5,890 gross / R4,490 nett</SelectItem>
-                  <SelectItem value="admin">Admin — R5,890 CTC</SelectItem>
+                  {["field_agent","cpc","admin"].map(r => {
+                    const p = calcPackage(r);
+                    return (
+                      <SelectItem key={r} value={r}>
+                        {ROLE_LABELS[r]} — R{p.gross.toLocaleString()} gross{p.totalDeductions > 0 ? ` / R${p.nett.toLocaleString()} nett` : ""}
+                      </SelectItem>
+                    );
+                  })}
                   <SelectItem value="user">User (other)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Package preview */}
-            {PACKAGES[hireForm.role] && (
-              <div className="glass rounded-xl p-4 text-sm space-y-1">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Package Preview</p>
-                {PACKAGES[hireForm.role].components.map(c => (
-                  <div key={c.name} className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">{c.name}</span>
-                    <span className="text-success">R{c.amount.toLocaleString()}</span>
+            {calcPackage(hireForm.role) && (() => {
+              const p = calcPackage(hireForm.role);
+              return (
+                <div className="glass rounded-xl p-4 text-sm space-y-1">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Package Preview</p>
+                  {p.components.map(c => (
+                    <div key={c.name} className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{c.name}</span>
+                      <span className="text-success">R{c.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                  {p.deductionItems.map(d => (
+                    <div key={d.name} className="flex justify-between text-xs">
+                      <span className="text-muted-foreground flex items-center gap-1"><Minus className="w-3 h-3 text-destructive" />{d.name}</span>
+                      <span className="text-destructive">-R{d.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-xs font-bold pt-1 border-t border-white/10 mt-1">
+                    <span className="text-foreground">Gross CTC</span>
+                    <span className="text-foreground">R{p.gross.toLocaleString()}</span>
                   </div>
-                ))}
-                {PACKAGES[hireForm.role].deductions.map(d => (
-                  <div key={d.name} className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">{d.name} (deduction)</span>
-                    <span className="text-destructive">-R{d.amount.toLocaleString()}</span>
-                  </div>
-                ))}
-                <div className="flex justify-between text-xs font-bold pt-1 border-t border-white/10 mt-1">
-                  <span className="text-foreground">Nett Take-Home</span>
-                  <span className="text-success">R{PACKAGES[hireForm.role].nett.toLocaleString()}</span>
+                  {p.totalDeductions > 0 && (
+                    <div className="flex justify-between text-xs font-bold">
+                      <span className="text-success">Nett Take-Home</span>
+                      <span className="text-success">R{p.nett.toLocaleString()}</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowHire(false)}>Cancel</Button>
