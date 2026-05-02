@@ -30,16 +30,14 @@ export default function AppLayout({ children, title, subtitle }) {
       `} style={{ width: 224, background: "rgba(10,10,20,0.95)", borderRight: "1px solid rgba(255,255,255,0.07)" }}>
 
         {/* Logo */}
-        <div className="px-5 py-5 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-glow-purple shrink-0">
-              <span className="text-white font-black text-sm">M</span>
-            </div>
-            <div>
-              <p className="text-sm font-black gradient-text leading-none">Marketing iO</p>
-              <p className="text-[10px] mt-0.5" style={{ color: "#6b6b85" }}>CRM Platform</p>
-            </div>
-          </div>
+        <div className="px-4 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+          <img
+            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/f2c763236_generated_image.png"
+            alt="Marketing iO"
+            className="w-full max-w-[168px] object-contain"
+            style={{ filter: "brightness(0) invert(1)" }}
+          />
+          <p className="text-[10px] mt-1" style={{ color: "#6b6b85" }}>CRM Platform</p>
         </div>
 
         {/* Nav */}
