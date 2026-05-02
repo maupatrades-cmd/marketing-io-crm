@@ -1,0 +1,57 @@
+{
+  "name": "OTPCode",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to User (null if not yet registered)"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address for which OTP was generated"
+    },
+    "code": {
+      "type": "string",
+      "description": "6-digit numeric code"
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "signup_verification",
+        "login_mfa",
+        "password_reset",
+        "sensitive_action"
+      ],
+      "description": "Purpose of this OTP"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this code expires (10 minutes from generation for most, 1 hour for password reset)"
+    },
+    "used": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if code has been successfully used"
+    },
+    "used_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when code was used"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when code was generated"
+    },
+    "generated_for_ip": {
+      "type": "string",
+      "description": "IP address that requested the OTP"
+    }
+  },
+  "required": [
+    "email",
+    "code",
+    "purpose"
+  ]
+}
