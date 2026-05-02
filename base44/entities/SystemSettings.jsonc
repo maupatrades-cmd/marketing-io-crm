@@ -1,0 +1,34 @@
+{
+  "name": "SystemSettings",
+  "type": "object",
+  "properties": {
+    "fallback_marketing_image_url": {
+      "type": "string",
+      "description": "URL of fallback image used when DALL-E fails"
+    },
+    "openai_api_key_set": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once Owner has configured OpenAI API key in environment"
+    },
+    "monthly_dalle_budget_zar": {
+      "type": "number",
+      "default": 200,
+      "description": "Monthly budget cap for DALL-E generation in ZAR"
+    },
+    "monthly_dalle_spent_zar": {
+      "type": "number",
+      "default": 0,
+      "description": "Amount spent this month on DALL-E generation in ZAR"
+    },
+    "dalle_budget_month": {
+      "type": "string",
+      "description": "YYYY-MM for the current budget period"
+    },
+    "fallback_image_file_uri": {
+      "type": "string",
+      "description": "Private file URI of uploaded fallback image"
+    }
+  },
+  "required": []
+}

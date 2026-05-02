@@ -1,0 +1,42 @@
+{
+  "name": "GeneratedImage",
+  "type": "object",
+  "properties": {
+    "prompt_used": {
+      "type": "string",
+      "description": "The full prompt sent to DALL-E"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL of the generated image"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the image was generated"
+    },
+    "used_in_template_code": {
+      "type": "string",
+      "description": "Email template that requested this image"
+    },
+    "used_for_client_id": {
+      "type": "string",
+      "description": "Client ID if image was generated for a specific client"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this cached image expires (default 24 hours from generation)"
+    },
+    "generation_cost_zar": {
+      "type": "number",
+      "default": 0.76,
+      "description": "Cost of generation in ZAR"
+    }
+  },
+  "required": [
+    "prompt_used",
+    "image_url",
+    "generated_at"
+  ]
+}
