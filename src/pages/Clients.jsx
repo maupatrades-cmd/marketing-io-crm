@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, Plus, Users, AlertTriangle, ChevronRight, CheckCircle2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import { notifyOnboardingMilestone } from "@/lib/notifications.js";
+import { useToast } from "@/components/ui/use-toast";
 
 const STATUS_COLORS = {
   lead: "bg-warning/15 text-warning border-warning/30",
@@ -41,6 +43,9 @@ export default function Clients() {
   const [form, setForm] = useState(EMPTY_CLIENT);
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState(null);
+  const { toast } = useToast();
+
+  const ONBOARDING_FIELDS = ["onboarding_form_returned", "debit_mandate_signed", "brand_assets_received", "setup_fee_paid", "go_live_acknowledged"];
 
   const load = () => base44.entities.Client.list("-created_date", 200).then(d => { setClients(d); setLoading(false); });
   useEffect(() => { load(); }, []);
@@ -57,8 +62,18 @@ export default function Clients() {
   const save = async () => {
     setSaving(true);
     const data = { ...form, monthly_retainer: Number(form.monthly_retainer) || 0, setup_fee_amount: Number(form.setup_fee_amount) || 0 };
-    if (editing) await base44.entities.Client.update(editing.id, data);
-    else await base44.entities.Client.create(data);
+    if (editing) {
+      await base44.entities.Client.update(editing.id, data);
+      ONBOARDING_FIELDS.forEach(field => {
+        if (!editing[field] && data[field] && data.email) {
+          notifyOnboardingMilestone(data, field).then(() => {
+            toast({ title: "Client notified", description: `Email sent: ${field.replace(/_/g, " ")}` });
+          }).catch(() => {});
+        }
+      });
+    } else {
+      await base44.entities.Client.create(data);
+    }
     setSaving(false);
     setShowForm(false);
     load();

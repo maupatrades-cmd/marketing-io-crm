@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, TrendingUp, ChevronRight } from "lucide-react";
+import { Search, Plus, TrendingUp, ChevronRight, Bell, BellOff } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import { notifyDealStageChange } from "@/lib/notifications.js";
+import { useToast } from "@/components/ui/use-toast";
 
 const STAGES = ["new_lead", "discovery_visit", "proposal_sent", "negotiation", "closed_won", "closed_lost", "onboarding"];
 const STAGE_COLORS = {
@@ -26,12 +28,13 @@ const PACKAGES = ["ignite", "accelerate", "dominate", "street_pulse", "township_
 const EMPTY = {
   client_name: "", client_id: "", deal_type: "core_package", package: "none",
   add_on_name: "", stage: "new_lead", setup_fee: "", monthly_retainer: "",
-  probability: "50", source: "inbound", notes: "",
+  probability: "50", source: "inbound", closer_id: "", closer_name: "", notes: "",
 };
 
 export default function Deals() {
   const [deals, setDeals] = useState([]);
   const [clients, setClients] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("all");
@@ -39,11 +42,14 @@ export default function Deals() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [notifyClient, setNotifyClient] = useState(true);
+  const { toast } = useToast();
 
   const load = () => Promise.all([
     base44.entities.Deal.list("-created_date", 200),
     base44.entities.Client.list("-created_date", 200),
-  ]).then(([d, c]) => { setDeals(d); setClients(c); setLoading(false); });
+    base44.entities.User.list(),
+  ]).then(([d, c, u]) => { setDeals(d); setClients(c); setUsers(u); setLoading(false); });
 
   useEffect(() => { load(); }, []);
 
@@ -59,8 +65,17 @@ export default function Deals() {
   const save = async () => {
     setSaving(true);
     const data = { ...form, setup_fee: Number(form.setup_fee) || 0, monthly_retainer: Number(form.monthly_retainer) || 0, probability: Number(form.probability) || 0 };
+    const stageChanged = editing && editing.stage !== form.stage;
     if (editing) await base44.entities.Deal.update(editing.id, data);
     else await base44.entities.Deal.create(data);
+    if (notifyClient && stageChanged) {
+      const client = clients.find(c => c.id === form.client_id);
+      if (client?.email) {
+        notifyDealStageChange(client, form.stage).then(() => {
+          toast({ title: "Notification sent", description: `Email sent to ${client.email}` });
+        }).catch(() => {});
+      }
+    }
     setSaving(false);
     setShowForm(false);
     load();
@@ -111,7 +126,7 @@ export default function Deals() {
             <div key={d.id} className="glass rounded-xl p-4 flex items-center gap-4 hover:shadow-card-hover transition-all">
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-foreground truncate">{d.client_name || "Unknown Client"}</p>
-                <p className="text-xs text-muted-foreground capitalize">{d.deal_type?.replace(/_/g, " ")} · {d.package !== "none" ? d.package : d.add_on_name || "—"}</p>
+                <p className="text-xs text-muted-foreground capitalize">{d.deal_type?.replace(/_/g, " ")} · {d.package !== "none" ? d.package : d.add_on_name || "—"}{d.closer_name ? ` · ${d.closer_name}` : ""}</p>
               </div>
               <div className="hidden sm:flex items-center gap-3 shrink-0">
                 {d.monthly_retainer > 0 && <span className="text-sm font-semibold text-foreground">R{d.monthly_retainer?.toLocaleString()}/mo</span>}
@@ -183,13 +198,40 @@ export default function Deals() {
               </Select>
             </div>
             <div className="col-span-2">
+              <Label className="text-xs text-muted-foreground mb-1 block">Closer / Seller</Label>
+              <Select value={form.closer_id || "owner"} onValueChange={v => {
+                if (v === "owner") {
+                  setForm(f => ({ ...f, closer_id: "owner", closer_name: "Owner (Thapelo)" }));
+                } else {
+                  const u = users.find(u => u.id === v);
+                  setForm(f => ({ ...f, closer_id: v, closer_name: u?.full_name || u?.email || "" }));
+                }
+              }}>
+                <SelectTrigger className="bg-secondary/50 border-border/50"><SelectValue placeholder="Select closer…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="owner">Owner (Thapelo)</SelectItem>
+                  {users.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name || u.email}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2">
               <Label className="text-xs text-muted-foreground mb-1 block">Notes</Label>
               <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="bg-secondary/50 border-border/50 h-20" />
             </div>
           </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button onClick={save} disabled={saving} className="gradient-bg text-white hover:opacity-90">{saving ? "Saving…" : "Save Deal"}</Button>
+          <div className="flex items-center justify-between mt-4">
+            <label className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setNotifyClient(n => !n)}>
+              {notifyClient
+                ? <Bell className="w-4 h-4" style={{ color: "#a764e6" }} />
+                : <BellOff className="w-4 h-4" style={{ color: "#6b6b85" }} />}
+              <span className="text-xs" style={{ color: notifyClient ? "#a8a8c0" : "#6b6b85" }}>
+                {notifyClient ? "Email client on stage change" : "No notification"}
+              </span>
+            </label>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
+              <Button onClick={save} disabled={saving} className="gradient-bg text-white hover:opacity-90">{saving ? "Saving…" : "Save Deal"}</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
