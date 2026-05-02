@@ -50,6 +50,15 @@ const PACKAGES = {
     total_ctc: 5890,
     nett: 5890,
   },
+  founder: {
+    label: "Founder / Owner",
+    components: [
+      { name: "Owner CTC", amount: 10000 },
+    ],
+    deductions: [],
+    total_ctc: 10000,
+    nett: 10000,
+  },
 };
 
 const ROLE_COLORS = {

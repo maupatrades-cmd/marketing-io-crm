@@ -11,6 +11,7 @@ const SALARY_PACKAGES = {
   field_agent: { gross: 6500, nett: 6500, deductions: 0 },
   cpc:         { gross: 5890, nett: 4490, deductions: 1400 },
   admin:       { gross: 5890, nett: 5890, deductions: 0 },
+  founder:     { gross: 10000, nett: 10000, deductions: 0 },
 };
 
 function getMonthOptions() {
