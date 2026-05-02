@@ -17,6 +17,7 @@ import Invoices from './pages/Invoices';
 import Receipts from './pages/Receipts';
 import ActivityLog from './pages/ActivityLog';
 import CalendarPage from './pages/CalendarPage';
+import PayrollReport from './pages/PayrollReport';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
       <Route path="/receipts" element={<Receipts />} />
       <Route path="/activity" element={<ActivityLog />} />
       <Route path="/calendar" element={<CalendarPage />} />
+      <Route path="/payroll" element={<PayrollReport />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
