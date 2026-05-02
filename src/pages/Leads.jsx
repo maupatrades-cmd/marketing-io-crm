@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, Zap, CheckCircle2, XCircle, Clock } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import InteractionNotesPanel from "@/components/notes/InteractionNotesPanel";
+import { useAuth } from "@/lib/AuthContext";
 
 const STATUS_COLORS = {
   pending_verification: "bg-warning/15 text-warning border-warning/30",
@@ -43,6 +44,7 @@ const EMPTY = {
 };
 
 export default function Leads() {
+  const { user } = useAuth();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -57,6 +59,10 @@ export default function Leads() {
   useEffect(() => { load(); }, []);
 
   const filtered = leads.filter(l => {
+    // Field agents see leads they created
+    if (user?.role === "field_agent" && l.created_by !== user.email) return false;
+    // CPCs see all leads (for qualification)
+    // Admins see all leads
     const matchSearch = !search || l.business_name?.toLowerCase().includes(search.toLowerCase()) || l.contact_person?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || l.status === statusFilter;
     return matchSearch && matchStatus;

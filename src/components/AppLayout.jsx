@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2 } from "lucide-react";
-import { useState } from "react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 
 const STAFF_NAV = {
@@ -86,6 +86,24 @@ export default function AppLayout({ children, title, subtitle }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
+  const [switchedRole, setSwitchedRole] = useState(null);
+  
+  useEffect(() => {
+    const stored = localStorage.getItem("__owner_switched_role");
+    setSwitchedRole(stored);
+  }, []);
+
+  const displayRole = switchedRole || user?.role;
+
+  const toggleSwitchView = (role) => {
+    if (switchedRole === role) {
+      localStorage.removeItem("__owner_switched_role");
+      setSwitchedRole(null);
+    } else {
+      localStorage.setItem("__owner_switched_role", role);
+      setSwitchedRole(role);
+    }
+  };
 
   return (
     <div className="min-h-screen flex font-inter" style={{ background: "transparent" }}>
@@ -178,7 +196,7 @@ export default function AppLayout({ children, title, subtitle }) {
               </Link>
             </>
           )}
-          {(STAFF_NAV[user?.role] || OWNER_NAV).map(({ path, label, icon: Icon }) => {
+          {(STAFF_NAV[displayRole] || OWNER_NAV).map(({ path, label, icon: Icon }) => {
             const active = location.pathname === path;
             return (
               <Link
@@ -199,8 +217,28 @@ export default function AppLayout({ children, title, subtitle }) {
           })}
         </nav>
 
-        {/* Client portal link */}
-        <div className="p-3 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+        {/* Owner Switch View + Client Portal */}
+        <div className="p-3 border-t space-y-2" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+          {user?.role === "owner" && (
+            <div className="bg-primary/10 rounded-lg p-2">
+              <p className="text-xs text-muted-foreground mb-2 font-semibold">Switch View</p>
+              <div className="flex flex-col gap-1">
+                {["field_agent", "cpc", "admin"].map(role => (
+                  <button
+                    key={role}
+                    onClick={() => toggleSwitchView(role)}
+                    className={`text-xs py-1.5 px-2 rounded-md transition-all text-left capitalize ${
+                      switchedRole === role
+                        ? "bg-primary text-white"
+                        : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {role.replace(/_/g, " ")}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <Link to="/client-portal"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs hover:bg-white/5 transition-all"
             style={{ color: "#6b6b85" }}>

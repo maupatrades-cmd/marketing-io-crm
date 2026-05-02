@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, DollarSign, CheckCircle2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import { useAuth } from "@/lib/AuthContext";
 
 const STATUS_COLORS = {
   pending: "bg-warning/15 text-warning border-warning/30",
@@ -16,6 +17,7 @@ const STATUS_COLORS = {
 };
 
 export default function Commissions() {
+  const { user } = useAuth();
   const [commissions, setCommissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -27,6 +29,10 @@ export default function Commissions() {
   useEffect(() => { load(); }, []);
 
   const filtered = commissions.filter(c => {
+    // Staff can only see their own commissions
+    if (user?.role === "field_agent" || user?.role === "cpc" || user?.role === "driver" || user?.role === "head_of_tech") {
+      if (c.staff_email !== user.email) return false;
+    }
     const matchSearch = !search || c.staff_name?.toLowerCase().includes(search.toLowerCase()) || c.client_name?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || c.status === statusFilter;
     const matchType = typeFilter === "all" || c.commission_type === typeFilter;

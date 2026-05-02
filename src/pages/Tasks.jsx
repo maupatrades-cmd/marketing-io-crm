@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +55,7 @@ function completedThisWeek(task) {
 }
 
 export default function Tasks() {
+  const { user: authUser } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [clients, setClients] = useState([]);
@@ -84,9 +86,12 @@ export default function Tasks() {
   useEffect(() => { load(); }, []);
 
   const isAdminOrOwner = currentUser?.role === "admin" || currentUser?.role === "owner";
+  const forceMineMode = authUser?.role !== "admin" && authUser?.role !== "owner";
 
   const filtered = tasks.filter(t => {
-    if (showMode === "mine" && currentUser && t.assigned_to !== currentUser.id) return false;
+    if (forceMineMode || showMode === "mine") {
+      if (currentUser && t.assigned_to !== currentUser.id) return false;
+    }
     if (statusFilter !== "all" && t.status !== statusFilter) return false;
     if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
     if (assigneeFilter !== "all" && t.assigned_to !== assigneeFilter) return false;
@@ -146,14 +151,16 @@ export default function Tasks() {
           <Input placeholder="Search tasks…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-secondary/50 border-border/50" />
         </div>
         {/* Show: Mine / All */}
-        <div className="flex rounded-lg border border-border/50 overflow-hidden">
-          {["mine", "all"].map(m => (
-            <button key={m} onClick={() => setShowMode(m)}
-              className={`px-3 py-1.5 text-sm transition-colors capitalize ${showMode === m ? "gradient-bg text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-              {m === "mine" ? "My Tasks" : "All Tasks"}
-            </button>
-          ))}
-        </div>
+         {!forceMineMode && (
+           <div className="flex rounded-lg border border-border/50 overflow-hidden">
+             {["mine", "all"].map(m => (
+               <button key={m} onClick={() => setShowMode(m)}
+                 className={`px-3 py-1.5 text-sm transition-colors capitalize ${showMode === m ? "gradient-bg text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                 {m === "mine" ? "My Tasks" : "All Tasks"}
+               </button>
+             ))}
+           </div>
+         )}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36 bg-secondary/50 border-border/50"><SelectValue /></SelectTrigger>
           <SelectContent>
