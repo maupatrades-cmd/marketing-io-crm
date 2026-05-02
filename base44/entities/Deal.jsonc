@@ -97,6 +97,21 @@
       "type": "string",
       "format": "date"
     },
+    "client_onboarded": {
+      "type": "boolean",
+      "default": false,
+      "description": "Tick when client is fully onboarded \u2014 triggers commission calculation for closer"
+    },
+    "client_onboarded_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date client was marked as onboarded"
+    },
+    "commission_generated": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once commissions have been auto-created for this deal"
+    },
     "lost_reason": {
       "type": "string",
       "description": "Reason if closed_lost"

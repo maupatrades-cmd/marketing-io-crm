@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, TrendingUp, ChevronRight, Bell, BellOff } from "lucide-react";
+import { Search, Plus, TrendingUp, ChevronRight, Bell, BellOff, CheckSquare } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { notifyDealStageChange } from "@/lib/notifications.js";
 import { useToast } from "@/components/ui/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const STAGES = ["new_lead", "discovery_visit", "proposal_sent", "negotiation", "closed_won", "closed_lost", "onboarding"];
 const STAGE_COLORS = {
@@ -28,8 +29,65 @@ const PACKAGES = ["ignite", "accelerate", "dominate", "street_pulse", "township_
 const EMPTY = {
   client_name: "", client_id: "", deal_type: "core_package", package: "none",
   add_on_name: "", stage: "new_lead", setup_fee: "", monthly_retainer: "",
-  probability: "50", source: "inbound", closer_id: "", closer_name: "", notes: "",
+  probability: "50", source: "inbound", closer_id: "", closer_name: "",
+  client_onboarded: false, commission_generated: false, notes: "",
 };
+
+// Commission rates — same for field agent AND owner
+const SETUP_RATE = 0.10;   // 10% of setup fee
+const RETAINER_RATE = 0.10; // 10% of monthly retainer (month 1)
+
+async function generateCloserCommissions(deal) {
+  if (!deal.closer_id || deal.commission_generated) return;
+  const today = new Date().toISOString().split("T")[0];
+  const payroll_month = today.slice(0, 7);
+  const commissions = [];
+
+  if (deal.setup_fee > 0) {
+    commissions.push({
+      staff_id: deal.closer_id,
+      staff_name: deal.closer_name || "Owner",
+      staff_role: deal.closer_id === "owner" ? "founder" : "field_agent",
+      commission_type: "setup_commission",
+      deal_id: deal.id,
+      client_id: deal.client_id,
+      client_name: deal.client_name,
+      package_or_addon: deal.package !== "none" ? deal.package : deal.add_on_name,
+      base_amount: deal.setup_fee,
+      rate_percent: SETUP_RATE * 100,
+      commission_amount: Math.round(deal.setup_fee * SETUP_RATE),
+      qualifying_event: "Client onboarded — setup fee commission",
+      qualifying_event_date: today,
+      payroll_month,
+      status: "pending",
+    });
+  }
+
+  if (deal.monthly_retainer > 0) {
+    commissions.push({
+      staff_id: deal.closer_id,
+      staff_name: deal.closer_name || "Owner",
+      staff_role: deal.closer_id === "owner" ? "founder" : "field_agent",
+      commission_type: "retainer_commission",
+      deal_id: deal.id,
+      client_id: deal.client_id,
+      client_name: deal.client_name,
+      package_or_addon: deal.package !== "none" ? deal.package : deal.add_on_name,
+      base_amount: deal.monthly_retainer,
+      rate_percent: RETAINER_RATE * 100,
+      commission_amount: Math.round(deal.monthly_retainer * RETAINER_RATE),
+      qualifying_event: "Client onboarded — retainer commission (month 1)",
+      qualifying_event_date: today,
+      payroll_month,
+      status: "pending",
+    });
+  }
+
+  if (commissions.length > 0) {
+    await base44.entities.Commission.bulkCreate(commissions);
+    await base44.entities.Deal.update(deal.id, { commission_generated: true });
+  }
+}
 
 export default function Deals() {
   const [deals, setDeals] = useState([]);
@@ -64,10 +122,30 @@ export default function Deals() {
 
   const save = async () => {
     setSaving(true);
-    const data = { ...form, setup_fee: Number(form.setup_fee) || 0, monthly_retainer: Number(form.monthly_retainer) || 0, probability: Number(form.probability) || 0 };
+    const today = new Date().toISOString().split("T")[0];
+    const data = {
+      ...form,
+      setup_fee: Number(form.setup_fee) || 0,
+      monthly_retainer: Number(form.monthly_retainer) || 0,
+      probability: Number(form.probability) || 0,
+      ...(form.client_onboarded && !editing?.client_onboarded ? { client_onboarded_date: today } : {}),
+    };
     const stageChanged = editing && editing.stage !== form.stage;
-    if (editing) await base44.entities.Deal.update(editing.id, data);
-    else await base44.entities.Deal.create(data);
+    const justOnboarded = form.client_onboarded && !editing?.client_onboarded && !editing?.commission_generated;
+
+    let savedDeal;
+    if (editing) {
+      await base44.entities.Deal.update(editing.id, data);
+      savedDeal = { ...editing, ...data };
+    } else {
+      savedDeal = await base44.entities.Deal.create(data);
+    }
+
+    if (justOnboarded && savedDeal?.closer_id) {
+      await generateCloserCommissions(savedDeal);
+      toast({ title: "Commissions generated", description: `Setup + retainer commissions created for ${savedDeal.closer_name || "closer"}` });
+    }
+
     if (notifyClient && stageChanged) {
       const client = clients.find(c => c.id === form.client_id);
       if (client?.email) {
@@ -131,6 +209,7 @@ export default function Deals() {
               <div className="hidden sm:flex items-center gap-3 shrink-0">
                 {d.monthly_retainer > 0 && <span className="text-sm font-semibold text-foreground">R{d.monthly_retainer?.toLocaleString()}/mo</span>}
                 {d.probability > 0 && <span className="text-xs text-muted-foreground">{d.probability}%</span>}
+                {d.client_onboarded && <Badge className="border text-xs bg-success/15 text-success border-success/30">Onboarded</Badge>}
                 <Badge className={`border text-xs capitalize ${STAGE_COLORS[d.stage] || "bg-muted/40 text-muted-foreground border-border/40"}`}>{d.stage?.replace(/_/g, " ")}</Badge>
               </div>
               <Button size="sm" variant="ghost" className="shrink-0 text-muted-foreground hover:text-foreground" onClick={() => openEdit(d)}>
@@ -217,6 +296,27 @@ export default function Deals() {
             <div className="col-span-2">
               <Label className="text-xs text-muted-foreground mb-1 block">Notes</Label>
               <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="bg-secondary/50 border-border/50 h-20" />
+            </div>
+            <div className="col-span-2">
+              <div className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${form.client_onboarded ? "border-success/40 bg-success/8" : "border-border/40 bg-secondary/30"}`}>
+                <Checkbox
+                  id="onboarded"
+                  checked={!!form.client_onboarded}
+                  onCheckedChange={v => setForm(f => ({ ...f, client_onboarded: !!v }))}
+                  disabled={!!editing?.commission_generated}
+                  className="mt-0.5"
+                />
+                <div>
+                  <label htmlFor="onboarded" className={`text-sm font-medium cursor-pointer ${form.client_onboarded ? "text-success" : "text-foreground"}`}>
+                    Client Onboarded ✓
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {editing?.commission_generated
+                      ? "Commissions already generated for this deal."
+                      : "Tick this once the client is fully onboarded. This will auto-generate setup & retainer commissions for the closer."}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex items-center justify-between mt-4">
