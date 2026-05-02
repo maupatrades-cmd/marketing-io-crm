@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Users, DollarSign, TrendingUp, BarChart2, AlertTriangle,
-  CheckCircle2, Clock, ArrowRight, Zap, FileText, Target
+  CheckCircle2, Clock, ArrowRight, Zap, FileText, Target, LineChart
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -35,6 +35,7 @@ export default function OwnerDashboard() {
   const [commissions, setCommissions] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [leads, setLeads] = useState([]);
+  const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -45,13 +46,15 @@ export default function OwnerDashboard() {
       base44.entities.Commission.list("-created_date", 100),
       base44.entities.Invoice.list("-created_date", 100),
       base44.entities.Lead.list("-created_date", 100),
+      base44.entities.MonthlyReport.list("-created_date", 100),
       base44.auth.me(),
-    ]).then(([c, d, com, inv, l, me]) => {
+    ]).then(([c, d, com, inv, l, r, me]) => {
       setClients(c);
       setDeals(d);
       setCommissions(com);
       setInvoices(inv);
       setLeads(l);
+      setReports(r);
       setCurrentUser(me);
       setLoading(false);
     });
@@ -89,8 +92,22 @@ export default function OwnerDashboard() {
           <KpiCard icon={BarChart2} label="Pending Commissions" value={loading ? "—" : `R${pendingCommissions.toLocaleString()}`} sub="Awaiting payout" color="bg-success/20" />
         </div>
 
+        {/* Reports Due This Week */}
+         {reports.filter(r => r.status === "draft").length > 0 && (
+          <div className="glass rounded-xl p-4 border-primary/30 border flex items-center gap-3">
+            <LineChart className="w-5 h-5 text-primary shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">{reports.filter(r => r.status === "draft").length} Report{reports.filter(r => r.status === "draft").length > 1 ? "s" : ""} Due This Week</p>
+              <p className="text-xs text-muted-foreground">Review and send before the 5th</p>
+            </div>
+            <Link to="/monthly-reports" className="ml-auto">
+              <Button size="sm" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10 text-xs">View</Button>
+            </Link>
+          </div>
+        )}
+
         {/* Alerts */}
-        {(accelerationClients > 0 || overdueInvoices > 0) && (
+         {(accelerationClients > 0 || overdueInvoices > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {accelerationClients > 0 && (
               <div className="glass rounded-xl p-4 border-destructive/30 border flex items-center gap-3">

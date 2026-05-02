@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -52,19 +52,34 @@ export default function AppLayout({ children, title, subtitle }) {
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {(user?.role === "owner" || user?.role === "admin") && (
-            <Link
-              to="/onboarding-submissions"
-              onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                location.pathname === "/onboarding-submissions"
-                  ? "gradient-bg text-white shadow-glow-purple"
-                  : "hover:bg-white/5"
-              }`}
-              style={location.pathname === "/onboarding-submissions" ? {} : { color: "#a8a8c0" }}
-            >
-              <FormInput className="w-4 h-4 shrink-0" />
-              Onboarding Forms
-            </Link>
+            <>
+              <Link
+                to="/onboarding-submissions"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/onboarding-submissions"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/onboarding-submissions" ? {} : { color: "#a8a8c0" }}
+              >
+                <FormInput className="w-4 h-4 shrink-0" />
+                Onboarding Forms
+              </Link>
+              <Link
+                to="/monthly-reports"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/monthly-reports"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/monthly-reports" ? {} : { color: "#a8a8c0" }}
+              >
+                <LineChart className="w-4 h-4 shrink-0" />
+                Monthly Reports
+              </Link>
+            </>
           )}
           {user?.role === "owner" && (
             <Link
