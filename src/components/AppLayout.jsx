@@ -1,9 +1,64 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 
-const NAV = [
+const STAFF_NAV = {
+  field_agent: [
+    { path: "/staff", label: "My Day", icon: Clock },
+    { path: "/staff/pipeline", label: "My Pipeline", icon: TrendingUp },
+    { path: "/staff/clients", label: "My Clients", icon: Users },
+    { path: "/leads", label: "Add Lead", icon: PlusCircle },
+    { path: "/tasks", label: "Tasks", icon: CheckSquare },
+    { path: "/staff/communications", label: "Communications", icon: Send },
+    { path: "/commissions", label: "My Commissions", icon: DollarSign },
+    { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
+    { path: "/playbooks", label: "Playbooks", icon: BookOpen },
+    { path: "/profile", label: "Profile", icon: UserCircle },
+  ],
+  cpc: [
+    { path: "/staff", label: "My Day", icon: Clock },
+    { path: "/staff/pipeline", label: "My Pipeline", icon: TrendingUp },
+    { path: "/leads", label: "My Leads", icon: Zap },
+    { path: "/tasks", label: "Tasks", icon: CheckSquare },
+    { path: "/staff/communications", label: "Communications", icon: Send },
+    { path: "/commissions", label: "My Commissions", icon: DollarSign },
+    { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
+    { path: "/playbooks", label: "Playbooks", icon: BookOpen },
+    { path: "/profile", label: "Profile", icon: UserCircle },
+  ],
+  admin: [
+    { path: "/staff", label: "My Day", icon: Clock },
+    { path: "/staff/verify-leads", label: "Verify Leads", icon: CheckCircle2 },
+    { path: "/onboarding", label: "Onboarding Queue", icon: ListChecks },
+    { path: "/contracts", label: "Contracts", icon: File },
+    { path: "/invoices", label: "Invoices", icon: FileText },
+    { path: "/receipts", label: "Receipts", icon: Receipt },
+    { path: "/tasks", label: "Tasks", icon: CheckSquare },
+    { path: "/clients", label: "All Clients", icon: Users },
+    { path: "/staff/communications", label: "Communications", icon: Send },
+    { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
+    { path: "/playbooks", label: "Playbooks", icon: BookOpen },
+    { path: "/profile", label: "Profile", icon: UserCircle },
+  ],
+  head_of_tech: [
+    { path: "/staff", label: "My Day", icon: Clock },
+    { path: "/staff/clients", label: "My Clients", icon: Briefcase },
+    { path: "/tasks", label: "Tasks", icon: CheckSquare },
+    { path: "/deliverables", label: "Deliverables", icon: CheckSquare },
+    { path: "/staff/communications", label: "Communications", icon: Send },
+    { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
+    { path: "/playbooks", label: "Playbooks", icon: BookOpen },
+    { path: "/profile", label: "Profile", icon: UserCircle },
+  ],
+  driver: [
+    { path: "/staff", label: "My Day", icon: Clock },
+    { path: "/tasks", label: "Tasks", icon: CheckSquare },
+    { path: "/profile", label: "Profile", icon: UserCircle },
+  ],
+};
+
+const OWNER_NAV = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
   { path: "/playbooks", label: "Playbooks", icon: BookOpen },
@@ -54,7 +109,7 @@ export default function AppLayout({ children, title, subtitle }) {
 
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {(user?.role === "owner" || user?.role === "admin") && (
+          {user?.role === "owner" && (
             <>
               <Link
                 to="/team-kpis"
@@ -95,10 +150,6 @@ export default function AppLayout({ children, title, subtitle }) {
                 <LineChart className="w-4 h-4 shrink-0" />
                 Monthly Reports
               </Link>
-            </>
-          )}
-          {user?.role === "owner" && (
-            <>
               <Link
                 to="/team-oversight"
                 onClick={() => setMobileOpen(false)}
@@ -127,7 +178,7 @@ export default function AppLayout({ children, title, subtitle }) {
               </Link>
             </>
           )}
-          {NAV.map(({ path, label, icon: Icon }) => {
+          {(STAFF_NAV[user?.role] || OWNER_NAV).map(({ path, label, icon: Icon }) => {
             const active = location.pathname === path;
             return (
               <Link

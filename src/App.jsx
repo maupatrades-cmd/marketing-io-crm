@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -41,9 +41,15 @@ import Deliverables from './pages/Deliverables';
 import MyKPIs from './pages/MyKPIs';
 import TeamKPIs from './pages/TeamKPIs';
 import Playbooks from './pages/Playbooks';
+import StaffMyDay from './pages/StaffMyDay';
+import StaffMyPipeline from './pages/StaffMyPipeline';
+import StaffMyClients from './pages/StaffMyClients';
+import StaffVerifyLeads from './pages/StaffVerifyLeads';
+import StaffCommunications from './pages/StaffCommunications';
+import RouteGuard from './components/RouteGuard';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -65,6 +71,15 @@ const AuthenticatedApp = () => {
     }
   }
 
+  // Smart landing redirect based on role
+  const LandingRedirect = () => {
+    if (!user) return <Navigate to="/sign-in" replace />;
+    if (user.role === "owner") return <Navigate to="/" replace />;
+    if (user.role === "client") return <Navigate to="/client-portal" replace />;
+    // All staff roles land on /staff
+    return <Navigate to="/staff" replace />;
+  };
+
   // Render the main app
   return (
     <Routes>
@@ -72,7 +87,7 @@ const AuthenticatedApp = () => {
       <Route path="/onboarding-form" element={<StaffOnboardingForm />} />
       <Route path="/build-summary" element={<BuildSummary />} />
       {/* Add your page Route elements here */}
-      <Route path="/" element={<OwnerDashboard />} />
+      <Route path="/" element={user?.role === "owner" ? <OwnerDashboard /> : <LandingRedirect />} />
       <Route path="/design-preview" element={<DesignPreview />} />
       <Route path="/client-portal" element={<ClientPortal />} />
       <Route path="/clients" element={<Clients />} />
@@ -103,6 +118,14 @@ const AuthenticatedApp = () => {
       <Route path="/my-kpis" element={<MyKPIs />} />
       <Route path="/team-kpis" element={<TeamKPIs />} />
       <Route path="/playbooks" element={<Playbooks />} />
+      
+      {/* Staff Portal Routes */}
+      <Route path="/staff" element={<StaffMyDay />} />
+      <Route path="/staff/pipeline" element={<RouteGuard allowedRoles={["field_agent", "cpc"]} fallbackPath="/staff"><StaffMyPipeline /></RouteGuard>} />
+      <Route path="/staff/clients" element={<RouteGuard allowedRoles={["field_agent", "cpc", "head_of_tech"]} fallbackPath="/staff"><StaffMyClients /></RouteGuard>} />
+      <Route path="/staff/verify-leads" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/staff"><StaffVerifyLeads /></RouteGuard>} />
+      <Route path="/staff/communications" element={<StaffCommunications />} />
+      
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<PageNotFound />} />
