@@ -1,0 +1,69 @@
+{
+  "name": "EmailTemplate",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Unique internal identifier (e.g., 'welcome_pack_sent')"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable template name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "authentication",
+        "sales",
+        "onboarding",
+        "operations",
+        "legal"
+      ],
+      "description": "Email category for organization"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Email subject line with {{variables}}"
+    },
+    "preheader": {
+      "type": "string",
+      "description": "Preview text shown in email clients"
+    },
+    "html_body": {
+      "type": "string",
+      "description": "Full HTML email body with {{variables}} and dark branded styling"
+    },
+    "plain_text_body": {
+      "type": "string",
+      "description": "Plain text fallback version"
+    },
+    "sender_email": {
+      "type": "string",
+      "default": "info@marketingio.co.za"
+    },
+    "sender_name": {
+      "type": "string",
+      "default": "Marketing iO"
+    },
+    "variables_used": {
+      "type": "string",
+      "description": "JSON array of variable names expected in this template"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "category",
+    "subject",
+    "html_body",
+    "plain_text_body"
+  ]
+}

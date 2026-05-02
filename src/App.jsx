@@ -36,6 +36,7 @@ import ContractSigningPublic from './pages/ContractSigningPublic';
 import ContractView from './pages/ContractView';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import EmailTemplates from './pages/EmailTemplates';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -93,6 +94,7 @@ const AuthenticatedApp = () => {
       <Route path="/monthly-reports" element={<MonthlyReports />} />
       <Route path="/sign-contract" element={<ContractSigningPublic />} />
       <Route path="/contracts/:id" element={<ContractView />} />
+      <Route path="/email-templates" element={<EmailTemplates />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<PageNotFound />} />
