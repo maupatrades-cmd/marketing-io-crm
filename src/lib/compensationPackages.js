@@ -10,7 +10,6 @@ export const EQUIPMENT_DEDUCTIONS = {
     { name: "Uniform", amount: 150 },
   ],
   admin: [],
-  founder: [],
 };
 
 export const SALARY_COMPONENTS = {
@@ -29,7 +28,7 @@ export const SALARY_COMPONENTS = {
     { name: "Basic Salary", amount: 4890 },
     { name: "Office Allowance", amount: 1000 },
   ],
-  founder: [
+  owner: [
     { name: "Owner CTC", amount: 10000 },
   ],
 };
@@ -38,7 +37,7 @@ export const ROLE_LABELS = {
   field_agent: "Field Agent",
   cpc: "CPC",
   admin: "Admin",
-  founder: "Founder / Owner",
+  owner: "Owner / Founder",
 };
 
 /**
