@@ -13,6 +13,7 @@ import { notifyOnboardingMilestone } from "@/lib/notifications.js";
 import { useToast } from "@/components/ui/use-toast";
 import ClientTaskChecklist, { ONBOARDING_TASKS } from "@/components/clients/ClientTaskChecklist";
 import ClientActivityFeed from "@/components/clients/ClientActivityFeed";
+import TaskWidget from "@/components/tasks/TaskWidget";
 
 const STATUS_COLORS = {
   lead: "bg-warning/15 text-warning border-warning/30",
@@ -234,6 +235,11 @@ export default function Clients() {
               <h4 className="text-sm font-semibold text-foreground">Onboarding Tasks</h4>
             </div>
             <ClientTaskChecklist client={selected} />
+          </div>
+
+          {/* Open Tasks */}
+          <div className="pt-3 border-t border-border/30">
+            <TaskWidget clientId={selected.id} title="Open Tasks" limit={5} />
           </div>
 
           {/* Activity Log */}

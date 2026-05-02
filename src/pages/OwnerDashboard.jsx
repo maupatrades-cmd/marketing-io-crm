@@ -10,6 +10,7 @@ import {
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import TaskWidget from "@/components/tasks/TaskWidget";
 
 const revenueData = [
   { month: "Nov", revenue: 68000, target: 75000 },
@@ -35,6 +36,7 @@ export default function OwnerDashboard() {
   const [invoices, setInvoices] = useState([]);
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -43,12 +45,14 @@ export default function OwnerDashboard() {
       base44.entities.Commission.list("-created_date", 100),
       base44.entities.Invoice.list("-created_date", 100),
       base44.entities.Lead.list("-created_date", 100),
-    ]).then(([c, d, com, inv, l]) => {
+      base44.auth.me(),
+    ]).then(([c, d, com, inv, l, me]) => {
       setClients(c);
       setDeals(d);
       setCommissions(com);
       setInvoices(inv);
       setLeads(l);
+      setCurrentUser(me);
       setLoading(false);
     });
   }, []);
@@ -170,7 +174,7 @@ export default function OwnerDashboard() {
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Recent Activity */}
-          <div className="lg:col-span-2 glass rounded-xl p-5">
+          <div className="glass rounded-xl p-5">
             <h2 className="text-sm font-semibold text-foreground mb-4">Recent Activity</h2>
             {loading ? (
               <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-8 bg-muted/40 rounded animate-pulse" />)}</div>
@@ -188,6 +192,9 @@ export default function OwnerDashboard() {
               </div>
             )}
           </div>
+
+          {/* My Tasks Widget */}
+          {currentUser && <TaskWidget userId={currentUser.id} title="My Open Tasks" limit={5} />}
 
           {/* Quick Actions */}
           <div className="glass rounded-xl p-5">

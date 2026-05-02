@@ -261,18 +261,36 @@ export default function LogSale() {
       deal_won_date: d,
     });
 
-    // 8. Onboarding task
-    await base44.entities.Task.create({
-      title: `Begin onboarding for ${clientName}`,
-      description: `New sale logged. Package: ${selectedPackage.replace(/_/g, " ")}. Start date: ${startDate}.`,
-      client_id: clientId,
-      client_name: clientName,
-      assigned_to: closerId,
-      assigned_to_name: closerName,
-      status: "todo",
-      priority: "high",
-      due_date: plusDays(3),
-    });
+    // 8. Auto tasks
+    const adminUser = adminUsers[0];
+    await base44.entities.Task.bulkCreate([
+      {
+        title: `Begin onboarding for ${clientName}`,
+        description: `New sale logged. Package: ${selectedPackage.replace(/_/g, " ")}. Start date: ${startDate}.`,
+        client_id: clientId,
+        client_name: clientName,
+        deal_id: deal.id,
+        assigned_to: adminUser?.id || closerId,
+        assigned_to_name: adminUser?.full_name || closerName,
+        status: "open",
+        priority: "high",
+        due_date: plusDays(1),
+        auto_generated: true,
+      },
+      ...(setupFee > 0 ? [{
+        title: `Follow up on setup fee payment with ${clientName}`,
+        description: `Setup invoice of R${setupFee.toLocaleString()} was issued. Follow up if not paid within 5 days.`,
+        client_id: clientId,
+        client_name: clientName,
+        deal_id: deal.id,
+        assigned_to: closerId,
+        assigned_to_name: closerName,
+        status: "open",
+        priority: "medium",
+        due_date: plusDays(5),
+        auto_generated: true,
+      }] : []),
+    ]);
 
     setSaving(false);
     setDone(true);

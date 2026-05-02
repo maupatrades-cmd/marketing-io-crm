@@ -26,6 +26,7 @@ import StaffOnboardingForm from './pages/StaffOnboardingForm';
 import BuildSummary from './pages/BuildSummary';
 import LogSale from './pages/LogSale';
 import ClientOnboarding from './pages/ClientOnboarding';
+import Tasks from './pages/Tasks';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -75,6 +76,7 @@ const AuthenticatedApp = () => {
       <Route path="/products" element={<Products />} />
       <Route path="/log-sale" element={<LogSale />} />
       <Route path="/onboarding" element={<ClientOnboarding />} />
+      <Route path="/tasks" element={<Tasks />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

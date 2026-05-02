@@ -100,6 +100,23 @@ export default function OnboardingDetail({ record, onUpdate, onClose }) {
 
   const allTriggersGreen = TRIGGERS.every(t => data[t.field]);
 
+  const createAutoTask = async (title, adminId, adminName, daysFromNow = 0) => {
+    const due = new Date();
+    due.setDate(due.getDate() + daysFromNow);
+    await base44.entities.Task.create({
+      title,
+      client_id: record.client_id,
+      client_name: record.client_name,
+      onboarding_id: record.id,
+      assigned_to: adminId || record.assigned_admin_id,
+      assigned_to_name: adminName || record.assigned_admin_name,
+      status: "open",
+      priority: "high",
+      due_date: due.toISOString().split("T")[0],
+      auto_generated: true,
+    }).catch(() => {});
+  };
+
   const save = async (updates) => {
     setSaving(true);
     const merged = { ...data, ...updates };
@@ -112,11 +129,16 @@ export default function OnboardingDetail({ record, onUpdate, onClose }) {
         merged[currentPhaseConfig.completedAt] = now();
         const nextIndex = PHASE_ORDER.indexOf(merged.current_phase) + 1;
         if (nextIndex < PHASE_ORDER.length) {
-          // Don't auto-advance to phase 6 unless triggers are green
           const nextPhase = PHASE_ORDER[nextIndex];
           if (nextPhase !== "phase6_delivery_start" || allTriggersGreen) {
             merged.current_phase = nextPhase;
             toast({ title: "Phase complete!", description: `Advanced to ${PHASES[nextIndex].label}` });
+            // Auto-task for phase 4: schedule onboarding call
+            if (nextPhase === "phase4_onboarding_call") {
+              createAutoTask(`Schedule onboarding call with ${record.client_name}`, record.assigned_admin_id, record.assigned_admin_name, 3);
+            }
+            // Auto-task for any phase change
+            createAutoTask(`Move ${record.client_name} to ${PHASES[nextIndex].label}`, record.assigned_admin_id, record.assigned_admin_name, 1);
           } else if (nextPhase === "phase6_delivery_start") {
             toast({ title: "Phase 5 complete", description: "Waiting for all 4 triggers to unlock Phase 6." });
           }

@@ -14,6 +14,12 @@
     "client_name": {
       "type": "string"
     },
+    "deal_id": {
+      "type": "string"
+    },
+    "onboarding_id": {
+      "type": "string"
+    },
     "assigned_to": {
       "type": "string",
       "description": "User ID"
@@ -21,16 +27,19 @@
     "assigned_to_name": {
       "type": "string"
     },
+    "created_by": {
+      "type": "string",
+      "description": "User ID of creator"
+    },
     "status": {
       "type": "string",
       "enum": [
-        "todo",
+        "open",
         "in_progress",
-        "awaiting_client",
         "done",
         "cancelled"
       ],
-      "default": "todo"
+      "default": "open"
     },
     "priority": {
       "type": "string",
@@ -46,12 +55,13 @@
       "type": "string",
       "format": "date"
     },
-    "completed_date": {
+    "completed_at": {
       "type": "string",
-      "format": "date"
+      "format": "date-time"
     },
-    "related_deliverable_id": {
-      "type": "string"
+    "auto_generated": {
+      "type": "boolean",
+      "default": false
     },
     "notes": {
       "type": "string"
