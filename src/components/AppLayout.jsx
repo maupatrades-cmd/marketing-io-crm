@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 const NAV = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/log-sale", label: "Log a Sale", icon: PlusCircle },
   { path: "/clients", label: "Clients", icon: Users },
   { path: "/deals", label: "Deals", icon: TrendingUp },
   { path: "/leads", label: "Leads", icon: Zap },
