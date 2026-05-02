@@ -132,6 +132,40 @@
         "other"
       ],
       "description": "Lead source path"
+    },
+    "client_user_id": {
+      "type": "string",
+      "description": "Reference to User \u2014 links to their portal login"
+    },
+    "portal_invitation_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When portal access was invited"
+    },
+    "first_portal_login_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of first portal login"
+    },
+    "portal_last_active_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last portal activity timestamp"
+    },
+    "preferred_communication_channel": {
+      "type": "string",
+      "enum": [
+        "email",
+        "whatsapp",
+        "phone",
+        "sms"
+      ],
+      "default": "email",
+      "description": "Preferred way to contact this client"
+    },
+    "notification_preferences": {
+      "type": "string",
+      "description": "JSON object with notification settings (email_deliverable_ready, email_invoice_issued, etc.)"
     }
   },
   "required": [

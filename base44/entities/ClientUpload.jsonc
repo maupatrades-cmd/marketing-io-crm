@@ -1,0 +1,53 @@
+{
+  "name": "ClientUpload",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client"
+    },
+    "uploaded_by_id": {
+      "type": "string",
+      "description": "Reference to User \u2014 usually the client themselves"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL of the uploaded file"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "file_type": {
+      "type": "string",
+      "enum": [
+        "logo",
+        "brand_guidelines",
+        "business_photo",
+        "team_photo",
+        "product_photo",
+        "marketing_asset",
+        "document",
+        "other"
+      ]
+    },
+    "file_size_bytes": {
+      "type": "number"
+    },
+    "mime_type": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "client_id",
+    "file_url",
+    "file_name",
+    "file_type"
+  ]
+}

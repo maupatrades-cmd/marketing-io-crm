@@ -1,0 +1,54 @@
+{
+  "name": "ClientNotification",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client"
+    },
+    "notification_type": {
+      "type": "string",
+      "enum": [
+        "deliverable_ready",
+        "invoice_issued",
+        "payment_received",
+        "message_received",
+        "contract_to_sign",
+        "report_ready",
+        "onboarding_step_complete",
+        "system_update"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "related_entity_type": {
+      "type": "string",
+      "description": "Deal, Invoice, Deliverable, Contract, MonthlyReport, etc."
+    },
+    "related_entity_id": {
+      "type": "string"
+    },
+    "action_url": {
+      "type": "string",
+      "description": "Link in portal to view detail"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "read_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "client_id",
+    "notification_type",
+    "title",
+    "body"
+  ]
+}

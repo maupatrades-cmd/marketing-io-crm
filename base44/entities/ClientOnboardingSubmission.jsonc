@@ -275,6 +275,118 @@
     "submission_date": {
       "type": "string",
       "format": "date"
+    },
+    "section_business_overview": {
+      "type": "string",
+      "description": "Vision, target audience, USP, geographic area"
+    },
+    "section_brand_assets_status": {
+      "type": "string",
+      "enum": [
+        "provided",
+        "partial",
+        "none"
+      ]
+    },
+    "section_existing_marketing": {
+      "type": "string",
+      "description": "Current marketing description, what's working, what's not"
+    },
+    "section_competitors": {
+      "type": "string",
+      "description": "List 3-5 competitors with notes"
+    },
+    "section_goals_12_months": {
+      "type": "string",
+      "description": "Specific revenue/growth targets"
+    },
+    "section_pain_points": {
+      "type": "string",
+      "description": "What's blocking them"
+    },
+    "section_brand_voice": {
+      "type": "string",
+      "enum": [
+        "professional",
+        "friendly",
+        "premium",
+        "casual",
+        "technical"
+      ]
+    },
+    "section_brand_colours": {
+      "type": "string",
+      "description": "Hex codes if known"
+    },
+    "section_target_audience": {
+      "type": "string",
+      "description": "Demographics, psychographics"
+    },
+    "section_seasonal_factors": {
+      "type": "string",
+      "description": "Busy months, slow months, events"
+    },
+    "section_unique_selling_points": {
+      "type": "string"
+    },
+    "section_existing_accounts": {
+      "type": "string",
+      "description": "JSON \u2014 social handles, GBP, website CMS login"
+    },
+    "section_business_hours": {
+      "type": "string"
+    },
+    "section_payment_methods_accepted": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "cash",
+          "eft",
+          "card",
+          "snapscan",
+          "zapper",
+          "payfast",
+          "yoco"
+        ]
+      }
+    },
+    "section_team_size": {
+      "type": "number"
+    },
+    "section_years_in_business": {
+      "type": "number"
+    },
+    "section_additional_notes": {
+      "type": "string"
+    },
+    "uploaded_logo_url": {
+      "type": "string",
+      "description": "URL of logo file"
+    },
+    "uploaded_logo_dark_url": {
+      "type": "string",
+      "description": "Dark/light variant"
+    },
+    "uploaded_brand_guidelines_url": {
+      "type": "string",
+      "description": "Brand book if available"
+    },
+    "uploaded_business_photos_urls": {
+      "type": "string",
+      "description": "JSON array of photo URLs, up to 20"
+    },
+    "uploaded_team_photos_urls": {
+      "type": "string",
+      "description": "JSON array of team photo URLs"
+    },
+    "uploaded_existing_marketing_urls": {
+      "type": "string",
+      "description": "JSON array of past marketing materials"
+    },
+    "uploaded_other_documents_urls": {
+      "type": "string",
+      "description": "JSON array of other relevant files"
     }
   },
   "required": [

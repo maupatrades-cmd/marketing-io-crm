@@ -47,6 +47,14 @@ import StaffMyClients from './pages/StaffMyClients';
 import StaffVerifyLeads from './pages/StaffVerifyLeads';
 import StaffCommunications from './pages/StaffCommunications';
 import RouteGuard from './components/RouteGuard';
+import ClientOnboardingFormFull from './pages/ClientOnboardingFormFull';
+import ClientInvoices from './pages/ClientInvoices';
+import ClientDeliverables from './pages/ClientDeliverables';
+import ClientReports from './pages/ClientReports';
+import ClientContracts from './pages/ClientContracts';
+import ClientUploads from './pages/ClientUploads';
+import ClientMessages from './pages/ClientMessages';
+import ClientProfile from './pages/ClientProfile';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -125,6 +133,16 @@ const AuthenticatedApp = () => {
       <Route path="/staff/clients" element={<RouteGuard allowedRoles={["field_agent", "cpc", "head_of_tech"]} fallbackPath="/staff"><StaffMyClients /></RouteGuard>} />
       <Route path="/staff/verify-leads" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/staff"><StaffVerifyLeads /></RouteGuard>} />
       <Route path="/staff/communications" element={<StaffCommunications />} />
+      
+      {/* Client Portal Routes */}
+      <Route path="/client/onboarding-form" element={<ClientOnboardingFormFull />} />
+      <Route path="/client/invoices" element={<ClientInvoices />} />
+      <Route path="/client/deliverables" element={<ClientDeliverables />} />
+      <Route path="/client/reports" element={<ClientReports />} />
+      <Route path="/client/contracts" element={<ClientContracts />} />
+      <Route path="/client/uploads" element={<ClientUploads />} />
+      <Route path="/client/messages" element={<ClientMessages />} />
+      <Route path="/client/profile" element={<ClientProfile />} />
       
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />

@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle2, Clock, FileText, AlertCircle, Download,
-  BarChart2, Star, Package, ChevronRight, CalendarDays, Zap
+  BarChart2, Star, Package, ChevronRight, CalendarDays, Zap,
+  Bell, LogOut, Settings, MessageSquare, Link as LinkIcon
 } from "lucide-react";
 
 const PACKAGE_LABELS = {
@@ -29,14 +30,36 @@ const STATUS_CONFIG = {
 };
 
 export default function ClientPortal() {
-  const [user, setUser] = useState(null);
-  const [client, setClient] = useState(null);
-  const [deliverables, setDeliverables] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [reports, setReports] = useState([]);
-  const [addOns, setAddOns] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+   const [user, setUser] = useState(null);
+   const [client, setClient] = useState(null);
+   const [deliverables, setDeliverables] = useState([]);
+   const [invoices, setInvoices] = useState([]);
+   const [reports, setReports] = useState([]);
+   const [addOns, setAddOns] = useState([]);
+   const [notifications, setNotifications] = useState([]);
+   const [activityLog, setActivityLog] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [activeTab, setActiveTab] = useState("overview");
+   const [showNotifications, setShowNotifications] = useState(false);
+   const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  const fetchData = async (me, clientId) => {
+    const [d, inv, rep, ao, notif, activity] = await Promise.all([
+      base44.entities.Deliverable.filter({ client_id: clientId }),
+      base44.entities.Invoice.filter({ client_id: clientId }),
+      base44.entities.MonthlyReport.filter({ client_id: clientId }),
+      base44.entities.ClientAddOn.filter({ client_id: clientId }),
+      base44.entities.ClientNotification.filter({ client_id: clientId }, "-created_date", 20),
+      base44.entities.ClientActivityLog.filter({ client_id: clientId }, "-created_date", 20),
+    ]);
+    setDeliverables(d);
+    setInvoices(inv);
+    setReports(rep);
+    setAddOns(ao);
+    setNotifications(notif);
+    setActivityLog(activity);
+    setLastUpdated(new Date());
+  };
 
   useEffect(() => {
     base44.auth.me().then(async (me) => {
@@ -45,20 +68,22 @@ export default function ClientPortal() {
       if (clients.length > 0) {
         const c = clients[0];
         setClient(c);
-        const [d, inv, rep, ao] = await Promise.all([
-          base44.entities.Deliverable.filter({ client_id: c.id }),
-          base44.entities.Invoice.filter({ client_id: c.id }),
-          base44.entities.MonthlyReport.filter({ client_id: c.id }),
-          base44.entities.ClientAddOn.filter({ client_id: c.id }),
-        ]);
-        setDeliverables(d);
-        setInvoices(inv);
-        setReports(rep);
-        setAddOns(ao);
+        await fetchData(me, c.id);
+        // Update last login
+        base44.entities.Client.update(c.id, { portal_last_active_at: new Date().toISOString() });
       }
       setLoading(false);
     });
   }, []);
+
+  // Real-time polling every 30 seconds
+  useEffect(() => {
+    if (!client) return;
+    const interval = setInterval(() => {
+      fetchData(user, client.id);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [client, user]);
 
   if (loading) {
     return (
@@ -102,23 +127,64 @@ export default function ClientPortal() {
     { id: "reports", label: "Reports" },
   ];
 
-  return (
-    <div className="min-h-screen bg-background font-inter">
-      {/* Header */}
-      <div className="border-b border-border/40 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold gradient-text">Marketing iO</h1>
-            <p className="text-xs text-muted-foreground">Client Portal</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-semibold text-foreground">{client.business_name}</p>
-            <p className="text-xs text-muted-foreground">{client.contact_person}</p>
-          </div>
-        </div>
-      </div>
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const quickLinks = [
+    { label: "Invoices", path: "/client/invoices", icon: FileText },
+    { label: "Deliverables", path: "/client/deliverables", icon: CheckCircle2 },
+    { label: "Reports", path: "/client/reports", icon: BarChart2 },
+    { label: "Contracts", path: "/client/contracts", icon: LinkIcon },
+    { label: "Files", path: "/client/uploads", icon: Package },
+    { label: "Messages", path: "/client/messages", icon: MessageSquare },
+    { label: "Profile", path: "/client/profile", icon: Settings },
+  ];
 
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+  return (
+     <div className="min-h-screen bg-background font-inter">
+       {/* Header */}
+       <div className="border-b border-border/40 px-6 py-4">
+         <div className="max-w-6xl mx-auto flex items-center justify-between">
+           <div>
+             <h1 className="text-xl font-bold gradient-text">Marketing iO</h1>
+             <p className="text-xs text-muted-foreground">Client Portal</p>
+           </div>
+           <div className="flex items-center gap-4">
+             <div className="text-right">
+               <p className="text-sm font-semibold text-foreground">{client.business_name}</p>
+               <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString("en-ZA")}</p>
+             </div>
+             {/* Notification Bell */}
+             <div className="relative">
+               <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 hover:bg-secondary/40 rounded-lg transition-colors">
+                 <Bell className="w-5 h-5 text-foreground" />
+                 {unreadCount > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />}
+               </button>
+               {showNotifications && (
+                 <div className="absolute right-0 mt-2 w-80 bg-secondary border border-border/40 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
+                   {notifications.length === 0 ? (
+                     <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
+                   ) : (
+                     <div className="divide-y divide-border/40">
+                       {notifications.slice(0, 10).map(n => (
+                         <div key={n.id} className={`p-3 border-l-4 cursor-pointer transition-colors ${!n.is_read ? "border-l-primary bg-primary/5" : "border-l-transparent"}`}>
+                           <p className="text-sm font-semibold text-foreground">{n.title}</p>
+                           <p className="text-xs text-muted-foreground">{n.body}</p>
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                 </div>
+               )}
+             </div>
+             <Button size="sm" variant="ghost" onClick={() => base44.auth.logout()} className="text-muted-foreground hover:text-foreground">
+               <LogOut className="w-4 h-4" />
+             </Button>
+           </div>
+         </div>
+       </div>
+
+      <div className="max-w-7xl mx-auto p-6 flex gap-6">
+        {/* Main content */}
+        <div className="flex-1 space-y-6">
         {/* Welcome Banner */}
         <div className="glass rounded-2xl p-6 gradient-bg-subtle">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -272,6 +338,46 @@ export default function ClientPortal() {
             )}
           </div>
         )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="w-72 hidden lg:block space-y-4">
+          {/* Quick Links */}
+          <div className="glass rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Quick Access</h3>
+            <div className="space-y-2">
+              {quickLinks.map(link => (
+                <a key={link.label} href={link.path} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary/40 transition-colors text-muted-foreground hover:text-foreground group">
+                  <link.icon className="w-4 h-4 group-hover:text-primary transition-colors" />
+                  {link.label}
+                  <ChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-all" />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="glass rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Recent Activity</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {activityLog.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No recent activity</p>
+              ) : (
+                activityLog.slice(0, 8).map(a => (
+                  <div key={a.id} className="text-xs pb-2 border-b border-border/20 last:border-0">
+                    <p className="text-muted-foreground">{new Date(a.created_date).toLocaleDateString("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                    <p className="text-foreground font-medium">{a.event_label}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Last Updated */}
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">Last updated: {lastUpdated.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
