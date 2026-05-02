@@ -1,0 +1,201 @@
+{
+  "name": "ClientOnboarding",
+  "type": "object",
+  "properties": {
+    "deal_id": {
+      "type": "string",
+      "description": "Reference to Deal"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "assigned_admin_id": {
+      "type": "string",
+      "description": "User ID of assigned admin or owner"
+    },
+    "assigned_admin_name": {
+      "type": "string"
+    },
+    "current_phase": {
+      "type": "string",
+      "enum": [
+        "phase1_contract_signed",
+        "phase2_welcome_invoicing",
+        "phase3_pre_onboarding",
+        "phase4_onboarding_call",
+        "phase5_asset_collection",
+        "phase6_delivery_start"
+      ],
+      "default": "phase1_contract_signed"
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": [
+        "in_progress",
+        "blocked",
+        "completed"
+      ],
+      "default": "in_progress"
+    },
+    "trigger_setup_fee_paid": {
+      "type": "boolean",
+      "default": false
+    },
+    "trigger_setup_fee_paid_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "trigger_onboarding_form_returned": {
+      "type": "boolean",
+      "default": false
+    },
+    "trigger_onboarding_form_returned_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "trigger_debit_mandate_signed": {
+      "type": "boolean",
+      "default": false
+    },
+    "trigger_debit_mandate_signed_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "trigger_brand_assets_received": {
+      "type": "boolean",
+      "default": false
+    },
+    "trigger_brand_assets_received_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "p1_contract_filed_in_drive": {
+      "type": "boolean",
+      "default": false
+    },
+    "p1_signed_pdf_uploaded": {
+      "type": "boolean",
+      "default": false
+    },
+    "p1_client_added_to_crm": {
+      "type": "boolean",
+      "default": false
+    },
+    "p1_assigned_to_admin": {
+      "type": "boolean",
+      "default": false
+    },
+    "p1_completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "p2_welcome_pack_emailed": {
+      "type": "boolean",
+      "default": false
+    },
+    "p2_welcome_whatsapp_sent": {
+      "type": "boolean",
+      "default": false
+    },
+    "p2_setup_invoice_issued": {
+      "type": "boolean",
+      "default": false
+    },
+    "p2_debit_mandate_emailed": {
+      "type": "boolean",
+      "default": false
+    },
+    "p2_onboarding_form_emailed": {
+      "type": "boolean",
+      "default": false
+    },
+    "p2_completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "p3_setup_fee_payment_followup": {
+      "type": "boolean",
+      "default": false
+    },
+    "p3_form_completion_followup": {
+      "type": "boolean",
+      "default": false
+    },
+    "p3_onboarding_call_scheduled": {
+      "type": "boolean",
+      "default": false
+    },
+    "p3_completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "p4_call_held": {
+      "type": "boolean",
+      "default": false
+    },
+    "p4_call_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "p4_call_notes": {
+      "type": "string"
+    },
+    "p4_brand_kit_brief_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "p4_completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "p5_logo_received": {
+      "type": "boolean",
+      "default": false
+    },
+    "p5_brand_colours_confirmed": {
+      "type": "boolean",
+      "default": false
+    },
+    "p5_existing_photos_received": {
+      "type": "boolean",
+      "default": false
+    },
+    "p5_login_access_received": {
+      "type": "boolean",
+      "default": false
+    },
+    "p5_target_audience_brief_done": {
+      "type": "boolean",
+      "default": false
+    },
+    "p5_completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "p6_delivery_started_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "p6_first_deliverable_scheduled": {
+      "type": "boolean",
+      "default": false
+    },
+    "p6_completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "deal_won_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the deal was closed \u2014 used for days-elapsed tracking"
+    }
+  },
+  "required": [
+    "deal_id",
+    "client_id"
+  ]
+}

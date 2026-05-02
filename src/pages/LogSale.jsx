@@ -246,7 +246,22 @@ export default function LogSale() {
       status: "sent",
     });
 
-    // 7. Onboarding task
+    // 7. Auto-create ClientOnboarding record
+    const adminUsers = users.filter(u => u.role === "admin" || u.role === "owner");
+    const assignedAdmin = adminUsers[0] || null;
+    await base44.entities.ClientOnboarding.create({
+      deal_id: deal.id,
+      client_id: clientId,
+      client_name: clientName,
+      assigned_admin_id: assignedAdmin?.id || closerId,
+      assigned_admin_name: assignedAdmin?.full_name || closerName,
+      current_phase: "phase1_contract_signed",
+      overall_status: "in_progress",
+      p1_client_added_to_crm: true,
+      deal_won_date: d,
+    });
+
+    // 8. Onboarding task
     await base44.entities.Task.create({
       title: `Begin onboarding for ${clientName}`,
       description: `New sale logged. Package: ${selectedPackage.replace(/_/g, " ")}. Start date: ${startDate}.`,
