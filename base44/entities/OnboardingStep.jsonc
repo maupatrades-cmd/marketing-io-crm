@@ -1,0 +1,67 @@
+{
+  "name": "OnboardingStep",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client"
+    },
+    "deal_id": {
+      "type": "string",
+      "description": "Reference to Deal that triggered this"
+    },
+    "step_number": {
+      "type": "number",
+      "description": "Order in the checklist (1-10)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Step title (e.g., 'Upload Logo')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed instruction for this step"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "brand_assets",
+        "business_info",
+        "content_plan",
+        "access_credentials",
+        "approval"
+      ]
+    },
+    "is_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Uploaded file URL if applicable"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Client-provided notes or staff comments"
+    },
+    "required": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this step must be completed"
+    }
+  },
+  "required": [
+    "client_id",
+    "deal_id",
+    "step_number",
+    "title",
+    "category"
+  ]
+}

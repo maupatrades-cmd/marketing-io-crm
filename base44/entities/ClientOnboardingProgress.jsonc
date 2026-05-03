@@ -1,0 +1,50 @@
+{
+  "name": "ClientOnboardingProgress",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client"
+    },
+    "deal_id": {
+      "type": "string",
+      "description": "Reference to Deal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "in_progress",
+        "completed",
+        "archived"
+      ],
+      "default": "not_started"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "total_steps": {
+      "type": "number",
+      "description": "Total number of steps in this onboarding"
+    },
+    "completed_steps": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of steps completed"
+    },
+    "progress_percentage": {
+      "type": "number",
+      "default": 0,
+      "description": "Percentage completion (0-100)"
+    }
+  },
+  "required": [
+    "client_id",
+    "deal_id"
+  ]
+}

@@ -52,6 +52,7 @@ import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import VerifyOTP from './pages/VerifyOTP';
 import ClientOnboardingFormFull from './pages/ClientOnboardingFormFull';
+import ClientOnboardingWizard from './pages/ClientOnboardingWizard';
 import ClientInvoices from './pages/ClientInvoices';
 import ClientDeliverables from './pages/ClientDeliverables';
 import ClientReports from './pages/ClientReports';
@@ -164,6 +165,7 @@ const AuthenticatedApp = () => {
       <Route path="/staff/communications" element={<StaffCommunications />} />
       
       {/* Client Portal Routes — require client role */}
+      <Route path="/client-onboarding" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOnboardingWizard /></RouteGuard>} />
       <Route path="/client/onboarding-form" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOnboardingFormFull /></RouteGuard>} />
       <Route path="/client/invoices" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientInvoices /></RouteGuard>} />
       <Route path="/client/deliverables" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientDeliverables /></RouteGuard>} />
