@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { getCurrentUser } from "@/lib/customAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertCircle, LogOut, ChevronRight, MessageSquare, FileText, BarChart3, Settings, ShoppingCart, Files, Calendar, Download, Eye } from "lucide-react";
 import ProductCard from "@/components/clientportal/ProductCard";
 import EnquiryModal from "@/components/clientportal/EnquiryModal";
@@ -554,6 +555,208 @@ export default function ClientPortal() {
                 onEnquire={handleEnquire}
               />
             ))}
+          </div>
+        </section>
+
+        {/* SECTION 7.5 — FREQUENTLY ASKED QUESTIONS */}
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold text-foreground">Common Questions</h2>
+            <p className="text-muted-foreground">Quick answers. If yours isn't here, message your team.</p>
+          </div>
+          <div className="h-1 w-20 gradient-bg rounded-full" />
+          <div className="mt-6 space-y-6">
+            {/* BILLING & PAYMENTS */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Billing & Payments</h3>
+              <Accordion type="single" collapsible className="space-y-2">
+                <AccordionItem value="debit-date" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    When is my debit order processed?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Your debit runs on the <span className="font-semibold text-foreground">{client.debit_order_date || "1st"}</span> of every month. If your account isn't funded, we'll retry within 3 business days.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="failed-debit" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    What happens if a debit fails?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    We'll email you immediately and retry once. After 3 failed debits in 12 months, your contract may be subject to acceleration. Contact us early if you anticipate any issue.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="change-debit-date" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    Can I change my debit date?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Yes — message your account admin. Changes take effect from the following month.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="download-invoice" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    How do I download an invoice?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Go to <button onClick={() => window.location.href = '/client/invoices'} className="text-primary hover:underline">Billing & Subscription</button>. All invoices are downloadable as PDF.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+
+            {/* CONTRACTS & CANCELLATION */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Contracts & Cancellation</h3>
+              <Accordion type="single" collapsible className="space-y-2">
+                <AccordionItem value="contract-length" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    How long is my contract?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Core packages (Ignite/Accelerate/Dominate) are 12 months. Street Pulse is 3 months. Add-ons are month-to-month unless specified.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="cancel" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    How do I cancel?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Submit a cancellation via the Manage Your Products section. Notice periods apply per your contract — typically 30 days.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="signed-contract" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    Where's my signed contract?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Available in <button onClick={() => window.location.href = '/client/contracts'} className="text-primary hover:underline">Your Contracts</button>. If missing, contact your admin.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+
+            {/* DELIVERABLES & APPROVALS */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Deliverables & Approvals</h3>
+              <Accordion type="single" collapsible className="space-y-2">
+                <AccordionItem value="approval-time" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    How long do I have to approve a deliverable?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    5 business days from submission. After that, deliverables are deemed approved automatically.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="request-changes" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    How do I request changes?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    On any deliverable awaiting review, click 'Request Changes' and tell us what's not right. Our team will revise within 2 business days.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="unhappy-work" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    What if I'm unhappy with the work?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Tell us early. We revise until it's right. Use <button onClick={() => window.location.href = '/client/messages'} className="text-primary hover:underline">Messages</button> to escalate if standard feedback isn't enough.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+
+            {/* PORTAL & ACCESS */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Portal & Access</h3>
+              <Accordion type="single" collapsible className="space-y-2">
+                <AccordionItem value="multi-user" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    Can multiple people from my team access this portal?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Currently one login per business. Multi-user access is coming soon.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="forgot-password" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    I forgot my password
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    <Button size="sm" variant="outline" onClick={() => window.location.href = '/forgot-password'}>Reset Password</Button>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="update-business-info" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    How do I update my business info?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Go to <button onClick={() => window.location.href = '/client/profile'} className="text-primary hover:underline">Profile Settings</button> and edit your details.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+
+            {/* MARKETING IO SERVICES */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">Marketing iO Services</h3>
+              <Accordion type="single" collapsible className="space-y-2">
+                <AccordionItem value="packages-difference" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    What's the difference between Ignite, Accelerate, and Dominate?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    <div className="space-y-2">
+                      <p><span className="font-semibold text-foreground">Ignite:</span> Foundation package — website, content & social media setup.</p>
+                      <p><span className="font-semibold text-foreground">Accelerate:</span> Growth package — adds video, paid ads & advanced analytics.</p>
+                      <p><span className="font-semibold text-foreground">Dominate:</span> Premium package — includes everything + reputation management & AI tools.</p>
+                      <Button size="sm" variant="link" className="mt-2 p-0" onClick={() => document.querySelector('[id*="sales"]')?.scrollIntoView({ behavior: 'smooth' })}>
+                        View full breakdown →
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="add-services" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    Can I add services later?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Yes — that's what the Sales Floor below is for. Click Enquire on anything you want.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="custom-packages" className="glass rounded-lg border-0">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
+                    Do you offer custom packages?
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-3 pt-0 text-muted-foreground text-sm">
+                    Yes — for serious growth. Reach out to the owner directly via <button onClick={() => window.location.href = '/client/messages'} className="text-primary hover:underline">Messages</button>.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          </div>
+
+          {/* CTA to contact */}
+          <div className="mt-8 p-4 glass rounded-lg border-border/50 text-center">
+            <p className="text-sm text-muted-foreground mb-3">Still stuck?</p>
+            <Button 
+              onClick={() => window.location.href = '/client/messages'}
+              className="gradient-bg text-white"
+            >
+              Message your team →
+            </Button>
           </div>
         </section>
 
