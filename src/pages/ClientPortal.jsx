@@ -21,6 +21,7 @@ export default function ClientPortal() {
   const [user, setUser] = useState(null);
   const [client, setClient] = useState(null);
   const [enquiries, setEnquiries] = useState([]);
+  const [productImages, setProductImages] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -35,6 +36,14 @@ export default function ClientPortal() {
       }
 
       setUser(me);
+
+      // Fetch product images
+      try {
+        const images = await base44.functions.invoke("get-product-images", {});
+        setProductImages(images.data || {});
+      } catch (err) {
+        console.error("Failed to load product images:", err);
+      }
 
       const clients = await base44.entities.Client.filter({ email: me.email });
       const c = Array.isArray(clients) ? clients[0] : clients;
@@ -129,6 +138,7 @@ export default function ClientPortal() {
                   key={product.id}
                   product={product}
                   isActive={false}
+                  imageUrl={productImages[product.id]}
                   onEnquire={handleEnquire}
                 />
               ))}
@@ -149,6 +159,7 @@ export default function ClientPortal() {
                 key={product.id}
                 product={product}
                 isActive={false}
+                imageUrl={productImages[product.id]}
                 onEnquire={handleEnquire}
               />
             ))}
@@ -168,6 +179,7 @@ export default function ClientPortal() {
                 key={product.id}
                 product={product}
                 isActive={false}
+                imageUrl={productImages[product.id]}
                 onEnquire={handleEnquire}
               />
             ))}

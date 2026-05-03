@@ -3,8 +3,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 
-export default function ProductCard({ product, isActive, onEnquire }) {
+export default function ProductCard({ product, isActive, onEnquire, imageUrl }) {
   const [hovering, setHovering] = useState(false);
+  const [imageLoading, setImageLoading] = useState(!!imageUrl);
+  const [imageError, setImageError] = useState(false);
 
   const totalValue = product.setup_price + (product.monthly_price * (product.term_months || 0));
 
@@ -18,8 +20,35 @@ export default function ProductCard({ product, isActive, onEnquire }) {
           : "border-slate-800"
       } overflow-hidden`}
     >
-      {/* Image Placeholder */}
+      {/* Image Section */}
       <div className="w-full aspect-video bg-gradient-to-br from-purple-900/40 to-pink-900/40 relative overflow-hidden">
+        {/* AI-Generated Image or Fallback */}
+        {imageUrl && !imageError ? (
+          <>
+            <img
+              src={imageUrl}
+              alt={product.name}
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                setImageLoading(false);
+                setImageError(true);
+              }}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
+                imageLoading ? "opacity-0" : "opacity-100"
+              }`}
+            />
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50">
+                <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-6xl opacity-30">{product.emoji}</div>
+          </div>
+        )}
+
         {/* Active pulse indicator */}
         {isActive && (
           <div className="absolute top-3 right-3 flex items-center gap-2">
@@ -27,10 +56,6 @@ export default function ProductCard({ product, isActive, onEnquire }) {
             <Badge className="bg-green-500/20 text-green-400 text-xs border-green-500/40">ACTIVE</Badge>
           </div>
         )}
-        {/* Fallback gradient with emoji */}
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="text-6xl opacity-30">{product.emoji}</div>
-        </div>
       </div>
 
       {/* Content */}
