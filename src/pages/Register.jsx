@@ -48,7 +48,7 @@ export default function Register() {
       const status = err?.response?.status;
       const detail = err?.response?.data?.error;
       if (status === 409) {
-        setError('An account with this email already exists. Please sign in.');
+        setError('Account already exists with this email. Please sign in instead.');
       } else {
         setError(`Signup failed${detail ? ': ' + detail : '. Please try again.'}`);
       }

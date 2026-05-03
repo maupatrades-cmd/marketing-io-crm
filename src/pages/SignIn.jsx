@@ -55,8 +55,11 @@ export default function SignIn() {
       }
       } catch (err) {
       const status = err?.response?.status;
+      const detail = err?.response?.data?.error;
       if (status === 423) {
         setError('Account temporarily locked due to multiple failed attempts. Please try again later or reset your password.');
+      } else if (status === 401 && detail?.includes('not found')) {
+        setError('No account found with this email. Please sign up first.');
       } else {
         setError('Invalid email or password.');
       }
