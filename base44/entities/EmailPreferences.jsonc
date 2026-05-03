@@ -1,0 +1,46 @@
+{
+  "name": "EmailPreferences",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to User"
+    },
+    "email": {
+      "type": "string",
+      "description": "User email address"
+    },
+    "marketing_opted_in": {
+      "type": "boolean",
+      "default": true
+    },
+    "newsletter_opted_in": {
+      "type": "boolean",
+      "default": true
+    },
+    "spotlight_opted_in": {
+      "type": "boolean",
+      "default": true
+    },
+    "anniversary_opted_in": {
+      "type": "boolean",
+      "default": true
+    },
+    "reengagement_opted_in": {
+      "type": "boolean",
+      "default": true
+    },
+    "unsubscribe_token": {
+      "type": "string",
+      "description": "Unique token for unsubscribe links"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "email"
+  ]
+}

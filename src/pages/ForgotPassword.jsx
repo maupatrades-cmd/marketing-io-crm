@@ -51,48 +51,12 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      // Check if user exists (but don't reveal to user)
-      const users = await base44.entities.User.filter({ email });
-      
-      if (users && users.length > 0) {
-        // Generate reset token (32-char random string)
-        const resetToken = Math.random().toString(36).substring(2, 34);
-        
-        // Save OTPCode with purpose=password_reset
-        await base44.entities.OTPCode.create({
-          email,
-          code: resetToken,
-          purpose: 'password_reset',
-          expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour
-          generated_at: new Date().toISOString()
-        });
-
-        // Send reset email
-        await base44.integrations.Core.SendEmail({
-          to: email,
-          subject: 'Reset your Marketing iO password',
-          body: `Click the link below to reset your password:\n\n${window.location.origin}/reset-password?token=${resetToken}\n\nThis link expires in 1 hour.\n\nIf you did not request a password reset, please ignore this email.`
-        });
-
-        // Log security event
-        await base44.entities.SecurityEvent.create({
-          event_type: 'password_reset_requested',
-          email,
-          details: 'Password reset requested'
-        });
-      } else {
-        // Still log but don't reveal
-        await base44.entities.SecurityEvent.create({
-          event_type: 'password_reset_requested',
-          email,
-          details: 'Password reset requested for non-existent email'
-        });
-      }
-
+      // Always show success — don't reveal if email exists
+      await base44.functions.invoke('send-forgot-password-email', { email });
       setSubmitted(true);
     } catch (err) {
-      setError(err.message || 'An error occurred');
-      console.error('Forgot password error:', err);
+      // Still show success for security (don't reveal if user exists)
+      setSubmitted(true);
     } finally {
       setLoading(false);
     }

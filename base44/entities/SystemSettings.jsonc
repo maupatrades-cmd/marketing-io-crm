@@ -4,7 +4,7 @@
   "properties": {
     "fallback_marketing_image_url": {
       "type": "string",
-      "description": "URL of fallback image used when DALL-E fails"
+      "description": "URL of fallback image used when Gemini fails"
     },
     "openai_api_key_set": {
       "type": "boolean",
@@ -14,12 +14,12 @@
     "monthly_dalle_budget_zar": {
       "type": "number",
       "default": 200,
-      "description": "Monthly budget cap for DALL-E generation in ZAR"
+      "description": "Monthly budget cap for image generation in ZAR"
     },
     "monthly_dalle_spent_zar": {
       "type": "number",
       "default": 0,
-      "description": "Amount spent this month on DALL-E generation in ZAR"
+      "description": "Amount spent this month on image generation in ZAR"
     },
     "dalle_budget_month": {
       "type": "string",
@@ -28,6 +28,10 @@
     "fallback_image_file_uri": {
       "type": "string",
       "description": "Private file URI of uploaded fallback image"
+    },
+    "forgot_password_hero_url": {
+      "type": "string",
+      "description": "Cached hero image URL for forgot-password emails (reused to avoid regeneration cost)"
     }
   },
   "required": []

@@ -1,0 +1,56 @@
+{
+  "name": "MarketingCampaign",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Human-readable campaign name"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Unique identifier slug (e.g. welcome_day_0)"
+    },
+    "subject_line": {
+      "type": "string",
+      "description": "Email subject line with {{variables}}"
+    },
+    "preheader": {
+      "type": "string",
+      "description": "Preview text shown in email clients"
+    },
+    "body_template": {
+      "type": "string",
+      "description": "HTML email body with {{variables}}"
+    },
+    "image_prompt": {
+      "type": "string",
+      "description": "Gemini image generation prompt"
+    },
+    "trigger_type": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "after_signup_verified",
+        "after_login_inactivity",
+        "after_anniversary",
+        "manual"
+      ],
+      "default": "manual"
+    },
+    "trigger_offset_days": {
+      "type": "number",
+      "default": 0,
+      "description": "Days after trigger event to send"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "slug",
+    "subject_line",
+    "body_template"
+  ]
+}

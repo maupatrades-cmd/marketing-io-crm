@@ -70,6 +70,8 @@ import AdminServiceOrders from './pages/AdminServiceOrders';
 import StaffProductivity from './pages/StaffProductivity';
 import DeliverableQuality from './pages/DeliverableQuality';
 import LeadScoring from './pages/LeadScoring';
+import OwnerCampaigns from './pages/OwnerCampaigns';
+import Unsubscribe from './pages/Unsubscribe';
 
 
 
@@ -150,6 +152,8 @@ const AuthenticatedApp = () => {
       <Route path="/staff-productivity" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><StaffProductivity /></RouteGuard>} />
       <Route path="/deliverable-quality" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><DeliverableQuality /></RouteGuard>} />
       <Route path="/lead-scoring" element={<RouteGuard allowedRoles={["owner", "admin", "field_agent", "cpc"]} fallbackPath="/"><LeadScoring /></RouteGuard>} />
+      <Route path="/owner/campaigns" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><OwnerCampaigns /></RouteGuard>} />
+      <Route path="/unsubscribe" element={<Unsubscribe />} />
 
       {/* Staff Portal Routes */}
       <Route path="/staff" element={<StaffMyDay />} />

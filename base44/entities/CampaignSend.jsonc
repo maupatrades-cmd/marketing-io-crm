@@ -1,0 +1,52 @@
+{
+  "name": "CampaignSend",
+  "type": "object",
+  "properties": {
+    "campaign_id": {
+      "type": "string",
+      "description": "Reference to MarketingCampaign"
+    },
+    "campaign_slug": {
+      "type": "string",
+      "description": "Denormalised slug"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Reference to User"
+    },
+    "email": {
+      "type": "string",
+      "description": "Recipient email"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "sent",
+        "failed",
+        "opted_out"
+      ],
+      "default": "pending"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Hero image URL used in this send"
+    },
+    "opened": {
+      "type": "boolean",
+      "default": false
+    },
+    "opened_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "campaign_id",
+    "email"
+  ]
+}
