@@ -125,7 +125,12 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Failed to create account. Please try again.' }, { status: 500 });
   }
 
-  await sendSignupOtp(normalizedEmail, fullName.trim(), otp);
+  try {
+    await sendSignupOtp(normalizedEmail, fullName.trim(), otp);
+  } catch (emailErr) {
+    console.error('[auth-register] OTP email send failed (non-fatal):', emailErr);
+    // Account is created. User can use "Resend code" on /verify-otp page.
+  }
 
   return Response.json({ user_id: newUser.id, email: normalizedEmail }, { status: 200 });
 });

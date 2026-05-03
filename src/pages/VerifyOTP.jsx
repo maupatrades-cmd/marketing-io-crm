@@ -75,10 +75,9 @@ export default function VerifyOTP() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img
-            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
+            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
             alt="Marketing iO"
-            className="h-10 mx-auto mb-4 object-contain"
-            style={{ filter: 'invert(1) brightness(2)', mixBlendMode: 'screen' }}
+            className="h-12 mx-auto mb-4 object-contain"
           />
           <h1 className="text-2xl font-bold text-white">Check your email</h1>
           <p className="text-slate-400 mt-1 text-sm">
