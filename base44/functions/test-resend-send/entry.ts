@@ -11,8 +11,33 @@ Deno.serve(async (req) => {
   const result = await resend.emails.send({
     from: 'Marketing iO Team <hello@marketingio.co.za>',
     to: 'maupatrades@gmail.com',
-    subject: 'Resend test from Marketing iO CRM',
-    html: '<div style="font-family:sans-serif;background:linear-gradient(135deg,#a764e6,#ec4899);color:white;padding:32px;text-align:center;border-radius:8px"><h1 style="margin:0">Marketing iO</h1><p style="margin:8px 0 0;font-style:italic">Too good to stay hidden.</p></div><div style="font-family:sans-serif;padding:24px;color:#1e293b"><p>Hi Thapelo,</p><p>If you\'re reading this in your inbox, Resend is wired up correctly and email delivery is working from app.marketingio.co.za.</p><p>This is a one-time test send. The full email system will use this same pipeline.</p><p>— The Marketing iO Team</p></div>'
+    subject: 'Logo render test — Marketing iO',
+    html: `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;padding:20px 0">
+  <tr><td align="center">
+    <table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:white;border-radius:12px;overflow:hidden">
+      <tr>
+        <td style="background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);padding:32px 24px;text-align:center">
+          <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png" alt="Marketing iO" height="48" style="height:48px;width:auto;display:block;margin:0 auto 8px;filter:brightness(0) invert(1)" />
+          <p style="margin:8px 0 0;color:white;font-size:12px;font-style:italic;letter-spacing:1px;opacity:0.9">Too good to stay hidden.</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:32px 24px;color:#1e293b;font-size:16px;line-height:1.6">
+          <p style="margin:0 0 16px">Hi Thapelo,</p>
+          <p style="margin:0 0 16px">Logo render test — if you see the Marketing iO logo above (white on purple/pink gradient), the email wrapper is ready for production.</p>
+          <p style="margin:0">— The Marketing iO Team</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#0f172a;padding:24px;text-align:center;color:#cbd5e1;font-size:12px">
+          <p style="margin:0 0 8px;color:white;font-weight:600">Marketing iO (Pty) Ltd · CIPC 2026303502</p>
+          <p style="margin:0">75 Marshall Street, Polokwane 0699 · ☎ 010 102 0534 · ✉ info@marketingio.co.za</p>
+          <p style="margin:8px 0 0;color:#a764e6;font-style:italic">Too good to stay hidden.</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>`
   });
 
   if (result.error) {
