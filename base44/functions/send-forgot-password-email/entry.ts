@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
 
   // Always return 200 — don't reveal if user exists.
   // Look up in AppUser (client portal accounts) first, then fall back to User (staff/CRM directory).
+  // Each lookup is wrapped in its own try so a transient error on AppUser doesn't defeat the User fallback.
   let user;
   let userEntity;
   try {
@@ -45,16 +46,21 @@ Deno.serve(async (req) => {
     if (appUsers?.[0]) {
       user = appUsers[0];
       userEntity = 'AppUser';
-    } else {
+    }
+  } catch (err) {
+    console.error('[send-forgot-password-email] AppUser lookup failed:', err);
+  }
+
+  if (!user) {
+    try {
       const legacyUsers = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
       if (legacyUsers?.[0]) {
         user = legacyUsers[0];
         userEntity = 'User';
       }
+    } catch (err) {
+      console.error('[send-forgot-password-email] User lookup failed:', err);
     }
-  } catch (err) {
-    console.error('[send-forgot-password-email] Error fetching user:', err);
-    return Response.json({ success: true });
   }
 
   if (!user) {

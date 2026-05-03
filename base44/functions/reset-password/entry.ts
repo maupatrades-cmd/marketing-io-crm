@@ -39,17 +39,28 @@ Deno.serve(async (req) => {
   }
 
   // Look up the reset token in AppUser (client portal) first, then User (staff/CRM directory).
+  // Each lookup is wrapped in its own try so a transient error on AppUser doesn't defeat the User fallback.
   let user;
   let userEntity;
-  const appUsers = await base44.asServiceRole.entities.AppUser.filter({ password_reset_token: token });
-  if (appUsers?.[0]) {
-    user = appUsers[0];
-    userEntity = 'AppUser';
-  } else {
-    const legacyUsers = await base44.asServiceRole.entities.User.filter({ password_reset_token: token });
-    if (legacyUsers?.[0]) {
-      user = legacyUsers[0];
-      userEntity = 'User';
+  try {
+    const appUsers = await base44.asServiceRole.entities.AppUser.filter({ password_reset_token: token });
+    if (appUsers?.[0]) {
+      user = appUsers[0];
+      userEntity = 'AppUser';
+    }
+  } catch (err) {
+    console.error('[reset-password] AppUser lookup failed:', err);
+  }
+
+  if (!user) {
+    try {
+      const legacyUsers = await base44.asServiceRole.entities.User.filter({ password_reset_token: token });
+      if (legacyUsers?.[0]) {
+        user = legacyUsers[0];
+        userEntity = 'User';
+      }
+    } catch (err) {
+      console.error('[reset-password] User lookup failed:', err);
     }
   }
 
