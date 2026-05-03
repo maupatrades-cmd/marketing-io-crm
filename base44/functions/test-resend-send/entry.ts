@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
     <table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:white;border-radius:12px;overflow:hidden">
       <tr>
         <td style="background:#0f172a;padding:24px 24px 20px;text-align:center">
-          <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/de9bcf4a8_marketingiomainlogo.png" alt="Marketing iO" width="240" style="width:240px;height:auto;display:block;margin:0 auto" />
+          <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png" alt="Marketing iO" width="280" style="width:280px;height:auto;display:block;margin:0 auto" />
         </td>
       </tr>
       <tr>
