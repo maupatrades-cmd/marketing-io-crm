@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { getCurrentUser } from "@/lib/customAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, LogOut } from "lucide-react";
+import { AlertCircle, LogOut, ChevronRight, MessageSquare, FileText, BarChart3, Settings, ShoppingCart, Files, Calendar } from "lucide-react";
 import ProductCard from "@/components/clientportal/ProductCard";
 import EnquiryModal from "@/components/clientportal/EnquiryModal";
 import { PRODUCT_CATALOG, getProductsByType, getProductById } from "@/data/ProductCatalog";
@@ -22,6 +22,12 @@ export default function ClientPortal() {
   const [client, setClient] = useState(null);
   const [enquiries, setEnquiries] = useState([]);
   const [productImages, setProductImages] = useState({});
+  const [onboarding, setOnboarding] = useState(null);
+  const [deliverables, setDeliverables] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [communications, setCommunications] = useState([]);
+  const [deal, setDeal] = useState(null);
+  const [staffCards, setStaffCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -50,8 +56,46 @@ export default function ClientPortal() {
 
       if (c) {
         setClient(c);
-        const enqs = await base44.entities.EnquiryEvent.filter({ client_id: c.id });
-        setEnquiries(Array.isArray(enqs) ? enqs : []);
+
+        // Fetch hub data in parallel
+        try {
+          const [enqs, onb, dels, invs, comms, deals] = await Promise.all([
+            base44.entities.EnquiryEvent.filter({ client_id: c.id }).catch(() => []),
+            base44.entities.ClientOnboarding.filter({ client_id: c.id }, "-created_date", 1).catch(() => []),
+            base44.entities.Deliverable.filter({ client_id: c.id }, "-created_date", 50).catch(() => []),
+            base44.entities.Invoice.filter({ client_id: c.id, status: 'issued' }, "due_date", 5).catch(() => []),
+            base44.entities.ClientCommunication.filter({ client_id: c.id }, "-created_date", 20).catch(() => []),
+            base44.entities.Deal.filter({ client_id: c.id, stage: 'closed_won' }, "-created_date", 1).catch(() => [])
+          ]);
+
+          setEnquiries(Array.isArray(enqs) ? enqs : []);
+          const onbRecord = Array.isArray(onb) ? onb[0] : onb;
+          setOnboarding(onbRecord);
+          setDeliverables(Array.isArray(dels) ? dels : []);
+          setInvoices(Array.isArray(invs) ? invs : []);
+          setCommunications(Array.isArray(comms) ? comms : []);
+          
+          const dealRecord = Array.isArray(deals) ? deals[0] : deals;
+          setDeal(dealRecord);
+
+          // Fetch staff if deal exists
+          if (dealRecord) {
+            const staffData = [];
+            const userIds = [dealRecord.closer_id, onbRecord?.assigned_admin_id, c.assigned_field_agent].filter(Boolean);
+            
+            for (const userId of userIds) {
+              try {
+                const users = await base44.entities.User.filter({ id: userId });
+                if (users && users[0]) staffData.push(users[0]);
+              } catch (err) {
+                console.error('Failed to fetch user:', userId, err);
+              }
+            }
+            setStaffCards(staffData);
+          }
+        } catch (err) {
+          console.error('Hub data fetch error:', err);
+        }
       }
       setLoading(false);
     };
@@ -91,6 +135,11 @@ export default function ClientPortal() {
     );
   }
 
+  const pendingDeliverables = deliverables.filter(d => d.status === 'awaiting_client');
+  const activeDeliverables = deliverables.filter(d => d.status === 'in_progress' || d.status === 'awaiting_client');
+  const recentMessages = communications.filter(c => c.response_message && new Date(c.created_date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+  const nextInvoice = invoices[0];
+
   // Determine current package and upgrades
   const currentPackage = getProductById(client.package);
   const upgradeProducts = (!client.package || client.package === 'none') 
@@ -99,8 +148,8 @@ export default function ClientPortal() {
   const allAddOns = getProductsByType("addon");
   const physicalProducts = getProductsByType("physical");
 
-  // Active enquiries count
-  const newEnquiries = enquiries.filter(e => e.status === "new").length;
+  const onboardingPhases = ['Contract Signed', 'Welcome & Invoicing', 'Pre-Onboarding', 'Onboarding Call', 'Asset Collection', 'Delivery Started'];
+  const phaseIndex = onboarding ? onboardingPhases.indexOf(onboarding.current_phase) : -1;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-foreground">
@@ -136,6 +185,220 @@ export default function ClientPortal() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-12 space-y-16">
+        {/* SECTION 2 — ACTION REQUIRED */}
+        {pendingDeliverables.length > 0 && (
+          <section className="space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-3xl font-bold text-foreground">Action Required</h2>
+              <p className="text-muted-foreground">Deliverables awaiting your approval</p>
+            </div>
+            <div className="h-1 w-20 gradient-bg rounded-full" />
+            <div className="space-y-3 mt-6">
+              {pendingDeliverables.map(d => {
+                const daysAgo = Math.floor((Date.now() - new Date(d.submitted_date)) / (1000 * 60 * 60 * 24));
+                const daysUntilDeadline = Math.ceil((new Date(d.review_deadline) - Date.now()) / (1000 * 60 * 60 * 24));
+                const urgency = daysUntilDeadline < 2 ? 'bg-red-500/10 border-red-500/30' : daysUntilDeadline < 5 ? 'bg-yellow-500/10 border-yellow-500/30' : '';
+                return (
+                  <div key={d.id} className={`glass rounded-lg p-4 border ${urgency}`}>
+                    <h3 className="font-semibold text-foreground">{d.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Submitted {daysAgo} day{daysAgo !== 1 ? 's' : ''} ago · Review by {new Date(d.review_deadline).toLocaleDateString()}
+                    </p>
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" variant="outline" onClick={() => window.location.href = '/client/deliverables'}>Approve</Button>
+                      <Button size="sm" variant="outline" onClick={() => window.location.href = '/client/deliverables'}>Request Changes</Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* SECTION 3 — PROJECT JOURNEY */}
+        {onboarding && (
+          <section className="space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-3xl font-bold text-foreground">Your Project Journey</h2>
+              <p className="text-muted-foreground">Track your onboarding progress</p>
+            </div>
+            <div className="h-1 w-20 gradient-bg rounded-full" />
+            <div className="glass rounded-lg p-6 mt-6">
+              <div className="flex items-center justify-between mb-6">
+                {onboardingPhases.map((phase, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      i < phaseIndex ? 'bg-primary text-primary-foreground' :
+                      i === phaseIndex ? 'bg-primary text-primary-foreground animate-pulse-glow' :
+                      'bg-muted text-muted-foreground'
+                    }`}>
+                      {i < phaseIndex ? '✓' : i + 1}
+                    </div>
+                    <span className="text-xs text-muted-foreground text-center">{phase}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3 border-t border-border pt-4">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" checked={onboarding.trigger_setup_fee_paid} disabled className="rounded" />
+                  <span className="text-sm">Setup fee paid</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" checked={onboarding.trigger_onboarding_form_returned} disabled className="rounded" />
+                  <span className="text-sm">Onboarding form returned</span>
+                  {!onboarding.trigger_onboarding_form_returned && <Button size="sm" variant="link" className="ml-auto" onClick={() => window.location.href = '/client/onboarding-form'}>Complete →</Button>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" checked={onboarding.trigger_debit_mandate_signed} disabled className="rounded" />
+                  <span className="text-sm">Debit mandate signed</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" checked={onboarding.trigger_brand_assets_received} disabled className="rounded" />
+                  <span className="text-sm">Brand assets received</span>
+                  {!onboarding.trigger_brand_assets_received && <Button size="sm" variant="link" className="ml-auto" onClick={() => window.location.href = '/client/uploads'}>Upload →</Button>}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* SECTION 4 — QUICK STATS */}
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold text-foreground">Quick Stats</h2>
+          </div>
+          <div className="h-1 w-20 gradient-bg rounded-full" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+            <button onClick={() => window.location.href = '/client/deliverables'} className="glass rounded-lg p-4 hover:border-primary/50 transition text-left">
+              <p className="text-2xl font-bold text-primary">{activeDeliverables.length}</p>
+              <p className="text-sm text-muted-foreground">in production</p>
+            </button>
+            <button onClick={() => window.location.href = '/client/invoices'} className="glass rounded-lg p-4 hover:border-primary/50 transition text-left">
+              {nextInvoice ? (
+                <>
+                  <p className="text-2xl font-bold text-primary">R{nextInvoice.amount_zar?.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Due {new Date(nextInvoice.due_date).toLocaleDateString()}</p>
+                </>
+              ) : (
+                <p className="text-sm text-success">All paid up ✓</p>
+              )}
+            </button>
+            <button onClick={() => window.location.href = '/client/messages'} className="glass rounded-lg p-4 hover:border-primary/50 transition text-left">
+              <p className="text-2xl font-bold text-primary">{recentMessages.length}</p>
+              <p className="text-sm text-muted-foreground">from your team</p>
+            </button>
+            <button onClick={() => window.location.href = '/client/project-status'} className="glass rounded-lg p-4 hover:border-primary/50 transition text-left">
+              <p className="text-sm font-semibold text-primary">{onboarding ? `Phase ${phaseIndex + 1}` : deal?.stage.replace(/_/g, ' ') || 'Pending'}</p>
+              <p className="text-xs text-muted-foreground mt-1">{onboarding ? onboardingPhases[phaseIndex] : 'Project status'}</p>
+            </button>
+          </div>
+        </section>
+
+        {/* SECTION 5 — YOUR TEAM */}
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold text-foreground">Your Marketing iO Team</h2>
+          </div>
+          <div className="h-1 w-20 gradient-bg rounded-full" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+            {staffCards.length > 0 ? staffCards.map(staff => (
+              <div key={staff.id} className="glass rounded-lg p-4">
+                <div className="w-12 h-12 rounded-full gradient-bg flex items-center justify-center text-white font-bold mb-3">
+                  {(staff.full_name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2)}
+                </div>
+                <h3 className="font-semibold text-foreground">{staff.full_name}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {deal?.closer_id === staff.id && 'Sales Consultant'}
+                  {onboarding?.assigned_admin_id === staff.id && 'Account Admin'}
+                  {client.assigned_field_agent === staff.id && 'Field Agent'}
+                </p>
+                <div className="flex gap-2 mt-3">
+                  {staff.phone && <a href={`https://wa.me/${staff.phone}`} className="text-sm text-primary hover:underline">WhatsApp</a>}
+                  {staff.email && <a href={`mailto:${staff.email}`} className="text-sm text-primary hover:underline">Email</a>}
+                </div>
+                <Button size="sm" variant="outline" className="w-full mt-3" onClick={() => window.location.href = '/client/messages'}>Send Message</Button>
+              </div>
+            )) : (
+              <div className="glass rounded-lg p-4 md:col-span-2 lg:col-span-3">
+                <p className="text-sm text-muted-foreground">Your team will be assigned once your deal is finalised.</p>
+                <p className="text-sm text-muted-foreground mt-2">In the meantime: <a href="mailto:info@marketingio.co.za" className="text-primary hover:underline">info@marketingio.co.za</a> · 010 102 0534</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* SECTION 6 — PROFILE SNAPSHOT */}
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold text-foreground">Profile</h2>
+          </div>
+          <div className="h-1 w-20 gradient-bg rounded-full" />
+          <div className="glass rounded-lg p-6 mt-6">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Business Name</p>
+                <p className="text-sm text-foreground">{client.business_name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Contact Person</p>
+                <p className="text-sm text-foreground">{client.contact_person}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Email</p>
+                <p className="text-sm text-foreground">{client.email}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Phone</p>
+                <p className="text-sm text-foreground">{client.phone}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Industry</p>
+                <p className="text-sm text-foreground">{client.industry || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Debit Date</p>
+                <p className="text-sm text-foreground">{client.debit_order_date || '—'}</p>
+              </div>
+            </div>
+            <Button variant="outline" className="w-full" onClick={() => window.location.href = '/client/profile'}>Edit Profile →</Button>
+          </div>
+        </section>
+
+        {/* SECTION 7 — SHORTCUTS */}
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold text-foreground">Quick Links</h2>
+          </div>
+          <div className="h-1 w-20 gradient-bg rounded-full" />
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-6">
+            <button onClick={() => window.location.href = '/client/contracts'} className="glass rounded-lg p-4 text-center hover:border-primary/50 transition">
+              <FileText className="w-6 h-6 text-primary mx-auto mb-2" />
+              <span className="text-xs font-semibold">Contracts</span>
+            </button>
+            <button onClick={() => window.location.href = '/client/uploads'} className="glass rounded-lg p-4 text-center hover:border-primary/50 transition">
+              <Files className="w-6 h-6 text-primary mx-auto mb-2" />
+              <span className="text-xs font-semibold">Uploads</span>
+            </button>
+            <button onClick={() => window.location.href = '/client/reports'} className="glass rounded-lg p-4 text-center hover:border-primary/50 transition">
+              <BarChart3 className="w-6 h-6 text-primary mx-auto mb-2" />
+              <span className="text-xs font-semibold">Reports</span>
+            </button>
+            <button onClick={() => window.location.href = '/client/onboarding-form'} className="glass rounded-lg p-4 text-center hover:border-primary/50 transition">
+              <Calendar className="w-6 h-6 text-primary mx-auto mb-2" />
+              <span className="text-xs font-semibold">Onboarding</span>
+            </button>
+            <button onClick={() => window.location.href = '/client/subscription'} className="glass rounded-lg p-4 text-center hover:border-primary/50 transition">
+              <Settings className="w-6 h-6 text-primary mx-auto mb-2" />
+              <span className="text-xs font-semibold">Billing</span>
+            </button>
+            <button onClick={() => window.location.href = '/client/orders'} className="glass rounded-lg p-4 text-center hover:border-primary/50 transition">
+              <ShoppingCart className="w-6 h-6 text-primary mx-auto mb-2" />
+              <span className="text-xs font-semibold">Orders</span>
+            </button>
+          </div>
+        </section>
+
+        {/* SECTION 8 — SALES FLOOR */}
         {/* Section A — Upgrade Package (if not on Dominate or no package) */}
         {(client.package !== "dominate" && upgradeProducts.length > 0) && (
           <section className="space-y-4">

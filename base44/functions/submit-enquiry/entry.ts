@@ -57,19 +57,24 @@ Deno.serve(async (req) => {
   }
 
   // Validate session token
-  const users = await base44.asServiceRole.entities.User.filter({ session_token });
+  const users = await base44.asServiceRole.entities.AppUser.filter({ session_token });
   const user = users?.[0];
   if (!user || !user.session_expires_at || new Date(user.session_expires_at) < new Date()) {
     console.error('[submit-enquiry] Invalid or expired session');
     return Response.json({ error: 'Invalid session' }, { status: 401 });
   }
 
+  console.log('[submit-enquiry] Token valid, user:', user.id, user.email);
+
   // Get client record
-  const clients = await base44.asServiceRole.entities.Client.filter({ client_user_id: user.id });
+  const clients = await base44.asServiceRole.entities.Client.filter({ email: user.email });
   const client = clients?.[0];
   if (!client) {
+    console.error('[submit-enquiry] No client found for email:', user.email);
     return Response.json({ error: 'No client account found' }, { status: 404 });
   }
+
+  console.log('[submit-enquiry] Client found:', client.id, client.business_name);
 
   // Look up product
   const product = PRODUCT_CATALOG.find(p => p.id === product_id);
