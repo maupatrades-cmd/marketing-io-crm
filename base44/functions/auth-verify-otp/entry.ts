@@ -18,13 +18,26 @@ Deno.serve(async (req) => {
   const user = users[0];
 
   // Validate OTP stored on user record
-  const otpValid =
-    user.pending_otp_code === code &&
-    user.pending_otp_purpose === purpose &&
-    user.pending_otp_expires_at &&
-    new Date(user.pending_otp_expires_at) > now;
+  const codeMatches = user.pending_otp_code === code;
+  const purposeMatches = user.pending_otp_purpose === purpose;
+  const notExpired = user.pending_otp_expires_at && new Date(user.pending_otp_expires_at) > now;
+
+  console.log('[auth-verify-otp] Verification attempt:', {
+    email: normalizedEmail,
+    submittedCode: code,
+    storedCode: user.pending_otp_code,
+    codeMatches,
+    purposeMatches,
+    expiresAt: user.pending_otp_expires_at,
+    now: now.toISOString(),
+    notExpired
+  });
+
+  const otpValid = codeMatches && purposeMatches && notExpired;
 
   if (!otpValid) {
+    const reason = !codeMatches ? 'code mismatch' : !purposeMatches ? 'purpose mismatch' : 'expired';
+    console.log('[auth-verify-otp] Verification failed:', reason);
     return Response.json({ error: 'Code expired or invalid' }, { status: 401 });
   }
 
