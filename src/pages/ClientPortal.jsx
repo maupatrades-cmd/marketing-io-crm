@@ -12,6 +12,8 @@ import {
   ArrowRight, Star, ShieldCheck, Activity
 } from "lucide-react";
 import { destroySession, getCurrentUser } from "@/lib/customAuth";
+import NotificationCenter from "@/components/client/NotificationCenter";
+import NotificationBadge from "@/components/client/NotificationBadge";
 
 const PACKAGE_LABELS = {
   ignite: "Ignite",
@@ -182,33 +184,8 @@ export default function ClientPortal() {
               <p className="text-sm font-semibold text-foreground">{client.business_name}</p>
               <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString("en-ZA")}</p>
             </div>
-            {/* Notification Bell */}
-            <div className="relative">
-              <button onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 hover:bg-secondary/40 rounded-lg transition-colors">
-                <Bell className="w-5 h-5 text-foreground" />
-                {unreadCount > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />}
-              </button>
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-card border border-border/40 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
-                  <div className="p-3 border-b border-border/40">
-                    <p className="text-sm font-semibold">Notifications</p>
-                  </div>
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
-                  ) : (
-                    <div className="divide-y divide-border/40">
-                      {notifications.slice(0, 10).map(n => (
-                        <div key={n.id} className={`p-3 border-l-4 ${!n.is_read ? "border-l-primary bg-primary/5" : "border-l-transparent"}`}>
-                          <p className="text-sm font-semibold text-foreground">{n.title}</p>
-                          <p className="text-xs text-muted-foreground">{n.body}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* Notification Center */}
+            {client && <NotificationCenter clientId={client.id} />}
             <button onClick={logout}
               className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
               <LogOut className="w-4 h-4" />
@@ -220,6 +197,9 @@ export default function ClientPortal() {
       <div className="max-w-7xl mx-auto p-4 lg:p-6 flex gap-6">
         {/* ── Main ── */}
         <div className="flex-1 min-w-0 space-y-5">
+
+          {/* Notification Badge */}
+          {client && <NotificationBadge clientId={client.id} />}
 
           {/* Welcome Banner */}
           <div className="glass rounded-2xl p-6 gradient-bg-subtle">
