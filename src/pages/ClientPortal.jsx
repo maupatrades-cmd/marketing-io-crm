@@ -224,7 +224,8 @@ export default function ClientPortal() {
   const physicalProducts = getProductsByType("physical");
 
   const onboardingPhases = ['Contract Signed', 'Welcome & Invoicing', 'Pre-Onboarding', 'Onboarding Call', 'Asset Collection', 'Delivery Started'];
-  const phaseIndex = onboarding ? onboardingPhases.indexOf(onboarding.current_phase) : -1;
+  const PHASE_MAP = { phase1_contract_signed: 0, phase2_welcome_invoicing: 1, phase3_pre_onboarding: 2, phase4_onboarding_call: 3, phase5_asset_collection: 4, phase6_delivery_start: 5 };
+  const phaseIndex = onboarding ? (PHASE_MAP[onboarding.current_phase] ?? -1) : -1;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-foreground">
