@@ -114,12 +114,22 @@ export default function ClientPortal() {
               </Badge>
             </h1>
           </div>
-          <button
-            onClick={logout}
-            className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.location.href = '/client/subscription'}
+              className="text-xs"
+            >
+              💳 Billing
+            </Button>
+            <button
+              onClick={logout}
+              className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -69,6 +69,8 @@ import ClientOrderAddOns from './pages/ClientOrderAddOns';
 import ClientOrderDomain from './pages/ClientOrderDomain';
 import ClientOrderEmail from './pages/ClientOrderEmail';
 import ClientOrders from './pages/ClientOrders';
+import ClientSubscription from './pages/ClientSubscription';
+import ClientBillingUpdate from './pages/ClientBillingUpdate';
 import AdminServiceOrders from './pages/AdminServiceOrders';
 import StaffProductivity from './pages/StaffProductivity';
 import DeliverableQuality from './pages/DeliverableQuality';
@@ -181,6 +183,8 @@ const AuthenticatedApp = () => {
       <Route path="/client/order-domain" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderDomain /></RouteGuard>} />
       <Route path="/client/order-email" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderEmail /></RouteGuard>} />
       <Route path="/client/orders" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrders /></RouteGuard>} />
+      <Route path="/client/subscription" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientSubscription /></RouteGuard>} />
+      <Route path="/client/billing-update" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientBillingUpdate /></RouteGuard>} />
       
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
