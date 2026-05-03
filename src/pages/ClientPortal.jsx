@@ -10,6 +10,8 @@ import ProductCard from "@/components/clientportal/ProductCard";
 import EnquiryModal from "@/components/clientportal/EnquiryModal";
 import DeliverableTimeline from "@/components/clientportal/DeliverableTimeline";
 import RequestUpdateModal from "@/components/clientportal/RequestUpdateModal";
+import SplashScreen from "@/components/clientportal/SplashScreen";
+import HeroSection from "@/components/clientportal/HeroSection";
 import { PRODUCT_CATALOG, getProductsByType, getProductById } from "@/data/ProductCatalog";
 
 const PACKAGE_LABELS = {
@@ -37,6 +39,9 @@ export default function ClientPortal() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDeliverable, setSelectedDeliverable] = useState(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [splashDismissed, setSplashDismissed] = useState(false);
+  const [heroImageUrl, setHeroImageUrl] = useState(null);
+  const [loadingHeroImage, setLoadingHeroImage] = useState(false);
 
   const unsubscribesRef = useRef([]);
 
@@ -105,6 +110,22 @@ export default function ClientPortal() {
       if (c) {
         setClient(c);
         await refreshData(c);
+
+        // Generate hero image
+        setLoadingHeroImage(true);
+        try {
+          const res = await base44.functions.invoke('generate-hero-image', {
+            business_name: c.business_name,
+            industry: c.industry,
+            package: c.package
+          });
+          if (res.data?.url) {
+            setHeroImageUrl(res.data.url);
+          }
+        } catch (err) {
+          console.error('Failed to generate hero image:', err);
+        }
+        setLoadingHeroImage(false);
 
         // Subscribe to real-time updates
         try {
@@ -206,6 +227,14 @@ export default function ClientPortal() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-foreground">
+      {/* Splash Screen */}
+      {!splashDismissed && (
+        <SplashScreen 
+          client={client}
+          onDismiss={() => setSplashDismissed(true)}
+        />
+      )}
+
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 border-b border-slate-700/40 backdrop-blur-md bg-slate-950/80">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -238,6 +267,15 @@ export default function ClientPortal() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-12 space-y-16">
+        {/* HERO SECTION — Client Branding + AI Generated Image */}
+        {splashDismissed && (
+          <HeroSection 
+            client={client}
+            heroImageUrl={heroImageUrl}
+            isLoadingImage={loadingHeroImage}
+          />
+        )}
+
         {/* SECTION 2 — ACTION REQUIRED */}
         {pendingDeliverables.length > 0 && (
           <section className="space-y-4">
