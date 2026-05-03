@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { getCurrentUser } from "@/lib/customAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Trash2, Download, Image, FileText, FolderOpen, CheckCircle2, AlertCircle, Loader2, File } from "lucide-react";
@@ -43,7 +44,8 @@ export default function ClientUploads() {
   const inputRef = useRef();
 
   useEffect(() => {
-    base44.auth.me().then(async (me) => {
+    getCurrentUser().then(async (me) => {
+      if (!me) { setLoading(false); window.location.href = '/login'; return; }
       const clients = await base44.entities.Client.filter({ email: me.email });
       if (clients.length > 0) {
         const c = clients[0];

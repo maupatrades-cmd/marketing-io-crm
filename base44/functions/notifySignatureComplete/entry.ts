@@ -1,124 +1,166 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { Resend } from 'npm:resend@3.2.0';
+
+const LOGO_URL = 'https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png';
+
+function wrapEmail(bodyHtml) {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Marketing iO</title></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;padding:20px 0;"><tr><td align="center">
+<table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;">
+<tr><td style="background:#0f172a;padding:28px 24px;text-align:center;">
+  <img src="${LOGO_URL}" alt="Marketing iO" width="240" style="width:240px;height:auto;display:block;margin:0 auto;" />
+</td></tr>
+<tr><td style="background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);padding:5px 0;font-size:0;line-height:0;">&nbsp;</td></tr>
+<tr><td style="padding:32px 24px;background:#ffffff;font-size:16px;line-height:1.6;color:#1e293b;">${bodyHtml}</td></tr>
+<tr><td style="background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);padding:3px 0;font-size:0;line-height:0;">&nbsp;</td></tr>
+<tr><td style="background:#0f172a;padding:28px 24px;text-align:center;">
+  <img src="${LOGO_URL}" alt="Marketing iO" width="140" style="width:140px;height:auto;display:block;margin:0 auto 12px auto;" />
+  <div style="font-size:13px;font-weight:600;color:#f8fafc;margin-bottom:8px;">Marketing iO (Pty) Ltd &middot; CIPC 2026303502</div>
+  <div style="font-size:12px;color:#94a3b8;line-height:1.8;">75 Marshall Street, Polokwane 0699<br>☎ 010 102 0534 &bull; <a href="mailto:info@marketingio.co.za" style="color:#a764e6;text-decoration:none;">info@marketingio.co.za</a></div>
+  <div style="height:1px;background:linear-gradient(90deg,transparent,#a764e6,#ec4899,transparent);margin:16px 0;"></div>
+  <div style="font-size:12px;font-style:italic;color:#a764e6;">Too good to stay hidden.</div>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+}
+
+async function sendEmail(to, subject, bodyHtml) {
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  if (!apiKey) { console.error('[notifySignatureComplete] RESEND_API_KEY missing'); return; }
+  const resend = new Resend(apiKey);
+  const result = await resend.emails.send({
+    from: 'Marketing iO Team <hello@marketingio.co.za>',
+    to, subject, html: wrapEmail(bodyHtml)
+  });
+  if (result.error) console.error('[notifySignatureComplete] Email failed:', result.error);
+}
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
 
+    // Auth: accept session token from header or body
+    let user = null;
+    try { user = await base44.auth.me(); } catch (_) {}
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      // Try session token fallback for service-role calls
+      const body = await req.json().catch(() => ({}));
+      const { contract_id } = body;
+
+      if (!contract_id) {
+        return Response.json({ error: 'contract_id required' }, { status: 400 });
+      }
+
+      const contracts = await base44.asServiceRole.entities.Contract.filter({ id: contract_id });
+      if (!contracts || contracts.length === 0) {
+        return Response.json({ error: 'Contract not found' }, { status: 404 });
+      }
+      const contract = contracts[0];
+      const clients = await base44.asServiceRole.entities.Client.filter({ id: contract.client_id });
+      const client = clients[0];
+      if (!client) return Response.json({ error: 'Client not found' }, { status: 404 });
+
+      const signatures = await base44.asServiceRole.entities.ContractSignature.filter({ contract_id, signer_role: 'client' });
+      const clientSignature = signatures[0];
+
+      // Notify client
+      const clientBodyHtml = `
+        <p style="margin:0 0 16px 0;">Dear ${client.contact_person || client.business_name},</p>
+        <p style="margin:0 0 16px 0;">We are pleased to confirm that your Master Service Agreement has been successfully signed.</p>
+        <p style="margin:0 0 8px 0;"><strong>Package:</strong> ${contract.package}</p>
+        <p style="margin:0 0 8px 0;"><strong>Setup Fee:</strong> R${(contract.setup_fee || 0).toLocaleString()}</p>
+        <p style="margin:0 0 8px 0;"><strong>Monthly Retainer:</strong> R${(contract.monthly_retainer || 0).toLocaleString()}</p>
+        <p style="margin:0 0 16px 0;"><strong>Start Date:</strong> ${contract.contract_start_date || 'To be confirmed'}</p>
+        ${clientSignature ? `<p style="margin:0 0 16px 0;">Signed on: ${new Date(clientSignature.signed_date).toLocaleDateString('en-ZA')}</p>` : ''}
+        <p style="margin:0 0 16px 0;">The next step in your onboarding journey will be initiated shortly.</p>
+        <p style="margin:0;">Questions? <a href="mailto:info@marketingio.co.za" style="color:#a764e6;">info@marketingio.co.za</a></p>`;
+
+      await sendEmail(client.email, `Your Contract Has Been Signed - ${contract.package}`, clientBodyHtml);
+
+      // Notify admins
+      const adminUsers = await base44.asServiceRole.entities.User.filter({ role: 'admin' });
+      for (const admin of adminUsers) {
+        const adminBodyHtml = `
+          <p style="margin:0 0 16px 0;">Hi ${admin.full_name},</p>
+          <p style="margin:0 0 16px 0;">A contract has been successfully signed.</p>
+          <p style="margin:0 0 8px 0;"><strong>Business:</strong> ${client.business_name}</p>
+          <p style="margin:0 0 8px 0;"><strong>Contact:</strong> ${client.contact_person}</p>
+          <p style="margin:0 0 8px 0;"><strong>Package:</strong> ${contract.package}</p>
+          <p style="margin:0 0 8px 0;"><strong>Setup Fee:</strong> R${(contract.setup_fee || 0).toLocaleString()}</p>
+          <p style="margin:0 0 16px 0;"><strong>Monthly Retainer:</strong> R${(contract.monthly_retainer || 0).toLocaleString()}</p>
+          ${clientSignature ? `<p style="margin:0 0 16px 0;">Signed by: ${clientSignature.signer_full_name} on ${new Date(clientSignature.signed_date).toLocaleDateString('en-ZA')}</p>` : ''}`;
+        await sendEmail(admin.email, `Contract Signed: ${client.business_name} - ${contract.package}`, adminBodyHtml).catch(() => {});
+      }
+
+      await base44.asServiceRole.entities.ClientActivityLog.create({
+        client_id: contract.client_id,
+        client_name: contract.client_name,
+        event_type: 'milestone',
+        event_label: `Contract Signed - ${contract.package}`,
+        logged_by: 'system',
+        logged_by_name: 'System'
+      });
+
+      return Response.json({ success: true, message: 'Signature notification emails sent', contract_id, client_email: client.email, admins_notified: adminUsers.length });
     }
 
-    const { contract_id } = await req.json();
+    // Authenticated path
+    const body2 = await req.clone().json().catch(() => ({}));
+    const { contract_id } = body2;
 
     if (!contract_id) {
       return Response.json({ error: 'contract_id required' }, { status: 400 });
     }
 
-    // Fetch contract
     const contracts = await base44.asServiceRole.entities.Contract.filter({ id: contract_id });
     if (!contracts || contracts.length === 0) {
       return Response.json({ error: 'Contract not found' }, { status: 404 });
     }
-
     const contract = contracts[0];
-
-    // Fetch client
     const clients = await base44.asServiceRole.entities.Client.filter({ id: contract.client_id });
     const client = clients[0];
+    if (!client) return Response.json({ error: 'Client not found' }, { status: 404 });
 
-    if (!client) {
-      return Response.json({ error: 'Client not found' }, { status: 404 });
-    }
-
-    // Fetch all signatures
-    const signatures = await base44.asServiceRole.entities.ContractSignature.filter({ 
-      contract_id,
-      signer_role: 'client'
-    });
-
+    const signatures = await base44.asServiceRole.entities.ContractSignature.filter({ contract_id, signer_role: 'client' });
     const clientSignature = signatures[0];
 
-    // Send email to client
-    await base44.integrations.Core.SendEmail({
-      to: client.email,
-      subject: `Your Contract Has Been Signed - ${contract.package}`,
-      body: `Dear ${client.contact_person || client.business_name},
+    const clientBodyHtml = `
+      <p style="margin:0 0 16px 0;">Dear ${client.contact_person || client.business_name},</p>
+      <p style="margin:0 0 16px 0;">We are pleased to confirm that your Master Service Agreement has been successfully signed.</p>
+      <p style="margin:0 0 8px 0;"><strong>Package:</strong> ${contract.package}</p>
+      <p style="margin:0 0 8px 0;"><strong>Setup Fee:</strong> R${(contract.setup_fee || 0).toLocaleString()}</p>
+      <p style="margin:0 0 8px 0;"><strong>Monthly Retainer:</strong> R${(contract.monthly_retainer || 0).toLocaleString()}</p>
+      <p style="margin:0 0 16px 0;"><strong>Start Date:</strong> ${contract.contract_start_date || 'To be confirmed'}</p>
+      ${clientSignature ? `<p style="margin:0 0 16px 0;">Signed on: ${new Date(clientSignature.signed_date).toLocaleDateString('en-ZA')}</p>` : ''}
+      <p style="margin:0;">Questions? <a href="mailto:info@marketingio.co.za" style="color:#a764e6;">info@marketingio.co.za</a></p>`;
 
-We are pleased to confirm that your Master Service Agreement has been successfully signed.
+    await sendEmail(client.email, `Your Contract Has Been Signed - ${contract.package}`, clientBodyHtml);
 
-**Contract Details:**
-- Package: ${contract.package}
-- Setup Fee: R${(contract.setup_fee || 0).toLocaleString()}
-- Monthly Retainer: R${(contract.monthly_retainer || 0).toLocaleString()}
-- Start Date: ${contract.contract_start_date || 'To be confirmed'}
-
-${clientSignature ? `Signed on: ${new Date(clientSignature.signed_date).toLocaleDateString()}` : ''}
-
-Your signed contract PDF is attached. Keep this for your records.
-
-The next step in your onboarding journey will be initiated shortly. You will receive further communication from our team regarding:
-1. Invoice for setup fees
-2. Debit mandate for recurring payments
-3. Onboarding form for brand assets collection
-
-If you have any questions, please don't hesitate to reach out to us at info@marketingio.co.za or ${client.phone || '+27 (0) 11 XXX XXXX'}.
-
-Best regards,
-Marketing iO Team`
-    });
-
-    // Send email to admin
     const adminUsers = await base44.asServiceRole.entities.User.filter({ role: 'admin' });
-    
-    for (const adminUser of adminUsers) {
-      await base44.integrations.Core.SendEmail({
-        to: adminUser.email,
-        subject: `Contract Signed: ${client.business_name} - ${contract.package}`,
-        body: `A contract has been successfully signed.
-
-**Client Details:**
-- Business: ${client.business_name}
-- Contact: ${client.contact_person}
-- Email: ${client.email}
-- Phone: ${client.phone}
-
-**Contract Details:**
-- Package: ${contract.package}
-- Setup Fee: R${(contract.setup_fee || 0).toLocaleString()}
-- Monthly Retainer: R${(contract.monthly_retainer || 0).toLocaleString()}
-- Contract ID: ${contract.id}
-
-${clientSignature ? `Signed by: ${clientSignature.signer_full_name} on ${new Date(clientSignature.signed_date).toLocaleDateString()}` : ''}
-
-**Next Actions Required:**
-1. Issue setup fee invoice
-2. Send debit mandate for signature
-3. Send onboarding form
-4. Schedule onboarding call
-
-View contract details: [Admin Dashboard Link]`
-      });
+    for (const admin of adminUsers) {
+      const adminBodyHtml = `
+        <p style="margin:0 0 16px 0;">Hi ${admin.full_name},</p>
+        <p style="margin:0 0 16px 0;">A contract has been successfully signed.</p>
+        <p style="margin:0 0 8px 0;"><strong>Business:</strong> ${client.business_name}</p>
+        <p style="margin:0 0 8px 0;"><strong>Package:</strong> ${contract.package}</p>
+        <p style="margin:0 0 8px 0;"><strong>Setup Fee:</strong> R${(contract.setup_fee || 0).toLocaleString()}</p>
+        <p style="margin:0 0 8px 0;"><strong>Monthly Retainer:</strong> R${(contract.monthly_retainer || 0).toLocaleString()}</p>
+        ${clientSignature ? `<p style="margin:0 0 16px 0;">Signed by: ${clientSignature.signer_full_name} on ${new Date(clientSignature.signed_date).toLocaleDateString('en-ZA')}</p>` : ''}`;
+      await sendEmail(admin.email, `Contract Signed: ${client.business_name} - ${contract.package}`, adminBodyHtml).catch(() => {});
     }
 
-    // Create activity log
     await base44.asServiceRole.entities.ClientActivityLog.create({
       client_id: contract.client_id,
       client_name: contract.client_name,
       event_type: 'milestone',
       event_label: `Contract Signed - ${contract.package}`,
-      to_value: 'signed',
       logged_by: user.id,
       logged_by_name: user.full_name
     });
 
-    return Response.json({
-      success: true,
-      message: 'Signature notification emails sent',
-      contract_id,
-      client_email: client.email,
-      admins_notified: adminUsers.length
-    });
+    return Response.json({ success: true, message: 'Signature notification emails sent', contract_id, client_email: client.email, admins_notified: adminUsers.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

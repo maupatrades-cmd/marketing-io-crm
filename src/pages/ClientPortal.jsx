@@ -11,7 +11,7 @@ import {
   Bell, LogOut, MessageSquare, Phone, Mail, Users,
   ArrowRight, Star, ShieldCheck, Activity
 } from "lucide-react";
-import { destroySession } from "@/lib/customAuth";
+import { destroySession, getCurrentUser } from "@/lib/customAuth";
 
 const PACKAGE_LABELS = {
   ignite: "Ignite",
@@ -78,7 +78,7 @@ export default function ClientPortal() {
 
   useEffect(() => {
     const load = async () => {
-      const me = user || await base44.auth.me();
+      const me = user || await getCurrentUser();
       if (!me) { setLoading(false); return; }
       const clients = await base44.entities.Client.filter({ email: me.email });
       const c = Array.isArray(clients) ? clients[0] : clients;
@@ -172,9 +172,8 @@ export default function ClientPortal() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
-              src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
+              src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
               alt="Marketing iO" className="h-8 object-contain"
-              style={{ filter: "invert(1) brightness(2)" }}
             />
             <span className="text-xs text-muted-foreground border-l border-border/40 pl-3">Client Portal</span>
           </div>
