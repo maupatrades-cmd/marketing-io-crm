@@ -44,11 +44,13 @@ export default function Register() {
       const data = res.data;
       navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=signup_verification`);
     } catch (err) {
+      console.error('[Register] Signup failed:', err?.response?.data || err);
       const status = err?.response?.status;
+      const detail = err?.response?.data?.error;
       if (status === 409) {
         setError('An account with this email already exists. Please sign in.');
       } else {
-        setError('Something went wrong creating your account. Please try again.');
+        setError(`Signup failed${detail ? ': ' + detail : '. Please try again.'}`);
       }
     } finally {
       setLoading(false);

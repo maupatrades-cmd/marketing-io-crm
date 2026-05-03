@@ -54,29 +54,54 @@ async function sendSignupOtp(to, fullName, otp) {
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const { fullName, email, phone, businessName, password } = await req.json();
 
+  // Step 1: Parse request
+  console.log('[auth-register] Step: parsing request body');
+  let fullName, email, phone, businessName, password;
+  try {
+    ({ fullName, email, phone, businessName, password } = await req.json());
+  } catch (err) {
+    console.error('[auth-register] request_parse_failed:', err.message);
+    return Response.json({ error: 'request_parse_failed', detail: err.message }, { status: 500 });
+  }
+
+  // Step 2: Validate input
+  console.log('[auth-register] Step: validating input');
   if (!fullName || !email || !password || !businessName) {
     return Response.json({ error: 'All required fields must be provided.' }, { status: 400 });
   }
-
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.json({ error: 'Invalid email format.' }, { status: 400 });
   }
-
   const normalizedEmail = email.toLowerCase().trim();
 
-  const existing = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+  // Step 3: Check existing user
+  console.log('[auth-register] Step: checking existing user for', normalizedEmail);
+  let existing;
+  try {
+    existing = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+  } catch (err) {
+    console.error('[auth-register] user_lookup_failed:', err.message);
+    return Response.json({ error: 'user_lookup_failed', detail: err.message }, { status: 500 });
+  }
   if (existing && existing.length > 0) {
     return Response.json({ error: 'Account already exists' }, { status: 409 });
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  // Step 4: Hash password
+  console.log('[auth-register] Step: hashing password');
+  let passwordHash;
+  try {
+    passwordHash = await bcrypt.hash(password, 10);
+  } catch (err) {
+    console.error('[auth-register] password_hash_failed:', err.message);
+    return Response.json({ error: 'password_hash_failed', detail: err.message }, { status: 500 });
+  }
 
-  let createdUserId = null;
-  let createdClientId = null;
-
-  const newUser = await base44.asServiceRole.entities.User.create({
+  // Step 5: Create user record
+  console.log('[auth-register] Step: creating user record');
+  let newUser;
+  const userPayload = {
     email: normalizedEmail,
     full_name: fullName.trim(),
     phone: phone?.trim() || '',
@@ -85,9 +110,23 @@ Deno.serve(async (req) => {
     pending_verification: true,
     email_verified: false,
     failed_login_count: 0
-  });
-  createdUserId = newUser.id;
+  };
+  try {
+    newUser = await base44.asServiceRole.entities.User.create(userPayload);
+  } catch (err) {
+    console.error('[auth-register] user_create_failed:', err.message);
+    return Response.json({
+      error: 'user_create_failed',
+      detail: err.message,
+      payload: { email: normalizedEmail, full_name: fullName.trim(), role: 'client' }
+    }, { status: 500 });
+  }
+  const createdUserId = newUser.id;
+  console.log('[auth-register] User created, id:', createdUserId);
 
+  // Step 6: Create client record
+  console.log('[auth-register] Step: creating client record');
+  let createdClientId = null;
   try {
     const newClient = await base44.asServiceRole.entities.Client.create({
       business_name: businessName.trim(),
@@ -99,16 +138,17 @@ Deno.serve(async (req) => {
       portal_invitation_sent_at: new Date().toISOString()
     });
     createdClientId = newClient.id;
-  } catch (clientErr) {
-    await base44.asServiceRole.entities.User.delete(createdUserId);
-    console.error('Client creation failed, rolled back user:', clientErr);
-    return Response.json({ error: 'Failed to create account. Please try again.' }, { status: 500 });
+    console.log('[auth-register] Client created, id:', createdClientId);
+  } catch (err) {
+    console.error('[auth-register] client_create_failed — rolling back user:', err.message);
+    try { await base44.asServiceRole.entities.User.delete(createdUserId); } catch (_) {}
+    return Response.json({ error: 'client_create_failed', detail: err.message }, { status: 500 });
   }
 
-  // Generate OTP
+  // Step 7: Create OTP record
+  console.log('[auth-register] Step: creating OTP record');
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-
   try {
     await base44.asServiceRole.entities.OTPCode.create({
       email: normalizedEmail,
@@ -119,18 +159,23 @@ Deno.serve(async (req) => {
       generated_at: new Date().toISOString(),
       user_id: newUser.id
     });
-  } catch (otpErr) {
+    console.log('[auth-register] OTP record created');
+  } catch (err) {
+    console.error('[auth-register] otp_create_failed — rolling back:', err.message);
     if (createdClientId) { try { await base44.asServiceRole.entities.Client.delete(createdClientId); } catch (_) {} }
-    await base44.asServiceRole.entities.User.delete(createdUserId);
-    return Response.json({ error: 'Failed to create account. Please try again.' }, { status: 500 });
+    try { await base44.asServiceRole.entities.User.delete(createdUserId); } catch (_) {}
+    return Response.json({ error: 'otp_create_failed', detail: err.message }, { status: 500 });
   }
 
+  // Step 8: Send OTP email (non-fatal)
+  console.log('[auth-register] Step: sending OTP email');
   try {
     await sendSignupOtp(normalizedEmail, fullName.trim(), otp);
+    console.log('[auth-register] OTP email dispatched');
   } catch (emailErr) {
-    console.error('[auth-register] OTP email send failed (non-fatal):', emailErr);
-    // Account is created. User can use "Resend code" on /verify-otp page.
+    console.error('[auth-register] OTP email send failed (non-fatal):', emailErr.message);
   }
 
+  console.log('[auth-register] Step: complete — user_id:', newUser.id);
   return Response.json({ user_id: newUser.id, email: normalizedEmail }, { status: 200 });
 });
