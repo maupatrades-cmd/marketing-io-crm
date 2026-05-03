@@ -1,0 +1,66 @@
+{
+  "name": "EnquiryEvent",
+  "type": "object",
+  "properties": {
+    "client_user_id": {
+      "type": "string",
+      "description": "User ID who clicked enquire"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "Client record ID"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "Product slug from ProductCatalog"
+    },
+    "product_name": {
+      "type": "string",
+      "description": "Snapshot of product name at time of enquiry"
+    },
+    "product_type": {
+      "type": "string",
+      "enum": [
+        "package",
+        "addon",
+        "physical"
+      ]
+    },
+    "client_message": {
+      "type": "string",
+      "description": "Optional context client provided"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "contacted",
+        "quoted",
+        "won",
+        "lost"
+      ],
+      "default": "new"
+    },
+    "deal_id": {
+      "type": "string",
+      "description": "Linked Deal record once converted"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "User ID of staff who picks it up"
+    },
+    "contacted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "closed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "client_user_id",
+    "product_id",
+    "product_name"
+  ]
+}
