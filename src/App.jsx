@@ -4,7 +4,6 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import { appParams } from '@/lib/app-params';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
 import DesignPreview from './pages/DesignPreview';
@@ -48,6 +47,9 @@ import StaffMyClients from './pages/StaffMyClients';
 import StaffVerifyLeads from './pages/StaffVerifyLeads';
 import StaffCommunications from './pages/StaffCommunications';
 import RouteGuard from './components/RouteGuard';
+import SignIn from './pages/SignIn';
+import Register from './pages/Register';
+import VerifyOTP from './pages/VerifyOTP';
 import ClientOnboardingFormFull from './pages/ClientOnboardingFormFull';
 import ClientInvoices from './pages/ClientInvoices';
 import ClientDeliverables from './pages/ClientDeliverables';
@@ -68,43 +70,7 @@ import AdminServiceOrders from './pages/AdminServiceOrders';
 import StaffProductivity from './pages/StaffProductivity';
 import DeliverableQuality from './pages/DeliverableQuality';
 
-const AuthRedirect = () => {
-  const { navigateToLogin } = useAuth();
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-slate-900 text-white p-6">
-      <div className="max-w-md w-full text-center space-y-6">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-          Marketing iO
-        </h1>
-        <p className="text-lg text-slate-200">Sign in to continue to your CRM</p>
-
-        <button
-          onClick={() => navigateToLogin()}
-          className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg font-semibold hover:opacity-90 transition"
-        >
-          Sign In
-        </button>
-
-        <details className="text-sm text-slate-400 mt-8">
-          <summary className="cursor-pointer hover:text-slate-200">Having trouble signing in?</summary>
-          <div className="mt-3 space-y-2 text-left bg-slate-800 p-4 rounded-lg">
-            <p>If the Sign In button keeps looping, sign in directly through Base44:</p>
-            <a
-              href={`https://app.base44.com/login?app_id=${appParams.appId || ''}`}
-              className="block px-4 py-2 bg-slate-700 rounded text-center hover:bg-slate-600"
-            >
-              Sign in via app.base44.com
-            </a>
-            <p className="text-xs text-slate-500 pt-2">
-              For support: support@marketingio.co.za
-            </p>
-          </div>
-        </details>
-      </div>
-    </div>
-  );
-};
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -123,18 +89,15 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
+      return <Navigate to="/login" replace />;
     }
   }
 
   // Smart landing redirect based on role
   const LandingRedirect = () => {
-    if (!user) return <AuthRedirect />;
+    if (!user) return <Navigate to="/login" replace />;
     if (user.role === "owner") return <Navigate to="/" replace />;
     if (user.role === "client") return <Navigate to="/client-portal" replace />;
-    // All staff roles land on /staff
     return <Navigate to="/staff" replace />;
   };
 
@@ -210,13 +173,15 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
-      {/* Auth route aliases */}
-      <Route path="/sign-in" element={<AuthRedirect />} />
-      <Route path="/signin" element={<AuthRedirect />} />
-      <Route path="/login" element={<AuthRedirect />} />
-      <Route path="/sign-up" element={<AuthRedirect />} />
-      <Route path="/signup" element={<AuthRedirect />} />
-      <Route path="/Login" element={<AuthRedirect />} />
+      {/* Auth routes */}
+      <Route path="/login" element={<SignIn />} />
+      <Route path="/sign-in" element={<Navigate to="/login" replace />} />
+      <Route path="/signin" element={<Navigate to="/login" replace />} />
+      <Route path="/Login" element={<Navigate to="/login" replace />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/signup" element={<Navigate to="/register" replace />} />
+      <Route path="/sign-up" element={<Navigate to="/register" replace />} />
+      <Route path="/verify-otp" element={<VerifyOTP />} />
       <Route path="/forgot" element={<Navigate to="/forgot-password" replace />} />
       <Route path="/reset" element={<Navigate to="/forgot-password" replace />} />
 

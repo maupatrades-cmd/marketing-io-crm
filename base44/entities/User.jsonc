@@ -10,72 +10,52 @@
         "field_agent",
         "cpc",
         "head_of_tech",
+        "driver",
         "client"
       ],
       "default": "client"
     },
+    "phone": {
+      "type": "string",
+      "description": "Mobile / WhatsApp number"
+    },
+    "password_hash": {
+      "type": "string",
+      "description": "bcrypt hash of user password"
+    },
+    "session_token": {
+      "type": "string",
+      "description": "Active session UUID"
+    },
+    "session_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the session token expires"
+    },
     "email_verified": {
       "type": "boolean",
       "default": false,
-      "description": "True after email verification via signup OTP"
+      "description": "True once email OTP verified"
     },
-    "email_verified_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when email was verified"
-    },
-    "failed_login_count": {
-      "type": "number",
-      "default": 0,
-      "description": "Number of failed login attempts, resets to 0 on successful login"
-    },
-    "account_locked": {
+    "pending_verification": {
       "type": "boolean",
-      "default": false,
-      "description": "True if account is currently locked"
-    },
-    "account_locked_until": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When account lockout expires"
-    },
-    "account_locked_reason": {
-      "type": "string",
-      "enum": [
-        "failed_logins",
-        "suspicious_activity",
-        "manually_locked_by_owner",
-        "security_event"
-      ],
-      "description": "Reason for account lockout"
+      "default": true,
+      "description": "True on signup, false after OTP verified"
     },
     "last_login_at": {
       "type": "string",
       "format": "date-time",
       "description": "Timestamp of last successful login"
     },
-    "last_login_ip": {
-      "type": "string",
-      "description": "IP address of last login"
+    "failed_login_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Consecutive failed login attempts"
     },
-    "last_login_country": {
-      "type": "string",
-      "description": "Country derived from last login IP"
-    },
-    "mfa_enabled": {
-      "type": "boolean",
-      "default": true,
-      "description": "MFA (email OTP) required for every login"
-    },
-    "password_last_changed_at": {
+    "lockout_until": {
       "type": "string",
       "format": "date-time",
-      "description": "Timestamp when password was last changed"
-    },
-    "force_password_reset_required": {
-      "type": "boolean",
-      "default": false,
-      "description": "Owner can force password reset on next login"
+      "description": "Account locked until this time"
     }
   }
 }
