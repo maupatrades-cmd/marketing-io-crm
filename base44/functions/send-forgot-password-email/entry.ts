@@ -36,14 +36,24 @@ Deno.serve(async (req) => {
 
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Always return 200 — don't reveal if user exists
+  // Always return 200 — don't reveal if user exists.
+  // Look up in AppUser (client portal accounts) first, then fall back to User (staff/CRM directory).
   let user;
+  let userEntity;
   try {
-    const users = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
-    user = users?.[0];
+    const appUsers = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
+    if (appUsers?.[0]) {
+      user = appUsers[0];
+      userEntity = 'AppUser';
+    } else {
+      const legacyUsers = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+      if (legacyUsers?.[0]) {
+        user = legacyUsers[0];
+        userEntity = 'User';
+      }
+    }
   } catch (err) {
     console.error('[send-forgot-password-email] Error fetching user:', err);
-    // Still return success to not reveal user existence
     return Response.json({ success: true });
   }
 
@@ -51,11 +61,10 @@ Deno.serve(async (req) => {
     return Response.json({ success: true });
   }
 
-  // Generate reset token stored directly on User record
   const resetToken = crypto.randomUUID().replace(/-/g, '');
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
-  await base44.asServiceRole.entities.AppUser.update(user.id, {
+  await base44.asServiceRole.entities[userEntity].update(user.id, {
     password_reset_token: resetToken,
     password_reset_expires_at: expiresAt
   });
