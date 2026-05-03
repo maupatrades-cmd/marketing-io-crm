@@ -12,6 +12,7 @@ import DeliverableTimeline from "@/components/clientportal/DeliverableTimeline";
 import RequestUpdateModal from "@/components/clientportal/RequestUpdateModal";
 import SplashScreen from "@/components/clientportal/SplashScreen";
 import HeroSection from "@/components/clientportal/HeroSection";
+import ChatWidget from "@/components/clientportal/ChatWidget";
 import { PRODUCT_CATALOG, getProductsByType, getProductById } from "@/data/ProductCatalog";
 
 const PACKAGE_LABELS = {
@@ -884,6 +885,15 @@ export default function ClientPortal() {
           deliverable={selectedDeliverable}
           client={client}
           user={user}
+        />
+      )}
+
+      {/* Chat Widget */}
+      {client && user && (
+        <ChatWidget 
+          client={client}
+          user={user}
+          onAdmin={deal?.closer_id}
         />
       )}
     </div>
