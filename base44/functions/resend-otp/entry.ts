@@ -65,14 +65,29 @@ Deno.serve(async (req) => {
     <p style="color:#94a3b8;font-size:14px;margin:0;">If you didn't request this code, please ignore this email.</p>`;
 
   const apiKey = Deno.env.get('RESEND_API_KEY');
-  if (apiKey) {
+  if (!apiKey) {
+    console.error('[resend-otp] RESEND_API_KEY not set');
+    return Response.json({ error: 'Email service not configured' }, { status: 500 });
+  }
+
+  try {
     const resend = new Resend(apiKey);
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: 'Marketing iO Team <hello@marketingio.co.za>',
       to: normalizedEmail,
       subject: `Your new Marketing iO code: ${newOtp}`,
       html: wrapEmail(bodyHtml)
     });
+    
+    if (result.error) {
+      console.error('[resend-otp] Email send failed:', result.error);
+      return Response.json({ error: 'Failed to send email', detail: result.error }, { status: 500 });
+    }
+    
+    console.log('[resend-otp] Email sent successfully:', result.id);
+  } catch (emailErr) {
+    console.error('[resend-otp] Email send exception:', emailErr.message);
+    return Response.json({ error: 'Email service error', detail: emailErr.message }, { status: 500 });
   }
 
   return Response.json({ success: true });
