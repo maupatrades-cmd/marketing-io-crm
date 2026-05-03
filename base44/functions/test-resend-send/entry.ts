@@ -16,9 +16,8 @@ Deno.serve(async (req) => {
   <tr><td align="center">
     <table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:white;border-radius:12px;overflow:hidden">
       <tr>
-        <td style="background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);padding:32px 24px;text-align:center">
-          <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png" alt="Marketing iO" height="48" style="height:48px;width:auto;display:block;margin:0 auto 8px;filter:brightness(0) invert(1)" />
-          <p style="margin:8px 0 0;color:white;font-size:12px;font-style:italic;letter-spacing:1px;opacity:0.9">Too good to stay hidden.</p>
+        <td style="background:#ffffff;padding:32px 24px;text-align:center;border-bottom:4px solid;border-image:linear-gradient(135deg,#a764e6,#ec4899) 1">
+          <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/de9bcf4a8_marketingiomainlogo.png" alt="Marketing iO" height="80" style="height:80px;width:auto;display:block;margin:0 auto" />
         </td>
       </tr>
       <tr>
