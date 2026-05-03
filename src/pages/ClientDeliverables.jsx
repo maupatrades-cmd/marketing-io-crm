@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle2, Clock, AlertCircle, MessageSquare, X } from "lucide-react";
 import FeedbackSurveyModal from "@/components/deliverables/FeedbackSurveyModal";
+import ClientDeliverablesDashboard from "@/components/client/ClientDeliverablesDashboard";
 
 export default function ClientDeliverables() {
   const [deliverables, setDeliverables] = useState([]);
@@ -156,6 +157,16 @@ export default function ClientDeliverables() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold gradient-text mb-2">Deliverables</h1>
         {forReview.length > 0 && <p className="text-warning font-semibold mb-6">{forReview.length} awaiting your review</p>}
+
+        {/* Dashboard View */}
+        {client && (
+          <div className="mb-8">
+            <ClientDeliverablesDashboard clientId={client.id} />
+          </div>
+        )}
+
+        <hr className="border-slate-700 my-8" />
+        <h2 className="text-xl font-semibold text-foreground mb-4">Detailed View</h2>
 
         <div className="flex gap-2 mb-6 overflow-x-auto">
           {["all", "pending_client_review", "approved", "changes_requested", "rejected"].map(f => (
