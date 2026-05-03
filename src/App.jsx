@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -67,6 +68,18 @@ import AdminServiceOrders from './pages/AdminServiceOrders';
 import StaffProductivity from './pages/StaffProductivity';
 import DeliverableQuality from './pages/DeliverableQuality';
 
+const AuthRedirect = () => {
+  const { navigateToLogin } = useAuth();
+  useEffect(() => {
+    navigateToLogin();
+  }, []);
+  return (
+    <div className="fixed inset-0 flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+    </div>
+  );
+};
+
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
 
@@ -92,7 +105,7 @@ const AuthenticatedApp = () => {
 
   // Smart landing redirect based on role
   const LandingRedirect = () => {
-    if (!user) return <Navigate to="/sign-in" replace />;
+    if (!user) return <AuthRedirect />;
     if (user.role === "owner") return <Navigate to="/" replace />;
     if (user.role === "client") return <Navigate to="/client-portal" replace />;
     // All staff roles land on /staff
@@ -172,11 +185,12 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Auth route aliases */}
-      <Route path="/sign-in" element={<Navigate to="/forgot-password" replace />} />
-      <Route path="/signin" element={<Navigate to="/forgot-password" replace />} />
-      <Route path="/login" element={<Navigate to="/forgot-password" replace />} />
-      <Route path="/sign-up" element={<Navigate to="/" replace />} />
-      <Route path="/signup" element={<Navigate to="/" replace />} />
+      <Route path="/sign-in" element={<AuthRedirect />} />
+      <Route path="/signin" element={<AuthRedirect />} />
+      <Route path="/login" element={<AuthRedirect />} />
+      <Route path="/sign-up" element={<AuthRedirect />} />
+      <Route path="/signup" element={<AuthRedirect />} />
+      <Route path="/Login" element={<AuthRedirect />} />
       <Route path="/forgot" element={<Navigate to="/forgot-password" replace />} />
       <Route path="/reset" element={<Navigate to="/forgot-password" replace />} />
 
