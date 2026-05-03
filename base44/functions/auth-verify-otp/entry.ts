@@ -11,27 +11,22 @@ Deno.serve(async (req) => {
   const normalizedEmail = email.toLowerCase().trim();
   const now = new Date();
 
-  const otps = await base44.asServiceRole.entities.OTPCode.filter({
-    email: normalizedEmail,
-    purpose,
-    used: false
-  });
-
-  const match = otps?.find(o => o.code === code && new Date(o.expires_at) > now);
-  if (!match) {
-    return Response.json({ error: 'Code expired or invalid' }, { status: 401 });
-  }
-
-  await base44.asServiceRole.entities.OTPCode.update(match.id, {
-    used: true,
-    used_at: now.toISOString()
-  });
-
   const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
   if (!users || users.length === 0) {
     return Response.json({ error: 'User not found.' }, { status: 404 });
   }
   const user = users[0];
+
+  // Validate OTP stored on user record
+  const otpValid =
+    user.pending_otp_code === code &&
+    user.pending_otp_purpose === purpose &&
+    user.pending_otp_expires_at &&
+    new Date(user.pending_otp_expires_at) > now;
+
+  if (!otpValid) {
+    return Response.json({ error: 'Code expired or invalid' }, { status: 401 });
+  }
 
   const token = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
@@ -39,7 +34,11 @@ Deno.serve(async (req) => {
   const userUpdate = {
     session_token: token,
     session_expires_at: expiresAt,
-    last_login_at: now.toISOString()
+    last_login_at: now.toISOString(),
+    // Clear OTP fields
+    pending_otp_code: null,
+    pending_otp_expires_at: null,
+    pending_otp_purpose: null
   };
 
   if (purpose === 'signup_verification') {

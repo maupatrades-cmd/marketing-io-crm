@@ -56,6 +56,19 @@
       "type": "string",
       "format": "date-time",
       "description": "Account locked until this time"
+    },
+    "pending_otp_code": {
+      "type": "string",
+      "description": "Temporary OTP code for verification"
+    },
+    "pending_otp_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the pending OTP expires"
+    },
+    "pending_otp_purpose": {
+      "type": "string",
+      "description": "Purpose of the pending OTP (signup_verification, login_mfa, etc.)"
     }
   },
   "required": []

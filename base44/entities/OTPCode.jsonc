@@ -27,7 +27,7 @@
     "expires_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When this code expires (10 minutes from generation for most, 1 hour for password reset)"
+      "description": "When this code expires"
     },
     "used": {
       "type": "boolean",
@@ -53,27 +53,5 @@
     "email",
     "code",
     "purpose"
-  ],
-  "rls": {
-    "create": {
-      "user_condition": {
-        "role": "system"
-      }
-    },
-    "read": {
-      "user_condition": {
-        "role": "system"
-      }
-    },
-    "update": {
-      "user_condition": {
-        "role": "system"
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "system"
-      }
-    }
-  }
+  ]
 }

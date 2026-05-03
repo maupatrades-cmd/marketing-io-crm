@@ -98,8 +98,10 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'password_hash_failed', detail: err.message }, { status: 500 });
   }
 
-  // Step 5: Create user record
+  // Step 5: Create user record (OTP included in create to avoid a separate update)
   console.log('[auth-register] Step: creating user record');
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const otpExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   let newUser;
   const userPayload = {
     email: normalizedEmail,
@@ -109,7 +111,10 @@ Deno.serve(async (req) => {
     password_hash: passwordHash,
     pending_verification: true,
     email_verified: false,
-    failed_login_count: 0
+    failed_login_count: 0,
+    pending_otp_code: otp,
+    pending_otp_expires_at: otpExpires,
+    pending_otp_purpose: 'signup_verification'
   };
   try {
     newUser = await base44.asServiceRole.entities.User.create(userPayload);
@@ -145,27 +150,8 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'client_create_failed', detail: err.message }, { status: 500 });
   }
 
-  // Step 7: Create OTP record
-  console.log('[auth-register] Step: creating OTP record');
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-  try {
-    await base44.asServiceRole.entities.OTPCode.create({
-      email: normalizedEmail,
-      code: otp,
-      purpose: 'signup_verification',
-      expires_at: expires,
-      used: false,
-      generated_at: new Date().toISOString(),
-      user_id: newUser.id
-    });
-    console.log('[auth-register] OTP record created');
-  } catch (err) {
-    console.error('[auth-register] otp_create_failed — rolling back:', err.message);
-    if (createdClientId) { try { await base44.asServiceRole.entities.Client.delete(createdClientId); } catch (_) {} }
-    try { await base44.asServiceRole.entities.User.delete(createdUserId); } catch (_) {}
-    return Response.json({ error: 'otp_create_failed', detail: err.message }, { status: 500 });
-  }
+  // Step 7: OTP already stored in user record during creation — just log it
+  console.log('[auth-register] Step: OTP already embedded in user record, skipping separate store');
 
   // Step 8: Send OTP email (non-fatal)
   console.log('[auth-register] Step: sending OTP email');
