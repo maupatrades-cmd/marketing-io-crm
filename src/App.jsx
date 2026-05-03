@@ -2,9 +2,9 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { appParams } from '@/lib/app-params';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
 import DesignPreview from './pages/DesignPreview';
@@ -70,12 +70,38 @@ import DeliverableQuality from './pages/DeliverableQuality';
 
 const AuthRedirect = () => {
   const { navigateToLogin } = useAuth();
-  useEffect(() => {
-    navigateToLogin();
-  }, []);
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+    <div className="fixed inset-0 flex items-center justify-center bg-slate-900 text-white p-6">
+      <div className="max-w-md w-full text-center space-y-6">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          Marketing iO
+        </h1>
+        <p className="text-lg text-slate-200">Sign in to continue to your CRM</p>
+
+        <button
+          onClick={() => navigateToLogin()}
+          className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg font-semibold hover:opacity-90 transition"
+        >
+          Sign In
+        </button>
+
+        <details className="text-sm text-slate-400 mt-8">
+          <summary className="cursor-pointer hover:text-slate-200">Having trouble signing in?</summary>
+          <div className="mt-3 space-y-2 text-left bg-slate-800 p-4 rounded-lg">
+            <p>If the Sign In button keeps looping, sign in directly through Base44:</p>
+            <a
+              href={`https://app.base44.com/login?app_id=${appParams.appId || ''}`}
+              className="block px-4 py-2 bg-slate-700 rounded text-center hover:bg-slate-600"
+            >
+              Sign in via app.base44.com
+            </a>
+            <p className="text-xs text-slate-500 pt-2">
+              For support: support@marketingio.co.za
+            </p>
+          </div>
+        </details>
+      </div>
     </div>
   );
 };
