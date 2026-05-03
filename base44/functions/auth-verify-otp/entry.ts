@@ -12,32 +12,47 @@ Deno.serve(async (req) => {
   const now = new Date();
 
   const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
-  if (!users || users.length === 0) {
-    return Response.json({ error: 'User not found.' }, { status: 404 });
+  const user = users?.[0];
+
+  let otpValid = false;
+  
+  if (user) {
+    // Check OTP on User record
+    const codeMatches = user.pending_otp_code === code;
+    const purposeMatches = user.pending_otp_purpose === purpose;
+    const notExpired = user.pending_otp_expires_at && new Date(user.pending_otp_expires_at) > now;
+    
+    console.log('[auth-verify-otp] User found, checking OTP:', {
+      email: normalizedEmail,
+      codeMatches,
+      purposeMatches,
+      notExpired
+    });
+    
+    otpValid = codeMatches && purposeMatches && notExpired;
+  } else {
+    // Check OTP in OTPCode entity (for non-users)
+    const otpCodes = await base44.asServiceRole.entities.OTPCode.filter({ 
+      email: normalizedEmail,
+      code: code,
+      purpose: purpose
+    });
+    const otpRecord = otpCodes?.[0];
+    
+    if (otpRecord) {
+      const notExpired = otpRecord.expires_at && new Date(otpRecord.expires_at) > now;
+      console.log('[auth-verify-otp] OTPCode found for non-user, checking expiry:', notExpired);
+      otpValid = notExpired;
+      
+      if (otpValid) {
+        // Mark OTPCode as used
+        await base44.asServiceRole.entities.OTPCode.update(otpRecord.id, { used: true, used_at: now.toISOString() });
+      }
+    }
   }
-  const user = users[0];
-
-  // Validate OTP stored on user record
-  const codeMatches = user.pending_otp_code === code;
-  const purposeMatches = user.pending_otp_purpose === purpose;
-  const notExpired = user.pending_otp_expires_at && new Date(user.pending_otp_expires_at) > now;
-
-  console.log('[auth-verify-otp] Verification attempt:', {
-    email: normalizedEmail,
-    submittedCode: code,
-    storedCode: user.pending_otp_code,
-    codeMatches,
-    purposeMatches,
-    expiresAt: user.pending_otp_expires_at,
-    now: now.toISOString(),
-    notExpired
-  });
-
-  const otpValid = codeMatches && purposeMatches && notExpired;
 
   if (!otpValid) {
-    const reason = !codeMatches ? 'code mismatch' : !purposeMatches ? 'purpose mismatch' : 'expired';
-    console.log('[auth-verify-otp] Verification failed:', reason);
+    console.log('[auth-verify-otp] Verification failed');
     return Response.json({ error: 'Code expired or invalid' }, { status: 401 });
   }
 
