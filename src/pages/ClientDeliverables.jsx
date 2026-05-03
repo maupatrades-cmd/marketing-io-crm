@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle2, Clock, AlertCircle, MessageSquare, X } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, MessageSquare, X, TrendingUp } from "lucide-react";
 import FeedbackSurveyModal from "@/components/deliverables/FeedbackSurveyModal";
 import ClientDeliverablesDashboard from "@/components/client/ClientDeliverablesDashboard";
+import DeliverableCard from "@/components/deliverables/DeliverableCard";
+import DeliverableStats from "@/components/deliverables/DeliverableStats";
 
 export default function ClientDeliverables() {
   const [deliverables, setDeliverables] = useState([]);
@@ -27,8 +29,23 @@ export default function ClientDeliverables() {
     const interval = setInterval(() => {
       setDeliverables(prev => [...prev]); // Force re-render for countdown updates
     }, 60000); // Update every minute
-    return () => clearInterval(interval);
-  }, []);
+
+    // Subscribe to real-time deliverable updates
+    const unsubscribe = base44.entities.Deliverable.subscribe((event) => {
+      if (client && event.data.client_id === client.id) {
+        if (event.type === "create") {
+          setDeliverables(prev => [event.data, ...prev]);
+        } else if (event.type === "update") {
+          setDeliverables(prev => prev.map(d => d.id === event.id ? event.data : d));
+        }
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      unsubscribe?.();
+    };
+  }, [client]);
 
   useEffect(() => {
     getCurrentUser().then(async (me) => {
@@ -166,6 +183,13 @@ export default function ClientDeliverables() {
         )}
 
         <hr className="border-slate-700 my-8" />
+        <div className="flex items-center gap-2 mb-6">
+          <TrendingUp className="w-5 h-5 text-primary" />
+          <h2 className="text-xl font-semibold text-foreground">Performance Overview</h2>
+        </div>
+        {client && <DeliverableStats deliverables={deliverables} />}
+
+        <hr className="border-slate-700 my-8" />
         <h2 className="text-xl font-semibold text-foreground mb-4">Detailed View</h2>
 
         <div className="flex gap-2 mb-6 overflow-x-auto">
@@ -187,53 +211,17 @@ export default function ClientDeliverables() {
                   {grouped[service].map(d => {
                     const isForReview = ["pending_client_review", "client_reviewing"].includes(d.approval_status);
                     return (
-                      <div key={d.id} className="glass rounded-xl p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-semibold text-foreground">{d.title}</p>
-                              {isForReview && getDaysLeftBadge(d.scheduled_date)}
-                            </div>
-                            <p className="text-xs text-muted-foreground">{new Date(d.created_date).toLocaleDateString("en-ZA")} • {d.service || "General"}</p>
-                            
-                            {/* Preview */}
-                            {d.preview_image && (
-                              <img src={d.preview_image} alt="preview" className="mt-3 rounded-lg max-h-40 object-cover" />
-                            )}
-                            {d.preview_url && !d.preview_image && (
-                              <a href={d.preview_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-2 inline-block">View Preview →</a>
-                            )}
-                          </div>
-                          <Badge className={isForReview ? "bg-warning/15 text-warning" : d.approval_status === "approved" ? "bg-success/15 text-success" : d.approval_status === "changes_requested" ? "bg-orange-600/15 text-orange-500" : d.approval_status === "rejected" ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary"}>
-                            {d.approval_status?.replace(/_/g, " ")}
-                          </Badge>
-                        </div>
-
-                        {isForReview && (
-                          <div className="flex gap-2 mt-4">
-                            <Button size="sm" onClick={() => handleApprove(d.id)} className="gradient-bg text-white text-xs" disabled={submitting}>
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-xs" onClick={() => { setSelectedDeliv(d); setModalType("request_changes"); }} disabled={submitting}>
-                              <MessageSquare className="w-3 h-3 mr-1" /> Request Changes
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-xs text-destructive hover:text-destructive" onClick={() => { setSelectedDeliv(d); setModalType("reject"); }} disabled={submitting}>
-                              <X className="w-3 h-3 mr-1" /> Reject
-                            </Button>
-                          </div>
-                        )}
-                        {/* Rate button for approved deliverables not yet rated */}
-                        {d.approval_status === "approved" && !ratedIds.has(d.id) && !isForReview && (
-                          <div className="mt-3">
-                            <Button size="sm" variant="outline" className="text-xs text-warning border-warning/40 hover:bg-warning/10" onClick={() => setSurveyDeliverable(d)}>
-                              ★ Rate this deliverable
-                            </Button>
-                          </div>
-                        )}
-                        {d.approval_status === "approved" && ratedIds.has(d.id) && (
-                          <p className="text-xs text-success mt-3">★ Rated — thank you!</p>
-                        )}
-                      </div>
+                      <DeliverableCard
+                        key={d.id}
+                        deliverable={d}
+                        onApprove={handleApprove}
+                        onRequestChanges={(deliv) => { setSelectedDeliv(deliv); setModalType("request_changes"); }}
+                        onReject={(deliv) => { setSelectedDeliv(deliv); setModalType("reject"); }}
+                        onRate={() => setSurveyDeliverable(d)}
+                        isRated={ratedIds.has(d.id)}
+                        isForReview={isForReview}
+                        submitting={submitting}
+                      />
                     );
                   })}
                 </div>

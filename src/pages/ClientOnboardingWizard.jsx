@@ -3,9 +3,11 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { getCurrentUser } from "@/lib/customAuth";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, ChevronLeft, Upload, Loader2 } from "lucide-react";
+import { AlertCircle, ChevronLeft, Upload, Loader2, FileText } from "lucide-react";
 import OnboardingChecklist from "@/components/onboarding/OnboardingChecklist";
 import OnboardingProgress from "@/components/onboarding/OnboardingProgress";
+import MandateSigningStep from "@/components/onboarding/MandateSigningStep";
+import BrandAssetsStep from "@/components/onboarding/BrandAssetsStep";
 
 export default function ClientOnboardingWizard() {
   const { user: authUser } = useAuth();
@@ -17,6 +19,8 @@ export default function ClientOnboardingWizard() {
   const [selectedStep, setSelectedStep] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [mandateSigned, setMandateSigned] = useState(false);
+  const [brandAssetsUploaded, setBrandAssetsUploaded] = useState(new Set());
 
   useEffect(() => {
     const load = async () => {
@@ -124,6 +128,45 @@ export default function ClientOnboardingWizard() {
     }
   };
 
+  const handleMandateSign = async () => {
+    if (!client) return;
+    setMandateSigned(true);
+    // Auto-complete mandate step if exists
+    const mandateStep = steps.find(s => s.category === "approval");
+    if (mandateStep && !mandateStep.is_completed) {
+      await base44.entities.OnboardingStep.update(mandateStep.id, {
+        is_completed: true,
+        completed_at: new Date().toISOString()
+      });
+    }
+  };
+
+  const handleBrandAssetUpload = async (assetId, file) => {
+    if (!client || !file) return;
+    setUploading(true);
+    setError(null);
+
+    try {
+      const uploadRes = await base44.integrations.Core.UploadFile({ file });
+      
+      // Create upload record
+      await base44.entities.ClientUpload.create({
+        client_id: client.id,
+        uploaded_by_id: user.id,
+        file_url: uploadRes.url,
+        file_name: file.name,
+        file_type: assetId
+      });
+
+      setBrandAssetsUploaded(prev => new Set([...prev, assetId]));
+    } catch (err) {
+      console.error("[OnboardingWizard] Brand asset upload error:", err);
+      setError("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -183,70 +226,88 @@ export default function ClientOnboardingWizard() {
           </div>
 
           {/* Detail Card */}
-          {selectedStep ? (
-            <div className="glass rounded-2xl p-6 border border-slate-700/40 space-y-4">
-              <h3 className="font-semibold text-foreground">{selectedStep.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{selectedStep.description}</p>
+           {selectedStep ? (
+             <div className="glass rounded-2xl p-6 border border-slate-700/40 space-y-4">
+               {selectedStep.category === "approval" ? (
+                 <MandateSigningStep
+                   step={selectedStep}
+                   onComplete={handleMandateSign}
+                   isCompleted={mandateSigned}
+                   submitting={uploading}
+                 />
+               ) : selectedStep.category === "brand_assets" ? (
+                 <BrandAssetsStep
+                   step={selectedStep}
+                   onUpload={handleBrandAssetUpload}
+                   completedAssets={Array.from(brandAssetsUploaded)}
+                   uploading={uploading}
+                 />
+               ) : (
+                 <>
+                   <h3 className="font-semibold text-foreground">{selectedStep.title}</h3>
+                   <p className="text-sm text-muted-foreground leading-relaxed">{selectedStep.description}</p>
 
-              {/* File Upload Section */}
-              <div className="space-y-3 pt-4 border-t border-slate-700/40">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Upload Document</p>
+                   {/* File Upload Section */}
+                   <div className="space-y-3 pt-4 border-t border-slate-700/40">
+                     <p className="text-xs font-semibold text-muted-foreground uppercase">Upload Document</p>
 
-                <div className="border-2 border-dashed border-slate-700 rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
-                  <input
-                    type="file"
-                    id="file-upload"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file);
-                    }}
-                    disabled={uploading}
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer flex flex-col items-center gap-2"
-                  >
-                    {uploading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                        <span className="text-xs text-muted-foreground">Uploading...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-5 h-5 text-slate-600" />
-                        <span className="text-xs text-muted-foreground">Click to upload</span>
-                      </>
-                    )}
-                  </label>
-                </div>
+                     <div className="border-2 border-dashed border-slate-700 rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
+                       <input
+                         type="file"
+                         id="file-upload"
+                         onChange={(e) => {
+                           const file = e.target.files?.[0];
+                           if (file) handleFileUpload(file);
+                         }}
+                         disabled={uploading}
+                         className="hidden"
+                       />
+                       <label
+                         htmlFor="file-upload"
+                         className="cursor-pointer flex flex-col items-center gap-2"
+                       >
+                         {uploading ? (
+                           <>
+                             <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                             <span className="text-xs text-muted-foreground">Uploading...</span>
+                           </>
+                         ) : (
+                           <>
+                             <Upload className="w-5 h-5 text-slate-600" />
+                             <span className="text-xs text-muted-foreground">Click to upload</span>
+                           </>
+                         )}
+                       </label>
+                     </div>
 
-                {selectedStep.file_name && (
-                  <p className="text-xs text-green-400">✓ Uploaded: {selectedStep.file_name}</p>
-                )}
-              </div>
+                     {selectedStep.file_name && (
+                       <p className="text-xs text-green-400">✓ Uploaded: {selectedStep.file_name}</p>
+                     )}
+                   </div>
 
-              {/* Error Message */}
-              {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
-                  <p className="text-xs text-destructive">{error}</p>
-                </div>
-              )}
+                   {/* Error Message */}
+                   {error && (
+                     <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+                       <p className="text-xs text-destructive">{error}</p>
+                     </div>
+                   )}
 
-              {/* Notes */}
-              {selectedStep.notes && (
-                <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
-                  <p className="text-xs text-primary">Staff note: {selectedStep.notes}</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="glass rounded-2xl p-6 border border-slate-700/40 text-center space-y-3">
-              <div className="text-4xl">🎉</div>
-              <h3 className="font-semibold text-foreground">All Done!</h3>
-              <p className="text-sm text-muted-foreground">Your setup is complete. Our team is finalizing everything.</p>
-            </div>
-          )}
+                   {/* Notes */}
+                   {selectedStep.notes && (
+                     <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
+                       <p className="text-xs text-primary">Staff note: {selectedStep.notes}</p>
+                     </div>
+                   )}
+                 </>
+               )}
+             </div>
+           ) : (
+             <div className="glass rounded-2xl p-6 border border-slate-700/40 text-center space-y-3">
+               <div className="text-4xl">🎉</div>
+               <h3 className="font-semibold text-foreground">All Done!</h3>
+               <p className="text-sm text-muted-foreground">Your setup is complete. Our team is finalizing everything.</p>
+             </div>
+           )}
         </div>
       </div>
     </div>
