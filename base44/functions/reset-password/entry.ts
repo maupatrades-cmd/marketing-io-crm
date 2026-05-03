@@ -38,8 +38,8 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Token is required.' }, { status: 400 });
   }
 
-  // Find app user by reset token
-  const users = await base44.asServiceRole.entities.AppUser.filter({ password_reset_token: token });
+  // Find user by reset token (query User entity, not AppUser)
+  const users = await base44.asServiceRole.entities.User.filter({ password_reset_token: token });
   const user = users?.[0];
 
   if (!user || !user.password_reset_expires_at) {
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
 
-  await base44.asServiceRole.entities.AppUser.update(user.id, {
+  await base44.asServiceRole.entities.User.update(user.id, {
     password_hash: passwordHash,
     password_reset_token: null,
     password_reset_expires_at: null,

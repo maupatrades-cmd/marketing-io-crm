@@ -37,8 +37,15 @@ Deno.serve(async (req) => {
   const normalizedEmail = email.toLowerCase().trim();
 
   // Always return 200 — don't reveal if user exists
-  const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
-  const user = users?.[0];
+  let user;
+  try {
+    const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+    user = users?.[0];
+  } catch (err) {
+    console.error('[send-forgot-password-email] Error fetching user:', err);
+    // Still return success to not reveal user existence
+    return Response.json({ success: true });
+  }
 
   if (!user) {
     return Response.json({ success: true });

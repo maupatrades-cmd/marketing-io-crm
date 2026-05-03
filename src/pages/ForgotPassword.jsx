@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ export default function ForgotPassword() {
   const [captchaQuestion, setCaptchaQuestion] = useState(null);
   const [captchaAnswer, setCaptchaAnswer] = useState('');
 
-  useState(() => {
+  useEffect(() => {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
     setCaptchaQuestion({ num1, num2, answer: num1 + num2 });
