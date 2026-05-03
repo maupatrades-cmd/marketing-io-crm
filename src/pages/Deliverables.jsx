@@ -70,8 +70,24 @@ export default function Deliverables() {
     try {
       await base44.entities.Deliverable.update(deliverable.id, {
         status: newStatus,
-        approved_date: newStatus.includes('approved') || newStatus === 'completed' ? new Date().toISOString().split('T')[0] : deliverable.approved_date
+        approved_date: newStatus.includes('approved') || newStatus === 'completed' ? new Date().toISOString().split('T')[0] : deliverable.approved_date,
+        submitted_date: newStatus === 'awaiting_client' ? new Date().toISOString().split('T')[0] : deliverable.submitted_date,
+        review_deadline: newStatus === 'awaiting_client' ? new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : deliverable.review_deadline
       });
+      
+      // Notify client
+      if (['awaiting_client', 'client_reviewing', 'in_progress', 'completed'].includes(newStatus)) {
+        try {
+          await base44.functions.invoke('notify-client-deliverable-update', {
+            deliverable_id: deliverable.id,
+            old_status: deliverable.status,
+            new_status: newStatus
+          });
+        } catch (err) {
+          console.error('Failed to notify client:', err);
+        }
+      }
+      
       setDeliverables(prev => prev.map(d => d.id === deliverable.id ? { ...d, status: newStatus } : d));
     } catch (err) {
       console.error('Failed to update deliverable:', err);

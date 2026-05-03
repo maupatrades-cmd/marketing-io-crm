@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { getCurrentUser } from "@/lib/customAuth";
@@ -38,6 +38,49 @@ export default function ClientPortal() {
   const [selectedDeliverable, setSelectedDeliverable] = useState(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
 
+  const unsubscribesRef = useRef([]);
+
+  const refreshData = async (c) => {
+    try {
+      const [enqs, onb, dels, invs, comms, deals, contracts] = await Promise.all([
+        base44.entities.EnquiryEvent.filter({ client_id: c.id }).catch(() => []),
+        base44.entities.ClientOnboarding.filter({ client_id: c.id }, "-created_date", 1).catch(() => []),
+        base44.entities.Deliverable.filter({ client_id: c.id }, "-created_date", 50).catch(() => []),
+        base44.entities.Invoice.filter({ client_id: c.id, status: 'issued' }, "due_date", 5).catch(() => []),
+        base44.entities.ClientCommunication.filter({ client_id: c.id }, "-created_date", 20).catch(() => []),
+        base44.entities.Deal.filter({ client_id: c.id, stage: 'closed_won' }, "-created_date", 1).catch(() => []),
+        base44.entities.Contract.filter({ client_id: c.id }, "-created_date", 10).catch(() => [])
+      ]);
+
+      setEnquiries(Array.isArray(enqs) ? enqs : []);
+      const onbRecord = Array.isArray(onb) ? onb[0] : onb;
+      setOnboarding(onbRecord);
+      setDeliverables(Array.isArray(dels) ? dels : []);
+      setInvoices(Array.isArray(invs) ? invs : []);
+      setCommunications(Array.isArray(comms) ? comms : []);
+      setContracts(Array.isArray(contracts) ? contracts : []);
+      
+      const dealRecord = Array.isArray(deals) ? deals[0] : deals;
+      setDeal(dealRecord);
+
+      if (dealRecord) {
+        const staffData = [];
+        const userIds = [dealRecord.closer_id, onbRecord?.assigned_admin_id, c.assigned_field_agent].filter(Boolean);
+        for (const userId of userIds) {
+          try {
+            const users = await base44.entities.User.filter({ id: userId });
+            if (users && users[0]) staffData.push(users[0]);
+          } catch (err) {
+            console.error('Failed to fetch user:', userId, err);
+          }
+        }
+        setStaffCards(staffData);
+      }
+    } catch (err) {
+      console.error('Refresh data error:', err);
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       const me = authUser || await getCurrentUser();
@@ -49,7 +92,6 @@ export default function ClientPortal() {
 
       setUser(me);
 
-      // Fetch product images
       try {
         const images = await base44.functions.invoke("get-product-images", {});
         setProductImages(images.data || {});
@@ -62,52 +104,48 @@ export default function ClientPortal() {
 
       if (c) {
         setClient(c);
+        await refreshData(c);
 
-        // Fetch hub data in parallel
-         try {
-           const [enqs, onb, dels, invs, comms, deals, contracts] = await Promise.all([
-             base44.entities.EnquiryEvent.filter({ client_id: c.id }).catch(() => []),
-             base44.entities.ClientOnboarding.filter({ client_id: c.id }, "-created_date", 1).catch(() => []),
-             base44.entities.Deliverable.filter({ client_id: c.id }, "-created_date", 50).catch(() => []),
-             base44.entities.Invoice.filter({ client_id: c.id, status: 'issued' }, "due_date", 5).catch(() => []),
-             base44.entities.ClientCommunication.filter({ client_id: c.id }, "-created_date", 20).catch(() => []),
-             base44.entities.Deal.filter({ client_id: c.id, stage: 'closed_won' }, "-created_date", 1).catch(() => []),
-             base44.entities.Contract.filter({ client_id: c.id }, "-created_date", 10).catch(() => [])
-           ]);
-
-           setEnquiries(Array.isArray(enqs) ? enqs : []);
-           const onbRecord = Array.isArray(onb) ? onb[0] : onb;
-           setOnboarding(onbRecord);
-           setDeliverables(Array.isArray(dels) ? dels : []);
-           setInvoices(Array.isArray(invs) ? invs : []);
-           setCommunications(Array.isArray(comms) ? comms : []);
-           setContracts(Array.isArray(contracts) ? contracts : []);
-          
-          const dealRecord = Array.isArray(deals) ? deals[0] : deals;
-          setDeal(dealRecord);
-
-          // Fetch staff if deal exists
-          if (dealRecord) {
-            const staffData = [];
-            const userIds = [dealRecord.closer_id, onbRecord?.assigned_admin_id, c.assigned_field_agent].filter(Boolean);
-            
-            for (const userId of userIds) {
-              try {
-                const users = await base44.entities.User.filter({ id: userId });
-                if (users && users[0]) staffData.push(users[0]);
-              } catch (err) {
-                console.error('Failed to fetch user:', userId, err);
-              }
+        // Subscribe to real-time updates
+        try {
+          const unsub1 = base44.entities.Deliverable.subscribe((event) => {
+            if (event.data?.client_id === c.id) {
+              refreshData(c);
             }
-            setStaffCards(staffData);
-          }
+          });
+          unsubscribesRef.current.push(unsub1);
+
+          const unsub2 = base44.entities.Invoice.subscribe((event) => {
+            if (event.data?.client_id === c.id) {
+              refreshData(c);
+            }
+          });
+          unsubscribesRef.current.push(unsub2);
+
+          const unsub3 = base44.entities.Contract.subscribe((event) => {
+            if (event.data?.client_id === c.id) {
+              refreshData(c);
+            }
+          });
+          unsubscribesRef.current.push(unsub3);
+
+          const unsub4 = base44.entities.ClientOnboarding.subscribe((event) => {
+            if (event.data?.client_id === c.id) {
+              refreshData(c);
+            }
+          });
+          unsubscribesRef.current.push(unsub4);
         } catch (err) {
-          console.error('Hub data fetch error:', err);
+          console.error('Subscription error:', err);
         }
       }
       setLoading(false);
     };
     load();
+
+    return () => {
+      unsubscribesRef.current.forEach(unsub => unsub?.());
+    };
   }, [authUser]);
 
   const handleEnquire = (product) => {
