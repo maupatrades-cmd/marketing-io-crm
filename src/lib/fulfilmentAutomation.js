@@ -1,4 +1,5 @@
 import { base44 } from '@/api/base44Client';
+import { notifyClient } from '@/lib/clientNotifier';
 
 /**
  * When a deal closes (stage = closed_won), auto-create deliverables
@@ -95,6 +96,8 @@ export async function autoCreateDeliverables(deal, client, contract) {
           notes: `Auto-created from FulfilmentTemplate ${template.code}`
         });
         createdDeliverables.push(deliverable.id);
+        // Notify client when deliverable moves to pending review (status set later by staff)
+        // Hook: notify when status updated to pending_client_review is handled in Deliverables page
       } catch (err) {
         console.error(`[FulfilmentAutomation] Failed to create deliverable "${deliverableTitle}":`, err);
       }

@@ -166,6 +166,16 @@ const AuthenticatedApp = () => {
       
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Auth route aliases */}
+      <Route path="/sign-in" element={<Navigate to="/forgot-password" replace />} />
+      <Route path="/signin" element={<Navigate to="/forgot-password" replace />} />
+      <Route path="/login" element={<Navigate to="/forgot-password" replace />} />
+      <Route path="/sign-up" element={<Navigate to="/" replace />} />
+      <Route path="/signup" element={<Navigate to="/" replace />} />
+      <Route path="/forgot" element={<Navigate to="/forgot-password" replace />} />
+      <Route path="/reset" element={<Navigate to="/forgot-password" replace />} />
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

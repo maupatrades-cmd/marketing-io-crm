@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, ClipboardList, CheckCircle2, Circle, Clock } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import OnboardingDetail from "@/components/onboarding/OnboardingDetail";
+import { notifyClient } from "@/lib/clientNotifier";
 
 const PHASE_LABELS = {
   phase1_contract_signed:   "Phase 1 · Contract",
@@ -64,6 +65,19 @@ export default function ClientOnboarding() {
   });
 
   const handleUpdate = (updated) => {
+    const prev = records.find(r => r.id === updated.id);
+    if (prev && prev.current_phase !== updated.current_phase && updated.client_id) {
+      const newPhaseLabel = PHASE_LABELS[updated.current_phase] || updated.current_phase?.replace(/_/g, " ");
+      notifyClient({
+        clientId: updated.client_id,
+        type: "onboarding_step_complete",
+        title: `Onboarding moved to ${newPhaseLabel}`,
+        body: "We're making progress on getting you set up. Check your portal for next steps.",
+        relatedEntityType: "ClientOnboarding",
+        relatedEntityId: updated.id,
+        actionUrl: "/client-portal",
+      });
+    }
     setRecords(prev => prev.map(r => r.id === updated.id ? updated : r));
     if (selected?.id === updated.id) setSelected(updated);
   };

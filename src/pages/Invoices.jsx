@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, Plus, FileText, AlertTriangle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import { notifyClient } from "@/lib/clientNotifier";
 
 const STATUS_COLORS = {
   draft: "bg-muted/40 text-muted-foreground border-border/40",
@@ -68,6 +69,20 @@ export default function Invoices() {
   const updateStatus = async (id, status) => {
     const extra = status === "paid" ? { payment_date: new Date().toISOString().split("T")[0] } : {};
     await base44.entities.Invoice.update(id, { status, ...extra });
+    if (status === "paid") {
+      const inv = invoices.find(i => i.id === id);
+      if (inv?.client_id) {
+        notifyClient({
+          clientId: inv.client_id,
+          type: "payment_received",
+          title: `Payment received — R${(inv.total_amount || inv.amount || 0).toLocaleString()}`,
+          body: "Thank you. Your payment has cleared and we're moving forward with your service.",
+          relatedEntityType: "Invoice",
+          relatedEntityId: id,
+          actionUrl: "/client/invoices",
+        });
+      }
+    }
     load();
   };
 

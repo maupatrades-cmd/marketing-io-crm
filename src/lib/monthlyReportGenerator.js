@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import { format, getDaysInMonth } from "date-fns";
 import { base44 } from "@/api/base44Client";
+import { notifyClient } from "@/lib/clientNotifier";
 
 const BRAND_COLOR = "#a764e6";
 const TEXT_COLOR = "#1a1a1a";
@@ -257,4 +258,19 @@ Your dedicated team is always available to answer questions, provide updates, an
   return doc.output("blob");
 }
 
-export { generateMonthlyReport };
+async function finaliseMonthlyReport(report, client, month, year, deliverables = [], communications = []) {
+  const blob = await generateMonthlyReport(client, month, year, deliverables, communications);
+  // Notify client that report is ready
+  await notifyClient({
+    clientId: report.client_id || client.id,
+    type: "report_ready",
+    title: `Your ${report.month_year || `${year}-${String(month).padStart(2,'0')}`} report is ready`,
+    body: "View your monthly performance summary and downloadable PDF.",
+    relatedEntityType: "MonthlyReport",
+    relatedEntityId: report.id,
+    actionUrl: "/client/reports",
+  });
+  return blob;
+}
+
+export { generateMonthlyReport, finaliseMonthlyReport };
