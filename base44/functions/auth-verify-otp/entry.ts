@@ -56,35 +56,45 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Code expired or invalid' }, { status: 401 });
   }
 
-  const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+  if (user) {
+    // Existing user verification
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
 
-  const userUpdate = {
-    session_token: token,
-    session_expires_at: expiresAt,
-    last_login_at: now.toISOString(),
-    // Clear OTP fields
-    pending_otp_code: null,
-    pending_otp_expires_at: null,
-    pending_otp_purpose: null
-  };
+    const userUpdate = {
+      session_token: token,
+      session_expires_at: expiresAt,
+      last_login_at: now.toISOString(),
+      pending_otp_code: null,
+      pending_otp_expires_at: null,
+      pending_otp_purpose: null
+    };
 
-  if (purpose === 'signup_verification') {
-    userUpdate.pending_verification = false;
-    userUpdate.email_verified = true;
-  } else if (purpose === 'login_mfa') {
-    userUpdate.failed_login_count = 0;
-  }
-
-  await base44.asServiceRole.entities.User.update(user.id, userUpdate);
-
-  return Response.json({
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      full_name: user.full_name
+    if (purpose === 'signup_verification') {
+      userUpdate.pending_verification = false;
+      userUpdate.email_verified = true;
+    } else if (purpose === 'login_mfa') {
+      userUpdate.failed_login_count = 0;
     }
-  }, { status: 200 });
+
+    await base44.asServiceRole.entities.User.update(user.id, userUpdate);
+
+    return Response.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        full_name: user.full_name
+      }
+    }, { status: 200 });
+  } else {
+    // Non-user (OTPCode) verification
+    console.log('[auth-verify-otp] Non-user OTP verified successfully');
+    return Response.json({
+      verified: true,
+      email: normalizedEmail,
+      purpose: purpose
+    }, { status: 200 });
+  }
 });
