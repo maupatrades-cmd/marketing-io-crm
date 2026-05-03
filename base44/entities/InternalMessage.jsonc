@@ -14,7 +14,7 @@
     },
     "to_id": {
       "type": "string",
-      "description": "Recipient user ID"
+      "description": "Recipient user ID (null if routing by role)"
     },
     "to_name": {
       "type": "string"
@@ -22,11 +22,66 @@
     "to_email": {
       "type": "string"
     },
+    "recipient_role": {
+      "type": "string",
+      "enum": [
+        "head_of_tech",
+        "head_of_marketing",
+        "admin",
+        "owner"
+      ],
+      "description": "Role to route to if to_id not specified"
+    },
     "subject": {
       "type": "string"
     },
-    "body": {
+    "message": {
       "type": "string"
+    },
+    "message_type": {
+      "type": "string",
+      "enum": [
+        "general",
+        "client_update_request",
+        "escalation",
+        "support"
+      ],
+      "default": "general"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client (for context)"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "deliverable_id": {
+      "type": "string",
+      "description": "Reference to Deliverable (if applicable)"
+    },
+    "deliverable_title": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "urgent"
+      ],
+      "default": "normal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "read",
+        "in_progress",
+        "resolved",
+        "closed"
+      ],
+      "default": "new"
     },
     "read": {
       "type": "boolean",
@@ -35,12 +90,25 @@
     "read_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "requires_escalation": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, will be escalated if not resolved within SLA"
+    },
+    "escalate_to_owner": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this needs owner attention"
+    },
+    "escalated_at": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [
     "from_id",
-    "to_id",
     "subject",
-    "body"
+    "message"
   ]
 }

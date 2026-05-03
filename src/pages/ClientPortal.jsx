@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, LogOut, ChevronRight, MessageSquare, FileText, BarChart3, Settings, ShoppingCart, Files, Calendar, Download, Eye } from "lucide-react";
 import ProductCard from "@/components/clientportal/ProductCard";
 import EnquiryModal from "@/components/clientportal/EnquiryModal";
+import DeliverableTimeline from "@/components/clientportal/DeliverableTimeline";
+import RequestUpdateModal from "@/components/clientportal/RequestUpdateModal";
 import { PRODUCT_CATALOG, getProductsByType, getProductById } from "@/data/ProductCatalog";
 
 const PACKAGE_LABELS = {
@@ -32,6 +34,8 @@ export default function ClientPortal() {
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedDeliverable, setSelectedDeliverable] = useState(null);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -115,6 +119,11 @@ export default function ClientPortal() {
       const enqs = await base44.entities.EnquiryEvent.filter({ client_id: client.id });
       setEnquiries(Array.isArray(enqs) ? enqs : []);
     }
+  };
+
+  const handleRequestUpdate = (deliverable) => {
+    setSelectedDeliverable(deliverable);
+    setUpdateModalOpen(true);
   };
 
   if (loading) {
@@ -219,6 +228,12 @@ export default function ClientPortal() {
             </div>
           </section>
         )}
+
+        {/* SECTION 2.3 — DELIVERABLES TIMELINE */}
+        <DeliverableTimeline 
+          deliverables={deliverables}
+          onRequestUpdate={handleRequestUpdate}
+        />
 
         {/* SECTION 2.5 — CONTRACTS */}
         {pendingContract && (
@@ -576,6 +591,17 @@ export default function ClientPortal() {
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           onSubmitted={handleSubmitted}
+        />
+      )}
+
+      {/* Request Update Modal */}
+      {selectedDeliverable && (
+        <RequestUpdateModal
+          isOpen={updateModalOpen}
+          onClose={() => setUpdateModalOpen(false)}
+          deliverable={selectedDeliverable}
+          client={client}
+          user={user}
         />
       )}
     </div>
