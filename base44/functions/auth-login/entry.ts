@@ -27,16 +27,14 @@ function wrapEmail(bodyHtml) {
 </body></html>`;
 }
 
-async function sendOtpEmail(to, fullName, otp, base44) {
+async function sendOtpEmail(to, fullName, otp) {
   const apiKey = Deno.env.get('RESEND_API_KEY');
-  if (!apiKey) {
-    console.error('[auth-login] RESEND_API_KEY missing');
-    return;
-  }
+  if (!apiKey) { console.error('[auth-login] RESEND_API_KEY missing'); return; }
+
   const bodyHtml = `
     <p style="margin:0 0 16px 0;">Hi ${fullName},</p>
-    <p style="margin:0 0 16px 0;">Your Marketing iO login code is:</p>
-    <div style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#a764e6;text-align:center;padding:16px;background:#f5f3ff;border:2px solid rgba(167,100,230,0.2);border-radius:8px;font-family:monospace;margin:16px 0">${otp}</div>
+    <p style="margin:0 0 16px 0;">Your Marketing iO login verification code is:</p>
+    <div style="font-size:36px;font-weight:bold;letter-spacing:10px;color:#a764e6;text-align:center;padding:20px;background:#f5f3ff;border:2px solid rgba(167,100,230,0.2);border-radius:8px;font-family:monospace;margin:16px 0">${otp}</div>
     <p style="color:#64748b;font-size:14px;margin:0 0 8px 0;">This code expires in <strong>10 minutes</strong>.</p>
     <p style="color:#94a3b8;font-size:14px;margin:0;">If you didn't try to log in, contact <a href="mailto:hello@marketingio.co.za" style="color:#a764e6;">hello@marketingio.co.za</a> immediately.</p>`;
 
@@ -47,9 +45,7 @@ async function sendOtpEmail(to, fullName, otp, base44) {
     subject: `Your Marketing iO login code: ${otp}`,
     html: wrapEmail(bodyHtml)
   });
-  if (result.error) {
-    console.error('[auth-login] OTP email failed:', result.error);
-  }
+  if (result.error) { console.error('[auth-login] OTP email failed:', result.error); }
 }
 
 Deno.serve(async (req) => {
@@ -61,17 +57,16 @@ Deno.serve(async (req) => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-
   const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
   const user = users?.[0];
 
   if (!user) {
-    await base44.asServiceRole.entities.LoginAttempt.create({
-      email_attempted: normalizedEmail,
-      success: false,
-      failure_reason: 'account_not_found',
-      attempted_at: new Date().toISOString()
-    });
+    try {
+      await base44.asServiceRole.entities.LoginAttempt.create({
+        email_attempted: normalizedEmail, success: false,
+        failure_reason: 'account_not_found', attempted_at: new Date().toISOString()
+      });
+    } catch (_) {}
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
@@ -80,6 +75,15 @@ Deno.serve(async (req) => {
   }
 
   if (user.pending_verification) {
+    // Re-generate OTP so they can verify
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    await base44.asServiceRole.entities.User.update(user.id, {
+      pending_otp_code: otp,
+      pending_otp_expires_at: expires,
+      pending_otp_purpose: 'signup_verification'
+    });
+    try { await sendOtpEmail(normalizedEmail, user.full_name || 'there', otp); } catch (_) {}
     return Response.json({ needs_verification: true, email: normalizedEmail }, { status: 200 });
   }
 
@@ -92,31 +96,27 @@ Deno.serve(async (req) => {
       updateData.lockout_until = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     }
     await base44.asServiceRole.entities.User.update(user.id, updateData);
-    await base44.asServiceRole.entities.LoginAttempt.create({
-      email_attempted: normalizedEmail,
-      success: false,
-      failure_reason: 'wrong_password',
-      attempted_at: new Date().toISOString(),
-      user_id: user.id
-    });
+    try {
+      await base44.asServiceRole.entities.LoginAttempt.create({
+        email_attempted: normalizedEmail, success: false,
+        failure_reason: 'wrong_password', attempted_at: new Date().toISOString(), user_id: user.id
+      });
+    } catch (_) {}
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  // Valid password — generate MFA OTP
+  // Valid password — generate MFA OTP stored on User record
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-  await base44.asServiceRole.entities.OTPCode.create({
-    email: normalizedEmail,
-    code: otp,
-    purpose: 'login_mfa',
-    expires_at: expires,
-    used: false,
-    generated_at: new Date().toISOString(),
-    user_id: user.id
+  await base44.asServiceRole.entities.User.update(user.id, {
+    pending_otp_code: otp,
+    pending_otp_expires_at: expires,
+    pending_otp_purpose: 'login_mfa',
+    failed_login_count: 0
   });
 
-  await sendOtpEmail(normalizedEmail, user.full_name || 'there', otp, base44);
+  await sendOtpEmail(normalizedEmail, user.full_name || 'there', otp);
 
   return Response.json({ needs_otp: true, email: normalizedEmail }, { status: 200 });
 });

@@ -28,57 +28,51 @@ function wrapEmail(bodyHtml) {
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const { email } = await req.json();
+  const { email, purpose } = await req.json();
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return Response.json({ error: 'Valid email required' }, { status: 400 });
+  if (!email || !purpose) {
+    return Response.json({ error: 'Email and purpose are required.' }, { status: 400 });
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-
-  // Always return 200 — don't reveal if user exists
   const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
   const user = users?.[0];
 
   if (!user) {
+    // Return success even if not found — don't expose user existence
     return Response.json({ success: true });
   }
 
-  // Generate reset token stored directly on User record
-  const resetToken = crypto.randomUUID().replace(/-/g, '');
-  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const newOtp = String(Math.floor(100000 + Math.random() * 900000));
+  const expiry = purpose === 'login_mfa'
+    ? new Date(Date.now() + 10 * 60 * 1000).toISOString()
+    : new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
   await base44.asServiceRole.entities.User.update(user.id, {
-    password_reset_token: resetToken,
-    password_reset_expires_at: expiresAt
+    pending_otp_code: newOtp,
+    pending_otp_expires_at: expiry,
+    pending_otp_purpose: purpose
   });
 
-  const appUrl = 'https://app.marketingio.co.za';
-  const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
-  const fullName = user.full_name || 'there';
+  const purposeLabel = purpose === 'signup_verification' ? 'verify your account' : 'complete your login';
+  const expiryLabel = purpose === 'login_mfa' ? '10 minutes' : '15 minutes';
 
   const bodyHtml = `
-    <p style="margin:0 0 16px 0;">Hi ${fullName},</p>
-    <p style="margin:0 0 16px 0;">We received a request to reset your Marketing iO password.</p>
-    <p style="margin:0 0 24px 0;">Click the button below to set a new password. The link expires in <strong>30 minutes</strong>.</p>
-    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;"><tr><td>
-      <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);color:#ffffff;padding:14px 32px;border-radius:8px;font-weight:600;font-size:16px;text-decoration:none;">Reset Password →</a>
-    </td></tr></table>
-    <p style="font-size:14px;color:#64748b;margin:0 0 16px 0;">Or copy this link:<br><a href="${resetUrl}" style="color:#a764e6;word-break:break-all;">${resetUrl}</a></p>
-    <p style="font-size:14px;color:#94a3b8;margin:0;">If you didn't request this, ignore this email — your account is safe.</p>`;
+    <p style="margin:0 0 16px 0;">Hi ${user.full_name || 'there'},</p>
+    <p style="margin:0 0 16px 0;">Here is your new Marketing iO code to ${purposeLabel}:</p>
+    <div style="font-size:36px;font-weight:bold;letter-spacing:10px;color:#a764e6;text-align:center;padding:20px;background:#f5f3ff;border:2px solid rgba(167,100,230,0.2);border-radius:8px;font-family:monospace;margin:16px 0">${newOtp}</div>
+    <p style="color:#64748b;font-size:14px;margin:0 0 8px 0;">This code expires in <strong>${expiryLabel}</strong>.</p>
+    <p style="color:#94a3b8;font-size:14px;margin:0;">If you didn't request this code, please ignore this email.</p>`;
 
   const apiKey = Deno.env.get('RESEND_API_KEY');
   if (apiKey) {
     const resend = new Resend(apiKey);
-    const result = await resend.emails.send({
+    await resend.emails.send({
       from: 'Marketing iO Team <hello@marketingio.co.za>',
       to: normalizedEmail,
-      subject: 'Reset your Marketing iO password',
+      subject: `Your new Marketing iO code: ${newOtp}`,
       html: wrapEmail(bodyHtml)
     });
-    if (result.error) { console.error('[send-forgot-password-email] Resend error:', result.error); }
-  } else {
-    console.error('[send-forgot-password-email] RESEND_API_KEY missing');
   }
 
   return Response.json({ success: true });

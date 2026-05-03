@@ -68,7 +68,16 @@
     },
     "pending_otp_purpose": {
       "type": "string",
-      "description": "Purpose of the pending OTP (signup_verification, login_mfa, etc.)"
+      "description": "Purpose of the pending OTP (signup_verification, login_mfa, password_reset)"
+    },
+    "password_reset_token": {
+      "type": "string",
+      "description": "Unique token for password reset link"
+    },
+    "password_reset_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the password reset token expires"
     }
   },
   "required": []

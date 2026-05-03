@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Eye, EyeOff } from 'lucide-react';
 import { validatePassword, getPasswordStrength } from '@/lib/passwordValidator';
 
 export default function ResetPassword() {
@@ -13,129 +13,48 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState(false);
   const [valid, setValid] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const token = searchParams.get('token');
 
   useEffect(() => {
     async function validateToken() {
       if (!token) {
-        setError('No reset token provided');
+        setError('No reset token provided.');
         setLoading(false);
         return;
       }
-
       try {
-        // Look up OTPCode by token
-        const otpCodes = await base44.entities.OTPCode.filter({
-          code: token,
-          purpose: 'password_reset',
-          used: false
-        });
-
-        if (!otpCodes || otpCodes.length === 0) {
-          setError('This reset link is invalid or has already been used');
-          setLoading(false);
-          return;
-        }
-
-        const otp = otpCodes[0];
-
-        // Check if expired
-        if (new Date(otp.expires_at) < new Date()) {
-          setError('This reset link has expired. Request a new one.');
-          setLoading(false);
-          return;
-        }
-
+        await base44.functions.invoke('reset-password', { token, action: 'validate' });
         setValid(true);
-        setLoading(false);
       } catch (err) {
-        setError(err.message || 'An error occurred validating the reset link');
+        const msg = err?.response?.data?.message || 'This reset link is invalid or has expired.';
+        setError(msg);
+      } finally {
         setLoading(false);
       }
     }
-
     validateToken();
   }, [token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
 
-    // Validate passwords match
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    // Validate password strength
+    if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
     const validation = validatePassword(newPassword);
-    if (!validation.valid) {
-      setError(validation.errors[0]);
-      return;
-    }
+    if (!validation.valid) { setError(validation.errors[0]); return; }
 
     setSubmitting(true);
-
     try {
-      // Look up OTPCode
-      const otpCodes = await base44.entities.OTPCode.filter({
-        code: token,
-        purpose: 'password_reset',
-        used: false
-      });
-
-      const otp = otpCodes[0];
-
-      // Find user
-      const users = await base44.entities.User.filter({ email: otp.email });
-      if (!users || users.length === 0) {
-        setError('User not found');
-        setSubmitting(false);
-        return;
-      }
-
-      const user = users[0];
-
-      // Update user password (Base44 auth would handle actual password hashing)
-      await base44.entities.User.update(user.id, {
-        password_last_changed_at: new Date().toISOString(),
-        force_password_reset_required: false
-      });
-
-      // Mark OTP as used
-      await base44.entities.OTPCode.update(otp.id, {
-        used: true,
-        used_at: new Date().toISOString()
-      });
-
-      // Log security event
-      await base44.entities.SecurityEvent.create({
-        event_type: 'password_reset_completed',
-        user_id: user.id,
-        email: otp.email,
-        details: 'Password reset completed successfully'
-      });
-
-      // Send confirmation email
-      await base44.integrations.Core.SendEmail({
-        to: otp.email,
-        subject: 'Your Marketing iO password was changed',
-        body: 'Your password was successfully reset. If this wasn\'t you, contact info@marketingio.co.za immediately.'
-      });
-
+      await base44.functions.invoke('reset-password', { token, newPassword });
       setSuccess(true);
-
-      setTimeout(() => {
-        navigate('/login?success=Password reset successfully. Please log in with your new password.');
-      }, 3000);
+      setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
-      setError(err.message || 'An error occurred resetting your password');
-      console.error('Reset password error:', err);
+      setError(err?.response?.data?.message || 'Failed to reset password. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -163,11 +82,8 @@ export default function ResetPassword() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm">{error}</p>
-              <Button
-                className="w-full"
-                onClick={() => navigate('/forgot-password')}
-              >
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <Button className="w-full" onClick={() => navigate('/forgot-password')}>
                 Request New Reset Link
               </Button>
             </CardContent>
@@ -181,16 +97,16 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen bg-background p-4 flex items-center justify-center">
         <div className="w-full max-w-md">
-          <Card className="border-success/50">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-success">
                 <CheckCircle2 className="w-5 h-5" />
-                Password Reset
+                Password Reset Successfully
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Your password has been reset successfully. Redirecting to login...
+                Your password has been updated. Redirecting to login…
               </p>
             </CardContent>
           </Card>
@@ -204,80 +120,76 @@ export default function ResetPassword() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <img
-            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
+            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
             alt="Marketing iO"
-            className="h-8 object-contain mx-auto"
-            style={{ filter: 'invert(1) brightness(2)', mixBlendMode: 'screen' }}
+            className="h-12 mx-auto mb-4 object-contain"
           />
-          <h1 className="text-2xl font-bold mt-4">Reset Password</h1>
+          <h1 className="text-2xl font-bold text-white">Reset Password</h1>
         </div>
 
-        <Card className="border-border/50">
-          <CardHeader>
-            <CardTitle>Create New Password</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="flex gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                  <p className="text-sm text-destructive">{error}</p>
-                </div>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-4 bg-slate-800/60 border border-slate-700 rounded-xl p-6">
+          {error && (
+            <div className="flex gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
 
-              <div>
-                <label className="text-sm font-medium mb-2 block">New Password</label>
-                <Input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Min 10 chars, 1 uppercase, 1 lowercase, 1 number"
-                  disabled={submitting}
-                  required
-                  autoFocus
-                />
-                {passwordStrength && (
-                  <p className={`text-xs mt-1 ${passwordStrength.color}`}>
-                    Strength: {passwordStrength.level}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">Confirm Password</label>
-                <Input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your new password"
-                  disabled={submitting}
-                  required
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Resetting...
-                  </>
-                ) : (
-                  'Reset Password'
-                )}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">New Password</label>
+            <div className="relative">
+              <Input
+                type={showPw ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Min 10 chars, 1 upper, 1 lower, 1 number"
                 disabled={submitting}
-                onClick={() => navigate('/login')}
-              >
-                Back to Login
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                required
+                autoFocus
+                className="bg-slate-700 border-slate-600 text-white pr-10"
+              />
+              <button type="button" onClick={() => setShowPw(v => !v)}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200">
+                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {passwordStrength && (
+              <p className={`text-xs mt-1 ${passwordStrength.color}`}>
+                Strength: {passwordStrength.level}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">Confirm Password</label>
+            <Input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Repeat your new password"
+              disabled={submitting}
+              required
+              className="bg-slate-700 border-slate-600 text-white"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
+          >
+            {submitting ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Resetting…</span> : 'Reset Password'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className="w-full py-2.5 rounded-lg font-medium text-slate-400 text-sm hover:text-white transition border border-slate-600 hover:border-slate-400"
+          >
+            Back to Login
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -55,14 +55,10 @@ export default function VerifyOTP() {
     if (resendCooldown > 0) return;
 
     try {
-      // Re-trigger the appropriate flow to generate a new OTP
-      if (purpose === 'login_mfa') {
-        setError('Please go back to the sign-in page to request a new code.');
-        return;
-      }
-      // For signup_verification, call register won't work as user exists — use a dedicated resend
-      // Fall back: navigate back with a message
-      setError('Please go back and sign in again to receive a new code.');
+      await base44.functions.invoke('resend-otp', { email, purpose });
+      setResendCount(c => c + 1);
+      setResendCooldown(60);
+      setError('');
     } catch (err) {
       setError('Failed to resend code. Please try again.');
     }

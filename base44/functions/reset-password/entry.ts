@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import bcrypt from 'npm:bcryptjs@2.4.3';
 import { Resend } from 'npm:resend@3.2.0';
 
 const LOGO_URL = 'https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png';
@@ -28,57 +29,61 @@ function wrapEmail(bodyHtml) {
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const { email } = await req.json();
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return Response.json({ error: 'Valid email required' }, { status: 400 });
+  // Handle token validation (GET-style via POST with action=validate)
+  const body = await req.json();
+  const { token, newPassword, action } = body;
+
+  if (!token) {
+    return Response.json({ error: 'Token is required.' }, { status: 400 });
   }
 
-  const normalizedEmail = email.toLowerCase().trim();
-
-  // Always return 200 — don't reveal if user exists
-  const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+  // Find user by reset token
+  const users = await base44.asServiceRole.entities.User.filter({ password_reset_token: token });
   const user = users?.[0];
 
-  if (!user) {
-    return Response.json({ success: true });
+  if (!user || !user.password_reset_expires_at) {
+    return Response.json({ error: 'invalid_token', message: 'This reset link is invalid or has already been used.' }, { status: 400 });
   }
 
-  // Generate reset token stored directly on User record
-  const resetToken = crypto.randomUUID().replace(/-/g, '');
-  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  if (new Date(user.password_reset_expires_at) < new Date()) {
+    return Response.json({ error: 'expired_token', message: 'This reset link has expired. Please request a new one.' }, { status: 400 });
+  }
+
+  // If just validating
+  if (action === 'validate') {
+    return Response.json({ valid: true, email: user.email });
+  }
+
+  // Resetting password
+  if (!newPassword || newPassword.length < 10) {
+    return Response.json({ error: 'Password must be at least 10 characters.' }, { status: 400 });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
 
   await base44.asServiceRole.entities.User.update(user.id, {
-    password_reset_token: resetToken,
-    password_reset_expires_at: expiresAt
+    password_hash: passwordHash,
+    password_reset_token: null,
+    password_reset_expires_at: null,
+    failed_login_count: 0,
+    lockout_until: null
   });
 
-  const appUrl = 'https://app.marketingio.co.za';
-  const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
-  const fullName = user.full_name || 'there';
-
-  const bodyHtml = `
-    <p style="margin:0 0 16px 0;">Hi ${fullName},</p>
-    <p style="margin:0 0 16px 0;">We received a request to reset your Marketing iO password.</p>
-    <p style="margin:0 0 24px 0;">Click the button below to set a new password. The link expires in <strong>30 minutes</strong>.</p>
-    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;"><tr><td>
-      <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);color:#ffffff;padding:14px 32px;border-radius:8px;font-weight:600;font-size:16px;text-decoration:none;">Reset Password →</a>
-    </td></tr></table>
-    <p style="font-size:14px;color:#64748b;margin:0 0 16px 0;">Or copy this link:<br><a href="${resetUrl}" style="color:#a764e6;word-break:break-all;">${resetUrl}</a></p>
-    <p style="font-size:14px;color:#94a3b8;margin:0;">If you didn't request this, ignore this email — your account is safe.</p>`;
-
+  // Send confirmation email
   const apiKey = Deno.env.get('RESEND_API_KEY');
   if (apiKey) {
     const resend = new Resend(apiKey);
-    const result = await resend.emails.send({
+    const bodyHtml = `
+      <p style="margin:0 0 16px 0;">Hi ${user.full_name || 'there'},</p>
+      <p style="margin:0 0 16px 0;">Your Marketing iO password was successfully reset.</p>
+      <p style="color:#94a3b8;font-size:14px;margin:0;">If this wasn't you, contact <a href="mailto:hello@marketingio.co.za" style="color:#a764e6;">hello@marketingio.co.za</a> immediately.</p>`;
+    await resend.emails.send({
       from: 'Marketing iO Team <hello@marketingio.co.za>',
-      to: normalizedEmail,
-      subject: 'Reset your Marketing iO password',
+      to: user.email,
+      subject: 'Your Marketing iO password has been changed',
       html: wrapEmail(bodyHtml)
     });
-    if (result.error) { console.error('[send-forgot-password-email] Resend error:', result.error); }
-  } else {
-    console.error('[send-forgot-password-email] RESEND_API_KEY missing');
   }
 
   return Response.json({ success: true });
