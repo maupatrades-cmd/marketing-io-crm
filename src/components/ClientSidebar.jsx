@@ -58,7 +58,11 @@ export default function ClientSidebar({ mobileOpen, setMobileOpen, user }) {
   ];
 
   const logout = () => {
-    base44.auth.logout("/");
+    import('@/lib/customAuth').then(({ destroySession }) => {
+      destroySession(user?.id).then(() => {
+        window.location.href = '/login';
+      });
+    });
   };
 
   return (
