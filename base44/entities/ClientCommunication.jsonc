@@ -1,0 +1,108 @@
+{
+  "name": "ClientCommunication",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Denormalised client business name"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "User ID of sender (client user)"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Name of sender"
+    },
+    "sender_email": {
+      "type": "string",
+      "description": "Email of sender"
+    },
+    "message_type": {
+      "type": "string",
+      "enum": [
+        "general_inquiry",
+        "support_request",
+        "feedback",
+        "urgent_issue",
+        "billing_inquiry"
+      ],
+      "default": "general_inquiry",
+      "description": "Category of message"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Message subject line"
+    },
+    "message": {
+      "type": "string",
+      "description": "Full message content"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "acknowledged",
+        "in_progress",
+        "resolved",
+        "closed"
+      ],
+      "default": "new",
+      "description": "Communication status"
+    },
+    "assigned_to_id": {
+      "type": "string",
+      "description": "User ID of staff member assigned to handle"
+    },
+    "assigned_to_name": {
+      "type": "string",
+      "description": "Name of assigned staff"
+    },
+    "response_message": {
+      "type": "string",
+      "description": "Response from owner/admin"
+    },
+    "responded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When response was sent"
+    },
+    "responded_by_id": {
+      "type": "string",
+      "description": "User ID of responder"
+    },
+    "responded_by_name": {
+      "type": "string",
+      "description": "Name of responder"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "urgent"
+      ],
+      "default": "normal"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether owner/admin has read the message"
+    },
+    "read_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "client_id",
+    "sender_id",
+    "subject",
+    "message"
+  ]
+}
