@@ -75,17 +75,17 @@ Deno.serve(async (req) => {
   }
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Step 3: Check existing user
-  console.log('[auth-register] Step: checking existing user for', normalizedEmail);
+  // Step 3: Check existing app user
+  console.log('[auth-register] Step: checking existing app user for', normalizedEmail);
   let existing;
   try {
-    existing = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+    existing = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
   } catch (err) {
-    console.error('[auth-register] user_lookup_failed:', err.message);
-    return Response.json({ error: 'user_lookup_failed', detail: err.message }, { status: 500 });
+    console.error('[auth-register] appuser_lookup_failed:', err.message);
+    return Response.json({ error: 'appuser_lookup_failed', detail: err.message }, { status: 500 });
   }
   if (existing && existing.length > 0) {
-    return Response.json({ error: 'Account already exists' }, { status: 409 });
+    return Response.json({ error: 'Account already exists with this email' }, { status: 409 });
   }
 
   // Step 4: Hash password
@@ -98,36 +98,35 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'password_hash_failed', detail: err.message }, { status: 500 });
   }
 
-  // Step 5: Create user record (OTP included in create to avoid a separate update)
-  console.log('[auth-register] Step: creating user record');
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const otpExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-  let newUser;
-  const userPayload = {
-    email: normalizedEmail,
-    full_name: fullName.trim(),
-    phone: phone?.trim() || '',
-    role: 'client',
-    password_hash: passwordHash,
-    pending_verification: true,
-    email_verified: false,
-    failed_login_count: 0,
-    pending_otp_code: otp,
-    pending_otp_expires_at: otpExpires,
-    pending_otp_purpose: 'signup_verification'
-  };
-  try {
-    newUser = await base44.asServiceRole.entities.User.create(userPayload);
-  } catch (err) {
-    console.error('[auth-register] user_create_failed:', err.message);
-    return Response.json({
-      error: 'user_create_failed',
-      detail: err.message,
-      payload: { email: normalizedEmail, full_name: fullName.trim(), role: 'client' }
-    }, { status: 500 });
-  }
-  const createdUserId = newUser.id;
-  console.log('[auth-register] User created, id:', createdUserId);
+  // Step 5: Create app user record (OTP included in create to avoid a separate update)
+   console.log('[auth-register] Step: creating app user record');
+   const otp = String(Math.floor(100000 + Math.random() * 900000));
+   const otpExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+   let newUser;
+   const userPayload = {
+     email: normalizedEmail,
+     full_name: fullName.trim(),
+     role: 'client',
+     password_hash: passwordHash,
+     pending_verification: true,
+     email_verified: false,
+     failed_login_count: 0,
+     pending_otp_code: otp,
+     pending_otp_expires_at: otpExpires,
+     pending_otp_purpose: 'signup_verification'
+   };
+   try {
+     newUser = await base44.asServiceRole.entities.AppUser.create(userPayload);
+   } catch (err) {
+     console.error('[auth-register] appuser_create_failed:', err.message);
+     return Response.json({
+       error: 'appuser_create_failed',
+       detail: err.message,
+       payload: { email: normalizedEmail, full_name: fullName.trim(), role: 'client' }
+     }, { status: 500 });
+   }
+   const createdUserId = newUser.id;
+   console.log('[auth-register] AppUser created, id:', createdUserId);
 
   // Step 6: Create client record
   console.log('[auth-register] Step: creating client record');
@@ -145,8 +144,8 @@ Deno.serve(async (req) => {
     createdClientId = newClient.id;
     console.log('[auth-register] Client created, id:', createdClientId);
   } catch (err) {
-    console.error('[auth-register] client_create_failed — rolling back user:', err.message);
-    try { await base44.asServiceRole.entities.User.delete(createdUserId); } catch (_) {}
+    console.error('[auth-register] client_create_failed — rolling back app user:', err.message);
+    try { await base44.asServiceRole.entities.AppUser.delete(createdUserId); } catch (_) {}
     return Response.json({ error: 'client_create_failed', detail: err.message }, { status: 500 });
   }
 

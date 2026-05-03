@@ -1,0 +1,93 @@
+{
+  "name": "AppUser",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "User email address"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "User full name"
+    },
+    "password_hash": {
+      "type": "string",
+      "description": "Bcrypt hashed password"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "client",
+        "staff",
+        "admin"
+      ],
+      "default": "client",
+      "description": "User role in the app"
+    },
+    "email_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Has email been verified"
+    },
+    "pending_verification": {
+      "type": "boolean",
+      "default": true,
+      "description": "Waiting for signup OTP verification"
+    },
+    "pending_otp_code": {
+      "type": "string",
+      "description": "Current OTP code"
+    },
+    "pending_otp_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When OTP expires"
+    },
+    "pending_otp_purpose": {
+      "type": "string",
+      "enum": [
+        "signup_verification",
+        "login_mfa",
+        "password_reset"
+      ],
+      "description": "What the OTP is for"
+    },
+    "session_token": {
+      "type": "string",
+      "description": "Active session token"
+    },
+    "session_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When session expires"
+    },
+    "last_login_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last login timestamp"
+    },
+    "failed_login_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Consecutive failed login attempts"
+    },
+    "lockout_until": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Account locked until this time"
+    },
+    "password_reset_token": {
+      "type": "string",
+      "description": "Token for password reset email"
+    },
+    "password_reset_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When reset token expires"
+    }
+  },
+  "required": [
+    "email",
+    "password_hash"
+  ]
+}

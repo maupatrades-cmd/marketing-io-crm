@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   const normalizedEmail = email.toLowerCase().trim();
   const now = new Date();
 
-  const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+  const users = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
   const user = users?.[0];
 
   let otpValid = false;
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
   }
 
   if (user) {
-    // Existing user verification
+    // Existing app user verification
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
 
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       userUpdate.failed_login_count = 0;
     }
 
-    await base44.asServiceRole.entities.User.update(user.id, userUpdate);
+    await base44.asServiceRole.entities.AppUser.update(user.id, userUpdate);
 
     return Response.json({
       token,

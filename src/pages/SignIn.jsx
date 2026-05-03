@@ -45,15 +45,18 @@ export default function SignIn() {
         return;
       }
       if (data.needs_otp) {
+        // Store temporary session for MFA verification
+        localStorage.setItem('mio_pending_login', JSON.stringify({ email: data.email, user_id: data.user_id }));
         navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=login_mfa`);
         return;
       }
       if (data.token) {
         base44.auth.setToken(data.token);
+        localStorage.setItem('mio_session_token', data.token);
         window.location.href = '/client-portal';
         return;
       }
-      } catch (err) {
+    } catch (err) {
       const status = err?.response?.status;
       const detail = err?.response?.data?.error;
       if (status === 423) {

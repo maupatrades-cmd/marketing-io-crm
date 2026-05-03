@@ -57,16 +57,10 @@ Deno.serve(async (req) => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-  const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+  const users = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
   const user = users?.[0];
 
   if (!user) {
-    try {
-      await base44.asServiceRole.entities.LoginAttempt.create({
-        email_attempted: normalizedEmail, success: false,
-        failure_reason: 'account_not_found', attempted_at: new Date().toISOString()
-      });
-    } catch (_) {}
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
@@ -78,7 +72,7 @@ Deno.serve(async (req) => {
     // Re-generate OTP so they can verify
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    await base44.asServiceRole.entities.User.update(user.id, {
+    await base44.asServiceRole.entities.AppUser.update(user.id, {
       pending_otp_code: otp,
       pending_otp_expires_at: expires,
       pending_otp_purpose: 'signup_verification'
@@ -95,28 +89,26 @@ Deno.serve(async (req) => {
     if (newCount >= 5) {
       updateData.lockout_until = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     }
-    await base44.asServiceRole.entities.User.update(user.id, updateData);
-    try {
-      await base44.asServiceRole.entities.LoginAttempt.create({
-        email_attempted: normalizedEmail, success: false,
-        failure_reason: 'wrong_password', attempted_at: new Date().toISOString(), user_id: user.id
-      });
-    } catch (_) {}
+    await base44.asServiceRole.entities.AppUser.update(user.id, updateData);
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  // Valid password — generate MFA OTP stored on User record
+  // Valid password — generate MFA OTP stored on AppUser record
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-  await base44.asServiceRole.entities.User.update(user.id, {
+  await base44.asServiceRole.entities.AppUser.update(user.id, {
     pending_otp_code: otp,
     pending_otp_expires_at: expires,
     pending_otp_purpose: 'login_mfa',
     failed_login_count: 0
   });
 
-  await sendOtpEmail(normalizedEmail, user.full_name || 'there', otp);
+  try { await sendOtpEmail(normalizedEmail, user.full_name || 'there', otp); } catch (_) {}
 
-  return Response.json({ needs_otp: true, email: normalizedEmail }, { status: 200 });
+  return Response.json({ 
+    needs_otp: true, 
+    email: normalizedEmail,
+    user_id: user.id 
+  }, { status: 200 });
 });
