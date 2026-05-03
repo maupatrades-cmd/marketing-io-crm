@@ -53,5 +53,27 @@
     "email",
     "code",
     "purpose"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "system"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "system"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "system"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "system"
+      }
+    }
+  }
 }
