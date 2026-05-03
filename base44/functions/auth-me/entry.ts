@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Token is required.' }, { status: 400 });
   }
 
-  const users = await base44.asServiceRole.entities.User.filter({ session_token: token });
+  const users = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
   if (!users || users.length === 0) {
     return Response.json({ error: 'Invalid session' }, { status: 401 });
   }
