@@ -1,4 +1,5 @@
 import { CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export default function OnboardingProgress({ completed, total, status }) {
@@ -30,14 +31,14 @@ export default function OnboardingProgress({ completed, total, status }) {
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-foreground">{percentage}%</p>
-          <Badge className={cn(
-            "text-xs mt-1",
+          <div className={cn(
+            "text-xs mt-1 inline-block px-2 py-1 rounded border",
             status === 'completed' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
             status === 'in_progress' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
             'bg-slate-600/20 text-slate-400 border-slate-600/30'
           )}>
             {statusLabels[status]}
-          </Badge>
+          </div>
         </div>
       </div>
 
@@ -71,8 +72,4 @@ export default function OnboardingProgress({ completed, total, status }) {
       </div>
     </div>
   );
-}
-
-function Badge({ className, children }) {
-  return <span className={`inline-block px-2 py-1 rounded border ${className}`}>{children}</span>;
 }

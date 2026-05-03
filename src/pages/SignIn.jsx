@@ -48,7 +48,12 @@ export default function SignIn() {
         navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=login_mfa`);
         return;
       }
-    } catch (err) {
+      if (data.token) {
+        base44.auth.setToken(data.token);
+        window.location.href = '/client-portal';
+        return;
+      }
+      } catch (err) {
       const status = err?.response?.status;
       if (status === 423) {
         setError('Account temporarily locked due to multiple failed attempts. Please try again later or reset your password.');

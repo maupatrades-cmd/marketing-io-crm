@@ -53,6 +53,7 @@ import Register from './pages/Register';
 import VerifyOTP from './pages/VerifyOTP';
 import ClientOnboardingFormFull from './pages/ClientOnboardingFormFull';
 import ClientOnboardingWizard from './pages/ClientOnboardingWizard';
+import StaffImageGenerator from './pages/StaffImageGenerator';
 import ClientInvoices from './pages/ClientInvoices';
 import ClientDeliverables from './pages/ClientDeliverables';
 import ClientReports from './pages/ClientReports';
@@ -163,6 +164,7 @@ const AuthenticatedApp = () => {
       <Route path="/staff/clients" element={<RouteGuard allowedRoles={["field_agent", "cpc", "head_of_tech"]} fallbackPath="/staff"><StaffMyClients /></RouteGuard>} />
       <Route path="/staff/verify-leads" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/staff"><StaffVerifyLeads /></RouteGuard>} />
       <Route path="/staff/communications" element={<StaffCommunications />} />
+      <Route path="/staff/image-generator" element={<RouteGuard allowedRoles={["admin", "owner", "head_of_tech"]} fallbackPath="/staff"><StaffImageGenerator /></RouteGuard>} />
       
       {/* Client Portal Routes — require client role */}
       <Route path="/client-onboarding" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOnboardingWizard /></RouteGuard>} />
