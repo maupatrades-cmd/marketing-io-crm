@@ -9,6 +9,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import DesignPreview from './pages/DesignPreview';
 import OwnerDashboard from './pages/OwnerDashboard';
 import ClientPortal from './pages/ClientPortal';
+import ClientProjectStatus from './pages/ClientProjectStatus';
 import Clients from './pages/Clients';
 import Deals from './pages/Deals';
 import Leads from './pages/Leads';
@@ -171,6 +172,7 @@ const AuthenticatedApp = () => {
       <Route path="/client/uploads" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientUploads /></RouteGuard>} />
       <Route path="/client/messages" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientMessages /></RouteGuard>} />
       <Route path="/client/profile" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientProfile /></RouteGuard>} />
+      <Route path="/client/project-status" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientProjectStatus /></RouteGuard>} />
       <Route path="/client/order-addons" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderAddOns /></RouteGuard>} />
       <Route path="/client/order-domain" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderDomain /></RouteGuard>} />
       <Route path="/client/order-email" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderEmail /></RouteGuard>} />
