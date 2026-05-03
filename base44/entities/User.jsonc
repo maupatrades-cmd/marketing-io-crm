@@ -57,5 +57,6 @@
       "format": "date-time",
       "description": "Account locked until this time"
     }
-  }
+  },
+  "required": []
 }
