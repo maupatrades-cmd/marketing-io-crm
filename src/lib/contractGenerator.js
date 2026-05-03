@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { format } from "date-fns";
+import { notifyClient } from "@/lib/clientNotifier";
 
 const BRAND_COLOR = "#a764e6";
 const ACCENT_COLOR = "#ec4899";
@@ -894,4 +895,21 @@ async function generateContractPDF(deal, client, packageData) {
   return doc.output("blob");
 }
 
-export { generateContractPDF, getNextContractNumber };
+/**
+ * Call this after saving a Contract record and setting status to "sent"
+ * to notify the client to review and sign.
+ */
+async function notifyContractSent(contract) {
+  if (!contract?.client_id) return;
+  notifyClient({
+    clientId: contract.client_id,
+    type: "contract_to_sign",
+    title: "Please review and sign your agreement",
+    body: "Your Marketing iO Master Service Agreement is ready for digital signature.",
+    relatedEntityType: "Contract",
+    relatedEntityId: contract.id,
+    actionUrl: contract.signing_token ? `/sign-contract?token=${contract.signing_token}` : "/client/contracts",
+  }).catch(() => {});
+}
+
+export { generateContractPDF, getNextContractNumber, notifyContractSent };

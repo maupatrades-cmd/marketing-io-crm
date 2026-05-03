@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { autoCreateDeliverables } from "@/lib/fulfilmentAutomation";
+import { notifyClient } from "@/lib/clientNotifier";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -234,7 +235,7 @@ export default function LogSale() {
     });
 
     // 6. Setup fee invoice
-    await base44.entities.Invoice.create({
+    const invoice = await base44.entities.Invoice.create({
       client_id: clientId,
       client_name: clientName,
       deal_id: deal.id,
@@ -246,6 +247,19 @@ export default function LogSale() {
       due_date: plusDays(7),
       status: "sent",
     });
+    // Notify client of new invoice
+    if (invoice?.id && clientId) {
+      const pkg = PACKAGE_DATA[selectedPackage];
+      notifyClient({
+        clientId,
+        type: "invoice_issued",
+        title: `Setup invoice issued — R${setupFee.toLocaleString()}`,
+        body: `Invoice for your ${pkg?.label || selectedPackage} package is ready. Click to view and pay.`,
+        relatedEntityType: "Invoice",
+        relatedEntityId: invoice.id,
+        actionUrl: "/client/invoices",
+      }).catch(() => {});
+    }
 
     // 7. Auto-create ClientOnboarding record
     const adminUsers = users.filter(u => u.role === "admin" || u.role === "owner");
