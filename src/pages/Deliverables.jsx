@@ -7,30 +7,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle2, Clock, AlertCircle, Search } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, Search, Plus } from 'lucide-react';
+import TimeLogModal from '@/components/deliverables/TimeLogModal';
 
 export default function Deliverables() {
   const [deliverables, setDeliverables] = useState([]);
   const [clients, setClients] = useState([]);
   const [users, setUsers] = useState([]);
+  const [timeLogs, setTimeLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [filterPhase, setFilterPhase] = useState('all');
   const [filterClient, setFilterClient] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [loggingFor, setLoggingFor] = useState(null);
 
-  useEffect(() => {
+  const loadData = () => {
     Promise.all([
       base44.entities.Deliverable.list('-created_date', 500),
       base44.entities.Client.list('-created_date', 200),
-      base44.entities.User.list()
-    ]).then(([d, c, u]) => {
+      base44.entities.User.list(),
+      base44.entities.TimeLog.list('-date_worked', 2000),
+    ]).then(([d, c, u, tl]) => {
       setDeliverables(d);
       setClients(c);
       setUsers(u);
+      setTimeLogs(tl);
       setLoading(false);
     });
-  }, []);
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const statusConfig = {
     not_started: { icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted/20', label: 'Not Started' },
@@ -204,7 +211,7 @@ export default function Deliverables() {
                       </div>
 
                       <div className="col-span-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mb-2">
                           <Icon className={`w-4 h-4 ${config.color}`} />
                           <Select value={d.status} onValueChange={newStatus => handleStatusChange(d, newStatus)}>
                             <SelectTrigger className={`bg-transparent border-0 text-sm font-medium ${config.color} p-0 h-auto`}>
@@ -218,6 +225,26 @@ export default function Deliverables() {
                             </SelectContent>
                           </Select>
                         </div>
+                        {/* Time logged */}
+                        {(() => {
+                          const hrs = timeLogs.filter(t => t.deliverable_id === d.id).reduce((s, t) => s + (t.hours || 0), 0);
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                <Clock className="inline w-3 h-3 mr-0.5" />
+                                {hrs > 0 ? `${hrs % 1 === 0 ? hrs : hrs.toFixed(1)}h logged` : 'No time logged'}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-xs px-2 text-primary hover:bg-primary/10"
+                                onClick={() => setLoggingFor(d)}
+                              >
+                                <Plus className="w-3 h-3 mr-0.5" /> Log
+                              </Button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </CardContent>
@@ -227,6 +254,14 @@ export default function Deliverables() {
           )}
         </div>
       </div>
+
+      {loggingFor && (
+        <TimeLogModal
+          deliverable={loggingFor}
+          onLogged={loadData}
+          onClose={() => setLoggingFor(null)}
+        />
+      )}
     </AppLayout>
   );
 }

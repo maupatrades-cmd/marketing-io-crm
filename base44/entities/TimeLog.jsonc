@@ -1,0 +1,59 @@
+{
+  "name": "TimeLog",
+  "type": "object",
+  "properties": {
+    "deliverable_id": {
+      "type": "string",
+      "description": "Reference to Deliverable"
+    },
+    "deliverable_title": {
+      "type": "string",
+      "description": "Denormalised deliverable title"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Denormalised client name"
+    },
+    "staff_id": {
+      "type": "string",
+      "description": "Reference to User who logged time"
+    },
+    "staff_name": {
+      "type": "string",
+      "description": "Denormalised staff full name"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "setup",
+        "monthly_recurring",
+        "once_off"
+      ],
+      "description": "Deliverable phase at time of logging"
+    },
+    "hours": {
+      "type": "number",
+      "description": "Hours spent (supports decimals e.g. 1.5)"
+    },
+    "date_worked": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the work was done"
+    },
+    "description": {
+      "type": "string",
+      "description": "What was done during this time"
+    }
+  },
+  "required": [
+    "deliverable_id",
+    "client_id",
+    "staff_id",
+    "hours",
+    "date_worked"
+  ]
+}

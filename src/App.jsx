@@ -64,6 +64,7 @@ import ClientOrderDomain from './pages/ClientOrderDomain';
 import ClientOrderEmail from './pages/ClientOrderEmail';
 import ClientOrders from './pages/ClientOrders';
 import AdminServiceOrders from './pages/AdminServiceOrders';
+import StaffProductivity from './pages/StaffProductivity';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -142,6 +143,7 @@ const AuthenticatedApp = () => {
       <Route path="/owner/financials" element={<OwnerFinancials />} />
       <Route path="/owner/reports" element={<OwnerReports />} />
       <Route path="/admin/service-orders" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/"><AdminServiceOrders /></RouteGuard>} />
+      <Route path="/staff-productivity" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><StaffProductivity /></RouteGuard>} />
 
       {/* Staff Portal Routes */}
       <Route path="/staff" element={<StaffMyDay />} />
