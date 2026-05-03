@@ -128,10 +128,13 @@ export async function sendTemplatedEmail({
       
       // Send alert to admin
       try {
-        await base44.integrations.Core.SendEmail({
+        await base44.functions.invoke('send-email-public', {
+          purpose: 'forgot_password',
           to: 'thapelom@marketingio.co.za',
-          subject: `[ALERT] Email template failed: ${templateCode}`,
-          body: `Template rendering failed. Details:\n\n${validation.error}\n\nTemplate: ${templateCode}\nRecipient: ${toEmail}`
+          payload: {
+            full_name: 'Admin',
+            reset_url: `Template rendering failed: ${validation.error} | Template: ${templateCode} | Recipient: ${toEmail}`
+          }
         });
       } catch (err) {
         console.error('Failed to send alert email:', err);
@@ -144,10 +147,10 @@ export async function sendTemplatedEmail({
 
     // 4. Send with retry logic
     const sendResult = await retryWithBackoff(async () => {
-      return await base44.integrations.Core.SendEmail({
+      return await base44.functions.invoke('send-campaign', {
         to: toEmail,
         subject,
-        body: plainTextBody
+        body_html: htmlBody
       });
     });
 
@@ -163,13 +166,9 @@ export async function sendTemplatedEmail({
 
       // Send admin alert
       try {
-        await base44.integrations.Core.SendEmail({
-          to: 'admin@marketingio.co.za',
-          subject: `[ALERT] Email send failed (permanent): ${templateCode}`,
-          body: `Email send failed after 3 retries.\n\nTemplate: ${templateCode}\nRecipient: ${toEmail}\nError: ${sendResult.error}\n\nVariables used: ${JSON.stringify(variables, null, 2)}`
-        });
+        console.error(`[EmailSender] ALERT: Email send failed for template ${templateCode} to ${toEmail}. Error: ${sendResult.error}`);
       } catch (err) {
-        console.error('Failed to send admin alert:', err);
+        console.error('Failed to log admin alert:', err);
       }
 
       return { success: false, error: sendResult.error, attempt_count: sendResult.attempt_count };
