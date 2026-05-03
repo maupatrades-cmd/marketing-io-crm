@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { getCurrentUser } from "@/lib/customAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, LogOut, ChevronRight, MessageSquare, FileText, BarChart3, Settings, ShoppingCart, Files, Calendar } from "lucide-react";
+import { AlertCircle, LogOut, ChevronRight, MessageSquare, FileText, BarChart3, Settings, ShoppingCart, Files, Calendar, Download, Eye } from "lucide-react";
 import ProductCard from "@/components/clientportal/ProductCard";
 import EnquiryModal from "@/components/clientportal/EnquiryModal";
 import { PRODUCT_CATALOG, getProductsByType, getProductById } from "@/data/ProductCatalog";
@@ -28,6 +28,7 @@ export default function ClientPortal() {
   const [communications, setCommunications] = useState([]);
   const [deal, setDeal] = useState(null);
   const [staffCards, setStaffCards] = useState([]);
+  const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -58,22 +59,24 @@ export default function ClientPortal() {
         setClient(c);
 
         // Fetch hub data in parallel
-        try {
-          const [enqs, onb, dels, invs, comms, deals] = await Promise.all([
-            base44.entities.EnquiryEvent.filter({ client_id: c.id }).catch(() => []),
-            base44.entities.ClientOnboarding.filter({ client_id: c.id }, "-created_date", 1).catch(() => []),
-            base44.entities.Deliverable.filter({ client_id: c.id }, "-created_date", 50).catch(() => []),
-            base44.entities.Invoice.filter({ client_id: c.id, status: 'issued' }, "due_date", 5).catch(() => []),
-            base44.entities.ClientCommunication.filter({ client_id: c.id }, "-created_date", 20).catch(() => []),
-            base44.entities.Deal.filter({ client_id: c.id, stage: 'closed_won' }, "-created_date", 1).catch(() => [])
-          ]);
+         try {
+           const [enqs, onb, dels, invs, comms, deals, contracts] = await Promise.all([
+             base44.entities.EnquiryEvent.filter({ client_id: c.id }).catch(() => []),
+             base44.entities.ClientOnboarding.filter({ client_id: c.id }, "-created_date", 1).catch(() => []),
+             base44.entities.Deliverable.filter({ client_id: c.id }, "-created_date", 50).catch(() => []),
+             base44.entities.Invoice.filter({ client_id: c.id, status: 'issued' }, "due_date", 5).catch(() => []),
+             base44.entities.ClientCommunication.filter({ client_id: c.id }, "-created_date", 20).catch(() => []),
+             base44.entities.Deal.filter({ client_id: c.id, stage: 'closed_won' }, "-created_date", 1).catch(() => []),
+             base44.entities.Contract.filter({ client_id: c.id }, "-created_date", 10).catch(() => [])
+           ]);
 
-          setEnquiries(Array.isArray(enqs) ? enqs : []);
-          const onbRecord = Array.isArray(onb) ? onb[0] : onb;
-          setOnboarding(onbRecord);
-          setDeliverables(Array.isArray(dels) ? dels : []);
-          setInvoices(Array.isArray(invs) ? invs : []);
-          setCommunications(Array.isArray(comms) ? comms : []);
+           setEnquiries(Array.isArray(enqs) ? enqs : []);
+           const onbRecord = Array.isArray(onb) ? onb[0] : onb;
+           setOnboarding(onbRecord);
+           setDeliverables(Array.isArray(dels) ? dels : []);
+           setInvoices(Array.isArray(invs) ? invs : []);
+           setCommunications(Array.isArray(comms) ? comms : []);
+           setContracts(Array.isArray(contracts) ? contracts : []);
           
           const dealRecord = Array.isArray(deals) ? deals[0] : deals;
           setDeal(dealRecord);
@@ -139,6 +142,8 @@ export default function ClientPortal() {
   const activeDeliverables = deliverables.filter(d => d.status === 'in_progress' || d.status === 'awaiting_client');
   const recentMessages = communications.filter(c => c.response_message && new Date(c.created_date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
   const nextInvoice = invoices[0];
+  const pendingContract = contracts.find(c => c.status === 'sent' && !c.signed_by_client);
+  const activeContract = contracts.find(c => ['signed', 'active'].includes(c.status));
 
   // Determine current package and upgrades
   const currentPackage = getProductById(client.package);
@@ -211,6 +216,82 @@ export default function ClientPortal() {
                   </div>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {/* SECTION 2.5 — CONTRACTS */}
+        {pendingContract && (
+          <section className="space-y-4">
+            <div className="relative glass rounded-lg p-6 border-2 border-primary/50 animate-pulse-glow">
+              <div className="space-y-2 mb-4">
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">🖊️ Action Required: Sign Your Contract</h3>
+                <p className="text-sm text-muted-foreground">
+                  {PACKAGE_LABELS[pendingContract.package] || pendingContract.package} contract · R{pendingContract.setup_fee_zar?.toLocaleString() || 0} setup + R{pendingContract.monthly_retainer_zar?.toLocaleString() || 0}/month
+                </p>
+                <p className="text-xs text-destructive/80">
+                  This link expires on {new Date(pendingContract.signing_link_expires_at).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {pendingContract.document_url && (
+                  <Button size="sm" variant="outline" onClick={() => window.open(pendingContract.document_url, '_blank')}>
+                    <Eye className="w-4 h-4 mr-1" /> Preview Contract
+                  </Button>
+                )}
+                {new Date(pendingContract.signing_link_expires_at) > new Date() ? (
+                  <Button size="sm" onClick={() => window.open(`/sign-contract?token=${pendingContract.signing_token}`, '_blank')} className="gradient-bg text-white">
+                    Sign Now →
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => window.location.href = 'mailto:info@marketingio.co.za'}>
+                    Contact us for a new link
+                  </Button>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeContract && (
+          <section className="space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-3xl font-bold text-foreground">Your Contracts</h2>
+            </div>
+            <div className="h-1 w-20 gradient-bg rounded-full" />
+            <div className="glass rounded-lg p-6 mt-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-foreground">Your {PACKAGE_LABELS[activeContract.package] || activeContract.package} Contract</h3>
+                  <Badge className="mt-2 bg-success/15 text-success border-success/30">
+                    {activeContract.status === 'signed' && `Signed ${new Date(activeContract.signed_date).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' })}`}
+                    {activeContract.status === 'active' && 'Active'}
+                  </Badge>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Term: {new Date(activeContract.contract_start_date).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric' })} → {new Date(activeContract.contract_end_date).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {activeContract.final_signed_pdf_url && (
+                  <Button size="sm" variant="outline" onClick={() => window.open(activeContract.final_signed_pdf_url, '_blank')}>
+                    <Download className="w-4 h-4 mr-1" /> Download Signed Copy
+                  </Button>
+                )}
+                {activeContract.document_url && (
+                  <Button size="sm" variant="outline" onClick={() => window.open(activeContract.document_url, '_blank')}>
+                    <Eye className="w-4 h-4 mr-1" /> View Original
+                  </Button>
+                )}
+                <Button size="sm" variant="link" className="ml-auto" onClick={() => window.location.href = '/client/messages'}>
+                  Need to make changes? Contact your account admin →
+                </Button>
+              </div>
+              {contracts.length > 1 && (
+                <p className="text-xs text-muted-foreground mt-4">
+                  <a href="/client/contracts" className="text-primary hover:underline">View all {contracts.length} contracts →</a>
+                </p>
+              )}
             </div>
           </section>
         )}
