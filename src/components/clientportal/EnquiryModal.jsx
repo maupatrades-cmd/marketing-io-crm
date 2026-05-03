@@ -11,7 +11,8 @@ export default function EnquiryModal({ product, client, user, isOpen, onClose, o
   const [error, setError] = useState(null);
 
   const handleSubmit = async () => {
-    if (!user?.session_token) {
+    const token = localStorage.getItem('mio_session_token');
+    if (!token) {
       setError("Session expired. Please refresh and try again.");
       return;
     }
@@ -21,7 +22,7 @@ export default function EnquiryModal({ product, client, user, isOpen, onClose, o
 
     try {
       const response = await base44.functions.invoke("submit-enquiry", {
-        session_token: user.session_token,
+        session_token: token,
         product_id: product.id,
         client_message: message || null
       });

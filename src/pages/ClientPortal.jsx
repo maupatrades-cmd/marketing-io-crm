@@ -93,7 +93,9 @@ export default function ClientPortal() {
 
   // Determine current package and upgrades
   const currentPackage = getProductById(client.package);
-  const upgradeProducts = currentPackage?.upgrade_path?.map(pid => getProductById(pid)) || [];
+  const upgradeProducts = (!client.package || client.package === 'none') 
+    ? getProductsByType("package") 
+    : (currentPackage?.upgrade_path?.map(pid => getProductById(pid)) || []);
   const allAddOns = getProductsByType("addon");
   const physicalProducts = getProductsByType("physical");
 
@@ -134,12 +136,12 @@ export default function ClientPortal() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-12 space-y-16">
-        {/* Section A — Upgrade Package (if not on Dominate) */}
-        {client.package !== "dominate" && upgradeProducts.length > 0 && (
+        {/* Section A — Upgrade Package (if not on Dominate or no package) */}
+        {(client.package !== "dominate" && upgradeProducts.length > 0) && (
           <section className="space-y-4">
             <div className="space-y-1">
-              <h2 className="text-3xl font-bold text-foreground">Take it to the next level</h2>
-              <p className="text-muted-foreground">You're growing. Here's what comes next.</p>
+              <h2 className="text-3xl font-bold text-foreground">{client.package === 'none' || !client.package ? 'Get Started' : 'Take it to the next level'}</h2>
+              <p className="text-muted-foreground">{client.package === 'none' || !client.package ? 'Choose your marketing foundation.' : "You're growing. Here's what comes next."}</p>
             </div>
             <div className="h-1 w-20 gradient-bg rounded-full" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -147,7 +149,7 @@ export default function ClientPortal() {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  isActive={false}
+                  isActive={product.id === client.package}
                   imageUrl={productImages[product.id]}
                   onEnquire={handleEnquire}
                 />
@@ -168,7 +170,7 @@ export default function ClientPortal() {
               <ProductCard
                 key={product.id}
                 product={product}
-                isActive={false}
+                isActive={product.id === client.package}
                 imageUrl={productImages[product.id]}
                 onEnquire={handleEnquire}
               />
@@ -188,7 +190,7 @@ export default function ClientPortal() {
               <ProductCard
                 key={product.id}
                 product={product}
-                isActive={false}
+                isActive={product.id === client.package}
                 imageUrl={productImages[product.id]}
                 onEnquire={handleEnquire}
               />

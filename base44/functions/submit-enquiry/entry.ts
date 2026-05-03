@@ -77,6 +77,21 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Product not found' }, { status: 404 });
   }
 
+  // Check for duplicate enquiry (same client, same product in last 24h)
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const recentEnquiries = await base44.asServiceRole.entities.EnquiryEvent.filter({
+    client_id: client.id,
+    product_id: product.id
+  });
+  const hasDuplicateInLast24h = recentEnquiries?.some(e => 
+    new Date(e.created_date) > new Date(twentyFourHoursAgo)
+  );
+  if (hasDuplicateInLast24h) {
+    return Response.json({ 
+      error: 'You already enquired about this product in the last 24 hours. Our team will be in touch soon.' 
+    }, { status: 409 });
+  }
+
   // Create EnquiryEvent
   const enquiry = await base44.asServiceRole.entities.EnquiryEvent.create({
     client_user_id: user.id,
@@ -89,40 +104,54 @@ Deno.serve(async (req) => {
   });
 
   // Create Deal
-  const dealValue = product.setup_price + (product.monthly_price * (product.term_months || 0));
-  const deal = await base44.asServiceRole.entities.Deal.create({
+  const dealType = product.type === 'addon' ? 'add_on' : 'core_package';
+  const dealPayload = {
     client_id: client.id,
-    client_name: client.business_name,
-    deal_type: 'add_on',
-    package: client.package || 'none',
+    client_name: client.business_name || 'Unknown',
+    deal_type: dealType,
     stage: 'new_lead',
     setup_fee: product.setup_price,
     monthly_retainer: product.monthly_price,
     probability: 30,
     source: 'inbound',
     notes: `Portal enquiry: ${product.name}. Client message: ${client_message || 'none'}`
-  });
+  };
+
+  // For packages, track the product; for add-ons, track both
+  if (product.type === 'package') {
+    dealPayload.package = product.id;
+  } else {
+    dealPayload.add_on_name = product.name;
+    dealPayload.package = client.package || 'none';
+  }
+
+  const deal = await base44.asServiceRole.entities.Deal.create(dealPayload);
 
   // Update enquiry with deal_id
   await base44.asServiceRole.entities.EnquiryEvent.update(enquiry.id, { deal_id: deal.id });
 
   // Send emails
   const apiKey = Deno.env.get('RESEND_API_KEY');
+  let emailSent = true;
+
   if (!apiKey) {
     console.error('[submit-enquiry] RESEND_API_KEY not set');
-    return Response.json({ success: true, enquiry_id: enquiry.id, deal_id: deal.id }, { status: 200 });
+    emailSent = false;
   }
 
-  const resend = new Resend(apiKey);
+  // Email to Owner and Client
+  const businessName = client.business_name || 'Unknown';
+  const contactPerson = client.contact_person || 'Contact';
+  const contactEmail = client.email || 'N/A';
+  const contactPhone = client.phone || 'N/A';
 
-  // Email to Owner
   const ownerBody = `
     <p style="margin:0 0 16px 0;"><strong>New Portal Enquiry!</strong></p>
     <div style="background:#f0f4f8;padding:16px;border-radius:8px;margin:16px 0;">
-      <p style="margin:0 0 8px 0;"><strong>Business:</strong> ${client.business_name}</p>
-      <p style="margin:0 0 8px 0;"><strong>Contact:</strong> ${client.contact_person}</p>
-      <p style="margin:0 0 8px 0;"><strong>Email:</strong> ${client.email}</p>
-      <p style="margin:0 0 8px 0;"><strong>Phone:</strong> ${client.phone || 'N/A'}</p>
+      <p style="margin:0 0 8px 0;"><strong>Business:</strong> ${businessName}</p>
+      <p style="margin:0 0 8px 0;"><strong>Contact:</strong> ${contactPerson}</p>
+      <p style="margin:0 0 8px 0;"><strong>Email:</strong> ${contactEmail}</p>
+      <p style="margin:0 0 8px 0;"><strong>Phone:</strong> ${contactPhone}</p>
       <p style="margin:0;"><strong>Product:</strong> ${product.emoji} ${product.name}</p>
     </div>
     <p style="margin:0 0 8px 0;"><strong>Pricing:</strong></p>
@@ -130,9 +159,8 @@ Deno.serve(async (req) => {
     ${client_message ? `<p style="margin:0 0 16px 0;"><strong>Client's Message:</strong><br />${client_message}</p>` : ''}
     <p style="margin:0;"><a href="https://marketingio.co.za/deals" style="color:#a764e6;text-decoration:none;font-weight:600;">View Deal in CRM →</a></p>`;
 
-  // Email to Client
   const clientBody = `
-    <p style="margin:0 0 16px 0;">Hi ${user.full_name},</p>
+    <p style="margin:0 0 16px 0;">Hi ${user.full_name || 'there'},</p>
     <p style="margin:0 0 16px 0;">We received your enquiry about <strong>${product.emoji} ${product.name}</strong>.</p>
     <p style="margin:0 0 16px 0;">Our team will contact you within <strong>4 hours</strong> to discuss how we can help.</p>
     <div style="background:#f0f4f8;padding:16px;border-radius:8px;margin:16px 0;">
@@ -143,28 +171,41 @@ Deno.serve(async (req) => {
     <p style="margin:0;text-align:center;font-size:14px;color:#94a3b8;">—</p>
     <p style="margin:8px 0 0 0;text-align:center;font-size:12px;color:#94a3b8;">Marketing iO Team</p>`;
 
-  // Send all 3 emails in parallel
-  await Promise.all([
-    resend.emails.send({
-      from: 'Marketing iO Team <hello@marketingio.co.za>',
-      to: 'maupatrades@gmail.com',
-      subject: `🔥 New Portal Enquiry: ${product.name} from ${client.business_name}`,
-      html: wrapEmail(ownerBody)
-    }),
-    resend.emails.send({
-      from: 'Marketing iO Team <hello@marketingio.co.za>',
-      to: user.email,
-      subject: `We got your enquiry — ${product.name}`,
-      html: wrapEmail(clientBody)
-    }),
-    resend.emails.send({
-      from: 'Marketing iO Team <hello@marketingio.co.za>',
-      to: 'info@marketingio.co.za',
-      subject: `New enquiry assigned for follow-up: ${product.name}`,
-      html: wrapEmail(ownerBody)
-    })
-  ]);
+  // Send emails with error tracking
+  if (emailSent && apiKey) {
+    const resend = new Resend(apiKey);
+    const emailResults = await Promise.allSettled([
+      resend.emails.send({
+        from: 'Marketing iO Team <hello@marketingio.co.za>',
+        to: 'maupatrades@gmail.com',
+        subject: `🔥 New Portal Enquiry: ${product.name} from ${businessName}`,
+        html: wrapEmail(ownerBody)
+      }),
+      resend.emails.send({
+        from: 'Marketing iO Team <hello@marketingio.co.za>',
+        to: user.email,
+        subject: `We got your enquiry — ${product.name}`,
+        html: wrapEmail(clientBody)
+      }),
+      resend.emails.send({
+        from: 'Marketing iO Team <hello@marketingio.co.za>',
+        to: 'info@marketingio.co.za',
+        subject: `New enquiry assigned for follow-up: ${product.name}`,
+        html: wrapEmail(ownerBody)
+      })
+    ]);
+
+    const failures = emailResults.filter(r => r.status === 'rejected');
+    if (failures.length > 0) {
+      console.error('[submit-enquiry] Email failures:', failures.map(f => f.reason));
+    }
+  }
 
   console.log('[submit-enquiry] Success:', enquiry.id);
-  return Response.json({ success: true, enquiry_id: enquiry.id, deal_id: deal.id }, { status: 200 });
+  return Response.json({
+    success: true,
+    enquiry_id: enquiry.id,
+    deal_id: deal.id,
+    email_sent: emailSent
+  }, { status: 200 });
 });
