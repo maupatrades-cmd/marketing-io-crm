@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { getCurrentUser } from '@/lib/customAuth';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,8 +50,9 @@ export default function OwnerDashboard() {
       base44.entities.Invoice.list("-created_date", 100),
       base44.entities.Lead.list("-created_date", 100),
       base44.entities.MonthlyReport.list("-created_date", 100),
-      base44.auth.me(),
+      getCurrentUser(),
     ]).then(([c, d, com, inv, l, r, me]) => {
+      if (!me) { window.location.href = '/login'; return; }
       setClients(c);
       setDeals(d);
       setCommissions(com);

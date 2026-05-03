@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { getCurrentUser } from '@/lib/customAuth';
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,7 @@ export default function InternalMail() {
   const { toast } = useToast();
 
   useEffect(() => {
-    base44.auth.me().then(setMe);
+    getCurrentUser().then(u => { if (!u) { window.location.href = '/login'; return; } setMe(u); });
     base44.entities.User.list().then(setUsers);
   }, []);
 

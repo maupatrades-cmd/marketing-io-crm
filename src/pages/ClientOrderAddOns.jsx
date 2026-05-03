@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { getCurrentUser } from '@/lib/customAuth';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,7 +28,8 @@ export default function ClientOrderAddOns() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(async (me) => {
+    getCurrentUser().then(async (me) => {
+      if (!me) { window.location.href = '/login'; return; }
       setUser(me);
       const clients = await base44.entities.Client.filter({ email: me.email });
       if (clients.length > 0) {

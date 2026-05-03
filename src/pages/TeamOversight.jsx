@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
+import { getCurrentUser } from '@/lib/customAuth';
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +41,8 @@ export default function TeamOversight() {
   }, []);
 
   useEffect(() => {
-    base44.auth.me().then(user => {
+    getCurrentUser().then(user => {
+      if (!user) { window.location.href = '/login'; return; }
       setCurrentUser(user);
       if (user?.role !== "admin" && user?.role !== "owner") {
         navigate("/");

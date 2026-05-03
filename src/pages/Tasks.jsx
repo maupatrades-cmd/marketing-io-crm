@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { getCurrentUser } from '@/lib/customAuth';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -74,8 +75,9 @@ export default function Tasks() {
     base44.entities.Task.list("-created_date", 300),
     base44.entities.User.list(),
     base44.entities.Client.list("-created_date", 200),
-    base44.auth.me(),
+    getCurrentUser(),
   ]).then(([t, u, c, me]) => {
+    if (!me) { window.location.href = '/login'; return; }
     setTasks(t);
     setUsers(u);
     setClients(c);

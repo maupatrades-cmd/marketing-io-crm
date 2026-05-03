@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { getCurrentUser } from '@/lib/customAuth';
 import AppLayout from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,8 @@ export default function MyKPIs() {
   useEffect(() => {
     (async () => {
       try {
-        const currentUser = await base44.auth.me();
+        const currentUser = await getCurrentUser();
+        if (!currentUser) { window.location.href = '/login'; return; }
         setUser(currentUser);
 
         // Fetch targets for this user's role

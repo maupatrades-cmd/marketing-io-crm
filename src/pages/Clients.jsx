@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { getCurrentUser } from '@/lib/customAuth';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +56,8 @@ export default function Clients() {
    const ONBOARDING_FIELDS = ["onboarding_form_returned", "debit_mandate_signed", "brand_assets_received", "setup_fee_paid", "go_live_acknowledged"];
 
    const load = async () => {
-     const user = await base44.auth.me();
+     const user = await getCurrentUser();
+     if (!user) { window.location.href = '/login'; return; }
      if (user?.role !== "owner" && user?.role !== "admin") {
        window.location.href = "/staff/clients";
        return;

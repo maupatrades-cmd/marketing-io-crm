@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { getCurrentUser } from '@/lib/customAuth';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +19,8 @@ export default function ClientOrderEmail() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(async (me) => {
+    getCurrentUser().then(async (me) => {
+      if (!me) { window.location.href = '/login'; return; }
       setUser(me);
       const clients = await base44.entities.Client.filter({ email: me.email });
       if (clients.length > 0) {

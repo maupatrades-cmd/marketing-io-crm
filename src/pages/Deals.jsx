@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { getCurrentUser } from '@/lib/customAuth';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -109,7 +110,8 @@ export default function Deals() {
    const { toast } = useToast();
 
    const load = async () => {
-     const user = await base44.auth.me();
+     const user = await getCurrentUser();
+     if (!user) { window.location.href = '/login'; return; }
      setCurrentUser(user);
 
      // Role-based redirects

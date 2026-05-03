@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { getCurrentUser } from '@/lib/customAuth';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,7 +83,8 @@ export default function EmailTemplates() {
   const handleSendTest = async () => {
     setTestLoading(true);
     try {
-      const user = await base44.auth.me();
+      const user = await getCurrentUser();
+      if (!user) { window.location.href = '/login'; return; }
       
       // Parse variables and create sample data
       const variables = JSON.parse(selectedTemplate.variables_used || '[]');

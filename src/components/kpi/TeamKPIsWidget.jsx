@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { getCurrentUser } from '@/lib/customAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,8 @@ export default function TeamKPIsWidget() {
   useEffect(() => {
     (async () => {
       try {
-        const currentUser = await base44.auth.me();
+        const currentUser = await getCurrentUser();
+        if (!currentUser) { window.location.href = '/login'; return; }
         setUser(currentUser);
 
         if (!['owner', 'admin', 'founder'].includes(currentUser.role)) {

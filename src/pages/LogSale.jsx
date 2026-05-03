@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { getCurrentUser } from '@/lib/customAuth';
 import { autoCreateDeliverables } from "@/lib/fulfilmentAutomation";
 import { notifyClient } from "@/lib/clientNotifier";
 import { Button } from "@/components/ui/button";
@@ -82,8 +83,9 @@ export default function LogSale() {
     Promise.all([
       base44.entities.Client.list("-created_date", 200),
       base44.entities.User.list(),
-      base44.auth.me(),
+      getCurrentUser(),
     ]).then(([c, u, me]) => {
+      if (!me) { window.location.href = '/login'; return; }
       setClients(c);
       setUsers(u);
       setCurrentUser(me);
