@@ -273,6 +273,9 @@ export default function ClientPortal() {
             client={client}
             heroImageUrl={heroImageUrl}
             isLoadingImage={loadingHeroImage}
+            onLogoUpdate={(url) => {
+              setClient(prev => ({ ...prev, logo_file: url }));
+            }}
           />
         )}
 

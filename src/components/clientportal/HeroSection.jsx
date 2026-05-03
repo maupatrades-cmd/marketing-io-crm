@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Globe, Users } from 'lucide-react';
+import { MapPin, Globe, Users, Edit2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import LogoUploadEditor from './LogoUploadEditor';
 
-export default function HeroSection({ client, heroImageUrl, isLoadingImage }) {
+export default function HeroSection({ client, heroImageUrl, isLoadingImage, onLogoUpdate }) {
+  const [showLogoEditor, setShowLogoEditor] = useState(false);
+  const [logoFile, setLogoFile] = useState(client?.logo_file);
   return (
     <div className="relative rounded-2xl overflow-hidden mb-12 glass border-primary/30 border-2">
       {/* Hero Image Background */}
@@ -35,18 +39,26 @@ export default function HeroSection({ client, heroImageUrl, isLoadingImage }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Logo + Name */}
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-lg bg-white p-2 flex items-center justify-center shadow-lg">
-                {client?.logo_file ? (
-                  <img 
-                    src={client.logo_file} 
-                    alt={client.business_name}
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white font-bold text-2xl">
-                    {client?.business_name?.charAt(0).toUpperCase()}
-                  </div>
-                )}
+              <div className="relative group">
+                <div className="w-20 h-20 rounded-lg bg-white p-2 flex items-center justify-center shadow-lg">
+                  {logoFile ? (
+                    <img 
+                      src={logoFile} 
+                      alt={client.business_name}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white font-bold text-2xl">
+                      {client?.business_name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowLogoEditor(true)}
+                  className="absolute -top-2 -right-2 bg-primary text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-foreground">{client?.business_name}</h2>
@@ -79,6 +91,29 @@ export default function HeroSection({ client, heroImageUrl, isLoadingImage }) {
           </div>
         </div>
       </div>
+
+      {/* Logo Upload Modal */}
+      {showLogoEditor && (
+        <div className="fixed inset-0 z-40 bg-black/50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-card rounded-2xl max-w-md w-full border border-border/50 p-6 sm:rounded-xl">
+            <h3 className="text-lg font-bold text-foreground mb-4">Upload Business Logo</h3>
+            <LogoUploadEditor 
+              client={client}
+              onLogoUpdate={(url) => {
+                setLogoFile(url);
+                setShowLogoEditor(false);
+                onLogoUpdate?.(url);
+              }}
+            />
+            <button
+              onClick={() => setShowLogoEditor(false)}
+              className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
