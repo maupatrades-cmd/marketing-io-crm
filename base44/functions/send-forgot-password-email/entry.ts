@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   // Always return 200 — don't reveal if user exists
   let user;
   try {
-    const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+    const users = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
     user = users?.[0];
   } catch (err) {
     console.error('[send-forgot-password-email] Error fetching user:', err);
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
   const resetToken = crypto.randomUUID().replace(/-/g, '');
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
-  await base44.asServiceRole.entities.User.update(user.id, {
+  await base44.asServiceRole.entities.AppUser.update(user.id, {
     password_reset_token: resetToken,
     password_reset_expires_at: expiresAt
   });
