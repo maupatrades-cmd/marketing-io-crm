@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import ClientSidebar from "@/components/ClientSidebar";
@@ -267,6 +267,19 @@ export default function AppLayout({ children, title, subtitle }) {
               >
                 <Timer className="w-4 h-4 shrink-0" />
                 Staff Productivity
+              </Link>
+              <Link
+                to="/deliverable-quality"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/deliverable-quality"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/deliverable-quality" ? {} : { color: "#a8a8c0" }}
+              >
+                <Star className="w-4 h-4 shrink-0" />
+                Deliverable Quality
               </Link>
               </>
               )}

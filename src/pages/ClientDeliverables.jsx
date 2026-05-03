@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle2, Clock, AlertCircle, MessageSquare, X } from "lucide-react";
+import FeedbackSurveyModal from "@/components/deliverables/FeedbackSurveyModal";
 
 export default function ClientDeliverables() {
   const [deliverables, setDeliverables] = useState([]);
@@ -15,6 +16,8 @@ export default function ClientDeliverables() {
   const [modalType, setModalType] = useState(null); // "request_changes", "reject"
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [surveyDeliverable, setSurveyDeliverable] = useState(null);
+  const [ratedIds, setRatedIds] = useState(new Set());
 
   const today = new Date();
 
@@ -31,8 +34,12 @@ export default function ClientDeliverables() {
       if (clients.length > 0) {
         const c = Array.isArray(clients) ? clients[0] : clients;
         setClient(c);
-        const dels = await base44.entities.Deliverable.filter({ client_id: c.id }, "-created_date", 100);
+        const [dels, existingFeedback] = await Promise.all([
+          base44.entities.Deliverable.filter({ client_id: c.id }, "-created_date", 100),
+          base44.entities.DeliverableFeedback.filter({ client_id: c.id }),
+        ]);
         setDeliverables(Array.isArray(dels) ? dels : [dels]);
+        setRatedIds(new Set((Array.isArray(existingFeedback) ? existingFeedback : []).map(f => f.deliverable_id)));
       }
       setLoading(false);
     });
@@ -46,6 +53,11 @@ export default function ClientDeliverables() {
         approved_date: new Date().toISOString() 
       });
       setDeliverables(prev => prev.map(d => d.id === id ? { ...d, approval_status: "approved" } : d));
+      // Trigger feedback survey if not already rated
+      if (!ratedIds.has(id)) {
+        const del = deliverables.find(d => d.id === id);
+        if (del) setSurveyDeliverable(del);
+      }
     } catch (err) {
       console.error("Approval error:", err);
     }
@@ -197,6 +209,17 @@ export default function ClientDeliverables() {
                             </Button>
                           </div>
                         )}
+                        {/* Rate button for approved deliverables not yet rated */}
+                        {d.approval_status === "approved" && !ratedIds.has(d.id) && !isForReview && (
+                          <div className="mt-3">
+                            <Button size="sm" variant="outline" className="text-xs text-warning border-warning/40 hover:bg-warning/10" onClick={() => setSurveyDeliverable(d)}>
+                              ★ Rate this deliverable
+                            </Button>
+                          </div>
+                        )}
+                        {d.approval_status === "approved" && ratedIds.has(d.id) && (
+                          <p className="text-xs text-success mt-3">★ Rated — thank you!</p>
+                        )}
                       </div>
                     );
                   })}
@@ -206,6 +229,18 @@ export default function ClientDeliverables() {
           )}
         </div>
       </div>
+
+      {/* Feedback Survey Modal */}
+      {surveyDeliverable && (
+        <FeedbackSurveyModal
+          deliverable={surveyDeliverable}
+          client={client}
+          onDone={() => {
+            setRatedIds(prev => new Set([...prev, surveyDeliverable.id]));
+            setSurveyDeliverable(null);
+          }}
+        />
+      )}
 
       {/* Request Changes Modal */}
       <Dialog open={modalType === "request_changes"} onOpenChange={(open) => { if (!open) { setModalType(null); setNote(""); } }}>

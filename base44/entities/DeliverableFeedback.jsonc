@@ -1,0 +1,55 @@
+{
+  "name": "DeliverableFeedback",
+  "type": "object",
+  "properties": {
+    "deliverable_id": {
+      "type": "string",
+      "description": "Reference to Deliverable"
+    },
+    "deliverable_title": {
+      "type": "string",
+      "description": "Denormalised title"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Denormalised client name"
+    },
+    "staff_id": {
+      "type": "string",
+      "description": "Reference to User who did the work"
+    },
+    "staff_name": {
+      "type": "string",
+      "description": "Denormalised staff name"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "setup",
+        "monthly_recurring",
+        "once_off"
+      ]
+    },
+    "rating": {
+      "type": "number",
+      "description": "Star rating 1\u20135"
+    },
+    "comment": {
+      "type": "string",
+      "description": "Optional client comment"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "deliverable_id",
+    "client_id",
+    "rating"
+  ]
+}
