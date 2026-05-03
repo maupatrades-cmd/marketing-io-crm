@@ -16,9 +16,12 @@ Deno.serve(async (req) => {
   <tr><td align="center">
     <table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:white;border-radius:12px;overflow:hidden">
       <tr>
-        <td style="background:#ffffff;padding:32px 24px;text-align:center;border-bottom:4px solid;border-image:linear-gradient(135deg,#a764e6,#ec4899) 1">
-          <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/de9bcf4a8_marketingiomainlogo.png" alt="Marketing iO" height="80" style="height:80px;width:auto;display:block;margin:0 auto" />
+        <td style="background:#0f172a;padding:32px 24px;text-align:center">
+          <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/de9bcf4a8_marketingiomainlogo.png" alt="Marketing iO" width="600" height="141" style="width:100%;max-width:600px;height:auto;display:block;margin:0 auto" />
         </td>
+      </tr>
+      <tr>
+        <td style="background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);padding:6px 0;font-size:0;line-height:0">&nbsp;</td>
       </tr>
       <tr>
         <td style="padding:32px 24px;color:#1e293b;font-size:16px;line-height:1.6">
