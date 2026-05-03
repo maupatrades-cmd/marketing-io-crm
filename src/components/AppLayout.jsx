@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import ClientSidebar from "@/components/ClientSidebar";
@@ -10,6 +10,7 @@ const STAFF_NAV = {
     { path: "/staff/pipeline", label: "My Pipeline", icon: TrendingUp },
     { path: "/staff/clients", label: "My Clients", icon: Users },
     { path: "/leads", label: "Add Lead", icon: PlusCircle },
+    { path: "/lead-scoring", label: "Lead Scoring", icon: Target },
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
     { path: "/staff/communications", label: "Communications", icon: Send },
     { path: "/commissions", label: "My Commissions", icon: DollarSign },
@@ -21,6 +22,7 @@ const STAFF_NAV = {
     { path: "/staff", label: "My Day", icon: Clock },
     { path: "/staff/pipeline", label: "My Pipeline", icon: TrendingUp },
     { path: "/leads", label: "My Leads", icon: Zap },
+    { path: "/lead-scoring", label: "Lead Scoring", icon: Target },
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
     { path: "/staff/communications", label: "Communications", icon: Send },
     { path: "/commissions", label: "My Commissions", icon: DollarSign },
@@ -69,6 +71,7 @@ const OWNER_NAV = [
   { path: "/clients", label: "Clients", icon: Users },
   { path: "/deals", label: "Deals", icon: TrendingUp },
   { path: "/leads", label: "Leads", icon: Zap },
+  { path: "/lead-scoring", label: "Lead Scoring", icon: Target },
   { path: "/commissions", label: "Commissions", icon: DollarSign },
   { path: "/invoices", label: "Invoices", icon: FileText },
   { path: "/receipts", label: "Receipts", icon: Receipt },

@@ -103,6 +103,40 @@
         }
       }
     },
+    "lead_score": {
+      "type": "number",
+      "default": 0,
+      "description": "Computed engagement + qualification score (0\u2013100)"
+    },
+    "score_tier": {
+      "type": "string",
+      "enum": [
+        "cold",
+        "warm",
+        "hot",
+        "high_value"
+      ],
+      "default": "cold",
+      "description": "Score bucket used for outreach prioritization"
+    },
+    "outreach_flag": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flagged for personalized outreach by sales team"
+    },
+    "outreach_assigned_to": {
+      "type": "string",
+      "description": "User ID assigned to do personalized outreach"
+    },
+    "outreach_notes": {
+      "type": "string",
+      "description": "Notes on what outreach to run for this prospect"
+    },
+    "last_scored_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the lead score was last computed"
+    },
     "notes": {
       "type": "string"
     }

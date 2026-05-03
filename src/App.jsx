@@ -69,6 +69,7 @@ import ClientOrders from './pages/ClientOrders';
 import AdminServiceOrders from './pages/AdminServiceOrders';
 import StaffProductivity from './pages/StaffProductivity';
 import DeliverableQuality from './pages/DeliverableQuality';
+import LeadScoring from './pages/LeadScoring';
 
 
 
@@ -148,6 +149,7 @@ const AuthenticatedApp = () => {
       <Route path="/admin/service-orders" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/"><AdminServiceOrders /></RouteGuard>} />
       <Route path="/staff-productivity" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><StaffProductivity /></RouteGuard>} />
       <Route path="/deliverable-quality" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><DeliverableQuality /></RouteGuard>} />
+      <Route path="/lead-scoring" element={<RouteGuard allowedRoles={["owner", "admin", "field_agent", "cpc"]} fallbackPath="/"><LeadScoring /></RouteGuard>} />
 
       {/* Staff Portal Routes */}
       <Route path="/staff" element={<StaffMyDay />} />
