@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { createSession, generateOTP } from '@/lib/customAuth';
 
 export default function VerifyOTP() {
   const navigate = useNavigate();
@@ -30,50 +29,22 @@ export default function VerifyOTP() {
 
     setLoading(true);
     try {
-      const now = new Date();
-      const otps = await base44.entities.OTPCode.filter({ email, purpose, used: false });
+      const res = await base44.functions.invoke('auth-verify-otp', { email, code, purpose });
+      const { token, user } = res.data;
 
-      if (!otps || otps.length === 0) {
-        setError('No valid code found. Please request a new one.');
-        setLoading(false);
+      localStorage.setItem('mio_session_token', token);
+      localStorage.setItem('mio_session_user', JSON.stringify(user));
+
+      if (purpose === 'password_reset') {
+        navigate(`/reset-password?token=${code}&email=${encodeURIComponent(email)}`);
         return;
       }
 
-      // Find matching unexpired code
-      const match = otps.find(o => o.code === code && new Date(o.expires_at) > now);
-      if (!match) {
-        setError('Code is incorrect or has expired. Please try again or resend.');
-        setLoading(false);
-        return;
-      }
-
-      // Mark used
-      await base44.entities.OTPCode.update(match.id, { used: true, used_at: now.toISOString() });
-
-      // Get user
-      const users = await base44.entities.User.filter({ email });
-      if (!users || users.length === 0) { setError('User not found.'); setLoading(false); return; }
-      const user = users[0];
-
-      if (purpose === 'signup_verification') {
-        await base44.entities.User.update(user.id, { pending_verification: false, email_verified: true });
-        await createSession(user.id);
-        window.location.href = '/client-portal';
-      } else if (purpose === 'login_mfa') {
-        await base44.entities.User.update(user.id, { failed_login_count: 0, last_login_at: now.toISOString() });
-        await createSession(user.id);
-        const role = user.role;
-        if (role === 'owner') { window.location.href = '/'; }
-        else if (role === 'client') { window.location.href = '/client-portal'; }
-        else { window.location.href = '/staff'; }
-      } else if (purpose === 'password_reset') {
-        // Reuse existing reset flow — redirect to reset-password with token
-        const token = match.code;
-        navigate(`/reset-password?token=${token}&email=${encodeURIComponent(email)}`);
-      }
+      if (user.role === 'owner') { window.location.href = '/'; }
+      else if (user.role === 'client') { window.location.href = '/client-portal'; }
+      else { window.location.href = '/staff'; }
     } catch (err) {
-      console.error('OTP verify error:', err);
-      setError('Something went wrong. Please try again.');
+      setError('Code is incorrect or has expired. Please try again or resend.');
     } finally {
       setLoading(false);
     }
@@ -84,31 +55,14 @@ export default function VerifyOTP() {
     if (resendCooldown > 0) return;
 
     try {
-      const otp = generateOTP();
-      const expires = new Date(Date.now() + (purpose === 'signup_verification' ? 15 : 10) * 60 * 1000).toISOString();
-      const users = await base44.entities.User.filter({ email });
-      const userId = users?.[0]?.id;
-      const fullName = users?.[0]?.full_name || 'there';
-
-      await base44.entities.OTPCode.create({
-        email,
-        code: otp,
-        purpose,
-        expires_at: expires,
-        used: false,
-        generated_at: new Date().toISOString(),
-        user_id: userId
-      });
-
-      await base44.integrations.Core.SendEmail({
-        to: email,
-        subject: 'Your new Marketing iO verification code',
-        body: `Hi ${fullName},\n\nYour new verification code is: ${otp}\n\nThis code expires in ${purpose === 'signup_verification' ? '15' : '10'} minutes.\n\n— The Marketing iO Team`
-      });
-
-      setResendCount(c => c + 1);
-      setResendCooldown(60);
-      setError('');
+      // Re-trigger the appropriate flow to generate a new OTP
+      if (purpose === 'login_mfa') {
+        setError('Please go back to the sign-in page to request a new code.');
+        return;
+      }
+      // For signup_verification, call register won't work as user exists — use a dedicated resend
+      // Fall back: navigate back with a message
+      setError('Please go back and sign in again to receive a new code.');
     } catch (err) {
       setError('Failed to resend code. Please try again.');
     }

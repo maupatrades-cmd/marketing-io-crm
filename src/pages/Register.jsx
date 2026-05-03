@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { hashPassword, generateOTP } from '@/lib/customAuth';
 import { validatePassword, getPasswordStrength } from '@/lib/passwordValidator';
 
 function makeCaptcha() {
@@ -34,70 +33,23 @@ export default function Register() {
     if (!pwValidation.valid) { setError(pwValidation.errors[0]); return; }
 
     setLoading(true);
-    let createdUserId = null;
-    let createdClientId = null;
-
     try {
-      const existing = await base44.entities.User.filter({ email: form.email.toLowerCase().trim() });
-      if (existing && existing.length > 0) {
-        setError('An account with this email already exists. Please sign in.');
-        setLoading(false);
-        return;
-      }
-
-      const passwordHash = hashPassword(form.password);
-
-      const newUser = await base44.entities.User.create({
-        email: form.email.toLowerCase().trim(),
-        full_name: form.fullName.trim(),
-        phone: form.phone.trim(),
-        role: 'client',
-        password_hash: passwordHash,
-        pending_verification: true,
-        email_verified: false,
-        failed_login_count: 0
-      });
-      createdUserId = newUser.id;
-
-      const newClient = await base44.entities.Client.create({
-        business_name: form.businessName.trim(),
-        contact_person: form.fullName.trim(),
+      const res = await base44.functions.invoke('auth-register', {
+        fullName: form.fullName.trim(),
         email: form.email.toLowerCase().trim(),
         phone: form.phone.trim(),
-        status: 'lead',
-        client_user_id: newUser.id,
-        portal_invitation_sent_at: new Date().toISOString()
+        businessName: form.businessName.trim(),
+        password: form.password
       });
-      createdClientId = newClient.id;
-
-      const otp = generateOTP();
-      const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-      await base44.entities.OTPCode.create({
-        email: form.email.toLowerCase().trim(),
-        code: otp,
-        purpose: 'signup_verification',
-        expires_at: expires,
-        used: false,
-        generated_at: new Date().toISOString(),
-        user_id: newUser.id
-      });
-
-      try {
-        await base44.integrations.Core.SendEmail({
-          to: form.email,
-          subject: 'Verify your Marketing iO account',
-          body: `Hi ${form.fullName},\n\nWelcome to Marketing iO!\n\nYour verification code is: ${otp}\n\nThis code expires in 15 minutes.\n\n— The Marketing iO Team`
-        });
-      } catch (emailErr) {
-        console.error('OTP email failed:', emailErr);
-      }
-
-      navigate(`/verify-otp?email=${encodeURIComponent(form.email.toLowerCase().trim())}&purpose=signup_verification`);
+      const data = res.data;
+      navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=signup_verification`);
     } catch (err) {
-      console.error('Signup error:', err);
-      if (createdClientId) { try { await base44.entities.Client.delete(createdClientId); } catch (_) {} }
-      if (createdUserId) { try { await base44.entities.User.delete(createdUserId); } catch (_) {} }
-      setError('Something went wrong creating your account. Please try again.');
+      const status = err?.response?.status;
+      if (status === 409) {
+        setError('An account with this email already exists. Please sign in.');
+      } else {
+        setError('Something went wrong creating your account. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

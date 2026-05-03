@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { verifyPassword, generateOTP } from '@/lib/customAuth';
 
 function makeCaptcha() {
   const a = Math.floor(Math.random() * 10) + 1;
@@ -35,72 +34,27 @@ export default function SignIn() {
 
     setLoading(true);
     try {
-      const users = await base44.entities.User.filter({ email: email.toLowerCase().trim() });
-
-      if (!users || users.length === 0) {
-        await base44.entities.LoginAttempt.create({ email_attempted: email, success: false, failure_reason: 'account_not_found', attempted_at: new Date().toISOString() });
-        setError('Invalid email or password.');
-        setLoading(false);
-        return;
-      }
-
-      const user = users[0];
-
-      // Check lockout
-      if (user.lockout_until && new Date(user.lockout_until) > new Date()) {
-        setError('Account temporarily locked due to multiple failed attempts. Please try again later or reset your password.');
-        setLoading(false);
-        return;
-      }
-
-      // Check pending verification
-      if (user.pending_verification) {
-        navigate(`/verify-otp?email=${encodeURIComponent(email)}&purpose=signup_verification`);
-        return;
-      }
-
-      // Verify password
-      const valid = verifyPassword(password, user.password_hash);
-      if (!valid) {
-        const newCount = (user.failed_login_count || 0) + 1;
-        const updateData = { failed_login_count: newCount };
-        if (newCount >= 5) {
-          updateData.lockout_until = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-        }
-        await base44.entities.User.update(user.id, updateData);
-        await base44.entities.LoginAttempt.create({ email_attempted: email, success: false, failure_reason: 'wrong_password', attempted_at: new Date().toISOString(), user_id: user.id });
-        setError('Invalid email or password.');
-        setLoading(false);
-        return;
-      }
-
-      // Send MFA OTP
-      const otp = generateOTP();
-      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      await base44.entities.OTPCode.create({
+      const res = await base44.functions.invoke('auth-login', {
         email: email.toLowerCase().trim(),
-        code: otp,
-        purpose: 'login_mfa',
-        expires_at: expires,
-        used: false,
-        generated_at: new Date().toISOString(),
-        user_id: user.id
+        password
       });
+      const data = res.data;
 
-      try {
-        await base44.integrations.Core.SendEmail({
-          to: email,
-          subject: `Your Marketing iO login code: ${otp}`,
-          body: `Hi ${user.full_name || 'there'},\n\nYour login code is: ${otp}\n\nThis code expires in 10 minutes.\n\nIf you didn't try to log in, please contact info@marketingio.co.za immediately.\n\n— The Marketing iO Team`
-        });
-      } catch (emailErr) {
-        console.error('OTP email failed:', emailErr);
+      if (data.needs_verification) {
+        navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=signup_verification`);
+        return;
       }
-
-      navigate(`/verify-otp?email=${encodeURIComponent(email.toLowerCase().trim())}&purpose=login_mfa`);
+      if (data.needs_otp) {
+        navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=login_mfa`);
+        return;
+      }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Something went wrong. Please try again.');
+      const status = err?.response?.status;
+      if (status === 423) {
+        setError('Account temporarily locked due to multiple failed attempts. Please try again later or reset your password.');
+      } else {
+        setError('Invalid email or password.');
+      }
     } finally {
       setLoading(false);
     }
