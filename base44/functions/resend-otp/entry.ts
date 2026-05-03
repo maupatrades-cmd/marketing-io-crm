@@ -35,13 +35,17 @@ Deno.serve(async (req) => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
+  console.log('[resend-otp] Looking up user:', normalizedEmail);
   const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
   const user = users?.[0];
 
   if (!user) {
+    console.log('[resend-otp] User not found:', normalizedEmail);
     // Return success even if not found — don't expose user existence
     return Response.json({ success: true });
   }
+  
+  console.log('[resend-otp] User found, generating OTP for:', user.id);
 
   const newOtp = String(Math.floor(100000 + Math.random() * 900000));
   const expiry = purpose === 'login_mfa'
