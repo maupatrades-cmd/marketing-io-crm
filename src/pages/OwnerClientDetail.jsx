@@ -8,8 +8,69 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight, FileText, Phone, Clock, AlertCircle } from "lucide-react";
 
 const TABS = [
-  "overview", "contacts", "deals", "invoices", "deliverables", "communications", "files", "audit"
+  "overview", "discovery", "contacts", "deals", "invoices", "deliverables", "communications", "files", "audit"
 ];
+
+const LEAD_SCORE_BADGES = {
+  hot:         { label: "Hot",         emoji: "🔥", className: "bg-destructive/15 text-destructive border-destructive/40" },
+  warm:        { label: "Warm",        emoji: "☀️", className: "bg-orange-500/15 text-orange-400 border-orange-500/40" },
+  nurture:     { label: "Nurture",     emoji: "🌱", className: "bg-success/15 text-success border-success/40" },
+  cold:        { label: "Cold",        emoji: "❄️", className: "bg-muted/40 text-muted-foreground border-border/40" },
+  unqualified: { label: "Unqualified", emoji: "—",  className: "bg-muted/30 text-muted-foreground/70 border-border/30" }
+};
+
+const HUMAN_LABELS = {
+  // industry
+  retail: "Retail / Shop", services: "Services", construction: "Construction / Trades",
+  hospitality: "Hospitality / Food", beauty: "Beauty / Salon", health: "Health / Wellness",
+  professional: "Professional Services", education: "Education / Training", other: "Other",
+  // years_in_business
+  starting: "Just starting out", less_than_1: "Less than 1 year", "1_to_3": "1 – 3 years",
+  "3_to_5": "3 – 5 years", "5_to_10": "5 – 10 years", "10_plus": "10+ years",
+  // employees
+  just_me: "Just me", "2_to_5": "2 – 5", "6_to_15": "6 – 15", "16_to_50": "16 – 50", "50_plus": "50+",
+  // provinces
+  gauteng: "Gauteng", western_cape: "Western Cape", kwazulu_natal: "KwaZulu-Natal",
+  eastern_cape: "Eastern Cape", free_state: "Free State", limpopo: "Limpopo",
+  mpumalanga: "Mpumalanga", north_west: "North West", northern_cape: "Northern Cape",
+  // goals
+  same_steady: "Stay where I am — steady and stable", double_revenue: "Double revenue",
+  five_x_growth: "5× growth", sell_business: "Sell the business", open_branches: "Open more branches",
+  // challenges
+  not_enough_leads: "Not getting enough leads", customers_dont_return: "Customers don't return",
+  cant_compete: "Can't compete with bigger players", dont_know_marketing: "Doesn't know marketing",
+  too_busy_doing_work: "Too busy to market", bad_reputation: "Online reputation hurting",
+  all_above: "All of the above",
+  // revenue
+  under_20k: "Under R20,000", "20k_to_50k": "R20,000 – R50,000", "50k_to_150k": "R50,000 – R150,000",
+  "150k_to_500k": "R150,000 – R500,000", "500k_plus": "R500,000+",
+  // new customers
+  "5_to_10": "5 – 10", "10_to_25": "10 – 25", "25_to_50": "25 – 50",
+  "50_to_100": "50 – 100", "100_plus": "100+",
+  // urgency
+  yesterday: "I needed it yesterday", within_1_month: "Within 1 month", within_3_months: "Within 3 months",
+  planning_ahead: "Planning ahead", no_rush: "No rush — just looking",
+  // budget
+  under_500: "Under R500", "500_to_1500": "R500 – R1,500", "1500_to_3000": "R1,500 – R3,000",
+  "3000_to_7000": "R3,000 – R7,000", "7000_plus": "R7,000+",
+  // assets
+  website: "Working website", whatsapp_automation: "WhatsApp automation",
+  active_social: "Active social media", gmb_claimed: "Google Business Profile claimed",
+  paid_ads: "Running paid ads", email_marketing: "Email marketing", crm: "CRM in use",
+  // agency
+  yes_didnt_work: "Yes — but it didn't work", yes_too_expensive: "Yes — but too expensive",
+  never: "Never used one", tried_diy: "Tried DIY",
+  // contact channels
+  phone: "Phone call", whatsapp: "WhatsApp", email: "Email", sms: "SMS",
+  // call times
+  morning: "Morning (08:00 – 12:00)", lunch: "Lunch (12:00 – 14:00)",
+  afternoon: "Afternoon (14:00 – 17:00)", evening: "Evening (17:00 – 20:00)",
+  weekend_only: "Weekends only"
+};
+
+const human = (v) => HUMAN_LABELS[v] || v;
+const humanList = (arr) => Array.isArray(arr) && arr.length ? arr.map(human).join(", ") : null;
+const fmt = (v) => (v === undefined || v === null || v === "") ? "—" : (typeof v === "string" ? human(v) : v);
 
 export default function OwnerClientDetail() {
   const { id } = useParams();
@@ -63,6 +124,12 @@ export default function OwnerClientDetail() {
               <Badge className={client.status === "active" ? "bg-success/15 text-success border-success/30" : "bg-warning/15 text-warning border-warning/30"}>
                 {client.status}
               </Badge>
+              {client.lead_score && LEAD_SCORE_BADGES[client.lead_score] && (
+                <Badge className={`border ${LEAD_SCORE_BADGES[client.lead_score].className}`}>
+                  <span className="mr-1">{LEAD_SCORE_BADGES[client.lead_score].emoji}</span>
+                  {LEAD_SCORE_BADGES[client.lead_score].label}
+                </Badge>
+              )}
               {client.assigned_field_agent && <span className="text-sm text-muted-foreground">Assigned: User {client.assigned_field_agent}</span>}
             </div>
           </div>
@@ -141,6 +208,71 @@ export default function OwnerClientDetail() {
               ) : (
                 <p className="text-sm text-muted-foreground">{notes || "No notes yet"}</p>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: Discovery — qualifier answers from the 5-step signup */}
+        {activeTab === "discovery" && (
+          <div className="space-y-6">
+            <div className="glass rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg">Lead Discovery</h3>
+                <p className="text-xs text-muted-foreground">
+                  Completed {client.signup_completed_steps || 1}/5 signup steps
+                  {client.lead_score_calculated_at ? ` · scored ${new Date(client.lead_score_calculated_at).toLocaleDateString("en-ZA")}` : ""}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Business Info */}
+                <div>
+                  <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Business Info</h4>
+                  <dl className="space-y-2 text-sm">
+                    <DRow label="Industry" value={fmt(client.industry)} />
+                    <DRow label="Years in business" value={fmt(client.years_in_business)} />
+                    <DRow label="Team size" value={fmt(client.number_of_employees)} />
+                    <DRow label="City" value={fmt(client.business_city)} />
+                    <DRow label="Address" value={fmt(client.business_address)} />
+                    <DRow label="Province" value={fmt(client.business_province)} />
+                  </dl>
+                </div>
+
+                {/* Story */}
+                <div>
+                  <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Their Story</h4>
+                  <dl className="space-y-2 text-sm">
+                    <DRow label="12-month goal" value={fmt(client.twelve_month_goal)} />
+                    <DRow label="Biggest challenge" value={fmt(client.biggest_challenge)} />
+                    <DRow label="What inspired them" value={client.founder_inspiration || "—"} multiline />
+                    <DRow label="Competitor envy" value={client.competitor_envy || "—"} multiline />
+                  </dl>
+                </div>
+
+                {/* Current State */}
+                <div>
+                  <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Current State</h4>
+                  <dl className="space-y-2 text-sm">
+                    <DRow label="Monthly revenue" value={fmt(client.monthly_revenue_range)} />
+                    <DRow label="New customers wanted" value={fmt(client.new_customers_target)} />
+                    <DRow label="Urgency" value={fmt(client.urgency_level)} />
+                    <DRow label="Marketing assets they have" value={humanList(client.current_marketing_assets) || "—"} />
+                    <DRow label="Agency history" value={fmt(client.agency_history)} />
+                  </dl>
+                </div>
+
+                {/* Preferences */}
+                <div>
+                  <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-3">How To Reach Them</h4>
+                  <dl className="space-y-2 text-sm">
+                    <DRow label="Marketing budget" value={fmt(client.monthly_marketing_budget)} />
+                    <DRow label="Preferred channels" value={humanList(client.preferred_contact_channels) || "—"} />
+                    <DRow label="Best call time" value={fmt(client.best_call_time)} />
+                    <DRow label="Wants consultation call" value={client.wants_consultation_call ? "Yes" : "No"} />
+                    <DRow label="Wants personalized proposal" value={client.wants_personalized_proposal ? "Yes" : "No"} />
+                  </dl>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -286,4 +418,13 @@ export default function OwnerClientDetail() {
 
 function LoadingSpinner() {
   return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" /></div>;
+}
+
+function DRow({ label, value, multiline = false }) {
+  return (
+    <div className={multiline ? "" : "flex items-baseline justify-between gap-3"}>
+      <dt className="text-xs text-muted-foreground shrink-0">{label}</dt>
+      <dd className={`text-foreground ${multiline ? "mt-1 whitespace-pre-wrap" : "text-right"}`}>{value}</dd>
+    </div>
+  );
 }
