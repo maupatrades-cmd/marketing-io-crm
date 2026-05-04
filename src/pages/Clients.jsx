@@ -33,6 +33,14 @@ const PACKAGE_LABELS = {
   street_pulse: "Street Pulse", township_pulse: "Township Pulse", none: "—",
 };
 
+const LEAD_SCORE_BADGES = {
+  hot:         { label: "Hot",         emoji: "🔥", className: "bg-destructive/15 text-destructive border-destructive/40" },
+  warm:        { label: "Warm",        emoji: "☀️", className: "bg-orange-500/15 text-orange-400 border-orange-500/40" },
+  nurture:     { label: "Nurture",     emoji: "🌱", className: "bg-success/15 text-success border-success/40" },
+  cold:        { label: "Cold",        emoji: "❄️", className: "bg-muted/40 text-muted-foreground border-border/40" },
+  unqualified: { label: "Unqualified", emoji: "—",  className: "bg-muted/30 text-muted-foreground/70 border-border/30" },
+};
+
 const EMPTY_CLIENT = {
   business_name: "", contact_person: "", email: "", phone: "",
   industry: "", status: "lead", package: "none",
@@ -228,6 +236,12 @@ export default function Clients() {
                 <p className="text-xs text-muted-foreground truncate">{c.contact_person} · {c.email}</p>
               </div>
               <div className="hidden sm:flex items-center gap-2 shrink-0">
+                {c.lead_score && LEAD_SCORE_BADGES[c.lead_score] && (
+                  <Badge className={`border text-xs ${LEAD_SCORE_BADGES[c.lead_score].className}`}>
+                    <span className="mr-1">{LEAD_SCORE_BADGES[c.lead_score].emoji}</span>
+                    {LEAD_SCORE_BADGES[c.lead_score].label}
+                  </Badge>
+                )}
                 <Badge className={`border text-xs ${STATUS_COLORS[c.status] || "bg-muted/40 text-muted-foreground border-border/40"} capitalize`}>{c.status?.replace(/_/g, " ")}</Badge>
                 <span className="text-xs text-muted-foreground">{PACKAGE_LABELS[c.package] || "—"}</span>
                 {c.monthly_retainer > 0 && <span className="text-sm font-semibold text-foreground">R{c.monthly_retainer?.toLocaleString()}/mo</span>}
