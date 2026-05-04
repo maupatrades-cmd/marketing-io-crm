@@ -35,8 +35,32 @@ Deno.serve(async (req) => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-  const users = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
-  const user = users?.[0];
+
+  // Look up account in AppUser (client portal) first, then fall back to User (staff/CRM directory).
+  // Each lookup wrapped in its own try so a transient AppUser error doesn't defeat the User fallback.
+  let user;
+  let userEntity;
+  try {
+    const appUsers = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
+    if (appUsers?.[0]) {
+      user = appUsers[0];
+      userEntity = 'AppUser';
+    }
+  } catch (err) {
+    console.error('[resend-otp] AppUser lookup failed:', err);
+  }
+
+  if (!user) {
+    try {
+      const legacyUsers = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+      if (legacyUsers?.[0]) {
+        user = legacyUsers[0];
+        userEntity = 'User';
+      }
+    } catch (err) {
+      console.error('[resend-otp] User lookup failed:', err);
+    }
+  }
 
   if (!user) {
     // Return success even if not found — don't expose user existence
@@ -48,7 +72,7 @@ Deno.serve(async (req) => {
     ? new Date(Date.now() + 10 * 60 * 1000).toISOString()
     : new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-  await base44.asServiceRole.entities.AppUser.update(user.id, {
+  await base44.asServiceRole.entities[userEntity].update(user.id, {
     pending_otp_code: newOtp,
     pending_otp_expires_at: expiry,
     pending_otp_purpose: purpose
