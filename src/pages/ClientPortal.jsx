@@ -297,7 +297,7 @@ export default function ClientPortal() {
           <LeadHero
             client={client}
             heroImageUrl={heroImageUrl}
-            copy={heroImageCopy}
+            heroCopy={heroImageCopy}
             onEnquire={handleEnquire}
           />
         )}
@@ -308,7 +308,7 @@ export default function ClientPortal() {
             client={client}
             heroImageUrl={heroImageUrl}
             isLoadingImage={loadingHeroImage}
-            copy={heroImageCopy}
+            heroCopy={heroImageCopy}
             onLogoUpdate={(url) => {
               setClient(prev => ({ ...prev, logo_file: url }));
             }}
