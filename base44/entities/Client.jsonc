@@ -170,6 +170,23 @@
     "logo_file": {
       "type": "string",
       "description": "URL of client's uploaded business logo"
+    },
+    "hero_image_url": {
+      "type": "string",
+      "description": "Cached portal hero image URL (24h TTL)"
+    },
+    "hero_image_copy": {
+      "type": "string",
+      "description": "Cached emotional headline paired with the hero image"
+    },
+    "hero_image_generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the cached hero image was generated"
+    },
+    "hero_image_scenario": {
+      "type": "string",
+      "description": "Scenario pool name used to generate the cached hero image"
     }
   },
   "required": [
