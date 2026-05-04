@@ -166,6 +166,10 @@
     "notification_preferences": {
       "type": "string",
       "description": "JSON object with notification settings (email_deliverable_ready, email_invoice_issued, etc.)"
+    },
+    "logo_file": {
+      "type": "string",
+      "description": "URL of client's uploaded business logo"
     }
   },
   "required": [
