@@ -57,9 +57,9 @@ Deno.serve(async (req) => {
 
   // Step 1: Parse request
   console.log('[auth-register] Step: parsing request body');
-  let fullName, email, phone, businessName, password;
+  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password;
   try {
-    ({ fullName, email, phone, businessName, password } = await req.json());
+    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password } = await req.json());
   } catch (err) {
     console.error('[auth-register] request_parse_failed:', err.message);
     return Response.json({ error: 'request_parse_failed', detail: err.message }, { status: 500 });
@@ -67,11 +67,26 @@ Deno.serve(async (req) => {
 
   // Step 2: Validate input
   console.log('[auth-register] Step: validating input');
+  // Compose fullName from first_name + last_name when callers send the new
+  // multi-step payload but omit fullName.
+  if (!fullName && (first_name || last_name)) {
+    fullName = `${first_name || ''} ${last_name || ''}`.trim();
+  }
   if (!fullName || !email || !password || !businessName) {
     return Response.json({ error: 'All required fields must be provided.' }, { status: 400 });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.json({ error: 'Invalid email format.' }, { status: 400 });
+  }
+  // SA mobile validation — accept either +27XXXXXXXXX (12 chars) or 0XXXXXXXXX (10 digits).
+  // mobile_number is the new strict field; legacy `phone` is left untouched for backwards compat.
+  const rawMobile = (mobile_number || '').replace(/\s+/g, '');
+  if (mobile_number !== undefined && rawMobile !== '') {
+    const localFormat = /^0\d{9}$/.test(rawMobile);
+    const intlFormat = /^\+27\d{9}$/.test(rawMobile);
+    if (!localFormat && !intlFormat) {
+      return Response.json({ error: 'Invalid SA mobile format. Use 0XXXXXXXXX or +27XXXXXXXXX.' }, { status: 400 });
+    }
   }
   const normalizedEmail = email.toLowerCase().trim();
 
@@ -125,6 +140,9 @@ Deno.serve(async (req) => {
      pending_otp_expires_at: otpExpires,
      pending_otp_purpose: 'signup_verification'
    };
+   if (first_name) userPayload.first_name = first_name.trim();
+   if (last_name) userPayload.last_name = last_name.trim();
+   if (rawMobile) userPayload.mobile_number = rawMobile;
    try {
      newUser = await base44.asServiceRole.entities.AppUser.create(userPayload);
    } catch (err) {
@@ -146,10 +164,11 @@ Deno.serve(async (req) => {
       business_name: businessName.trim(),
       contact_person: fullName.trim(),
       email: normalizedEmail,
-      phone: phone?.trim() || '',
+      phone: rawMobile || phone?.trim() || '',
       status: 'lead',
       client_user_id: newUser.id,
-      portal_invitation_sent_at: new Date().toISOString()
+      portal_invitation_sent_at: new Date().toISOString(),
+      signup_completed_steps: 1
     });
     createdClientId = newClient.id;
     console.log('[auth-register] Client created, id:', createdClientId);
@@ -172,5 +191,5 @@ Deno.serve(async (req) => {
   }
 
   console.log('[auth-register] Step: complete — user_id:', newUser.id);
-  return Response.json({ user_id: newUser.id, email: normalizedEmail }, { status: 200 });
+  return Response.json({ user_id: newUser.id, client_id: createdClientId, email: normalizedEmail }, { status: 200 });
 });
