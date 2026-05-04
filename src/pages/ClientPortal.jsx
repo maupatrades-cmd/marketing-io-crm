@@ -12,6 +12,7 @@ import DeliverableTimeline from "@/components/clientportal/DeliverableTimeline";
 import RequestUpdateModal from "@/components/clientportal/RequestUpdateModal";
 import SplashScreen from "@/components/clientportal/SplashScreen";
 import HeroSection from "@/components/clientportal/HeroSection";
+import LeadHero from "@/components/clientportal/LeadHero";
 import ChatWidget from "@/components/clientportal/ChatWidget";
 import { PRODUCT_CATALOG, getProductsByType, getProductById } from "@/data/ProductCatalog";
 
@@ -223,6 +224,12 @@ export default function ClientPortal() {
   const allAddOns = getProductsByType("addon");
   const physicalProducts = getProductsByType("physical");
 
+  const isLead = (
+    (!client.package || client.package === 'none') &&
+    !onboarding &&
+    !deal
+  );
+
   const onboardingPhases = ['Contract Signed', 'Welcome & Invoicing', 'Pre-Onboarding', 'Onboarding Call', 'Asset Collection', 'Delivery Started'];
   const PHASE_MAP = { phase1_contract_signed: 0, phase2_welcome_invoicing: 1, phase3_pre_onboarding: 2, phase4_onboarding_call: 3, phase5_asset_collection: 4, phase6_delivery_start: 5 };
   const phaseIndex = onboarding ? (PHASE_MAP[onboarding.current_phase] ?? -1) : -1;
@@ -269,9 +276,18 @@ export default function ClientPortal() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-12 space-y-16">
+        {/* LEAD HERO — Empty state for new signups without a package */}
+        {isLead && (
+          <LeadHero
+            client={client}
+            heroImageUrl={heroImageUrl}
+            onEnquire={handleEnquire}
+          />
+        )}
+
         {/* HERO SECTION — Client Branding + AI Generated Image */}
-        {splashDismissed && (
-          <HeroSection 
+        {!isLead && splashDismissed && (
+          <HeroSection
             client={client}
             heroImageUrl={heroImageUrl}
             isLoadingImage={loadingHeroImage}
@@ -282,7 +298,7 @@ export default function ClientPortal() {
         )}
 
         {/* SECTION 2 — ACTION REQUIRED */}
-        {pendingDeliverables.length > 0 && (
+        {!isLead && pendingDeliverables.length > 0 && (
           <section className="space-y-4">
             <div className="space-y-1">
               <h2 className="text-3xl font-bold text-foreground">Action Required</h2>
@@ -312,13 +328,15 @@ export default function ClientPortal() {
         )}
 
         {/* SECTION 2.3 — DELIVERABLES TIMELINE */}
-        <DeliverableTimeline 
-          deliverables={deliverables}
-          onRequestUpdate={handleRequestUpdate}
-        />
+        {!isLead && (
+          <DeliverableTimeline
+            deliverables={deliverables}
+            onRequestUpdate={handleRequestUpdate}
+          />
+        )}
 
         {/* SECTION 2.5 — CONTRACTS */}
-        {pendingContract && (
+        {!isLead && pendingContract && (
           <section className="space-y-4">
             <div className="relative glass rounded-lg p-6 border-2 border-primary/50 animate-pulse-glow">
               <div className="space-y-2 mb-4">
@@ -350,7 +368,7 @@ export default function ClientPortal() {
           </section>
         )}
 
-        {activeContract && (
+        {!isLead && activeContract && (
           <section className="space-y-4">
             <div className="space-y-1">
               <h2 className="text-3xl font-bold text-foreground">Your Contracts</h2>
@@ -394,7 +412,7 @@ export default function ClientPortal() {
         )}
 
         {/* SECTION 3 — PROJECT JOURNEY */}
-        {onboarding && (
+        {!isLead && onboarding && (
           <section className="space-y-4">
             <div className="space-y-1">
               <h2 className="text-3xl font-bold text-foreground">Your Project Journey</h2>
@@ -441,6 +459,7 @@ export default function ClientPortal() {
         )}
 
         {/* SECTION 4 — QUICK STATS */}
+        {!isLead && (
         <section className="space-y-4">
           <div className="space-y-1">
             <h2 className="text-3xl font-bold text-foreground">Quick Stats</h2>
@@ -471,8 +490,10 @@ export default function ClientPortal() {
             </button>
           </div>
         </section>
+        )}
 
         {/* SECTION 5 — YOUR TEAM */}
+        {!isLead && (
         <section className="space-y-4">
           <div className="space-y-1">
             <h2 className="text-3xl font-bold text-foreground">Your Marketing iO Team</h2>
@@ -504,6 +525,7 @@ export default function ClientPortal() {
             )}
           </div>
         </section>
+        )}
 
         {/* SECTION 6 — PROFILE SNAPSHOT */}
         <section className="space-y-4">
@@ -543,6 +565,7 @@ export default function ClientPortal() {
         </section>
 
         {/* SECTION 7 — SHORTCUTS */}
+        {!isLead && (
         <section className="space-y-4">
           <div className="space-y-1">
             <h2 className="text-3xl font-bold text-foreground">Quick Links</h2>
@@ -575,6 +598,7 @@ export default function ClientPortal() {
             </button>
           </div>
         </section>
+        )}
 
         {/* SECTION 8 — SALES FLOOR */}
         {/* Section A — Upgrade Package (if not on Dominate or no package) */}
@@ -640,6 +664,7 @@ export default function ClientPortal() {
         </section>
 
         {/* SECTION 7.5 — FREQUENTLY ASKED QUESTIONS */}
+        {!isLead && (
         <section className="space-y-4">
           <div className="space-y-1">
             <h2 className="text-3xl font-bold text-foreground">Common Questions</h2>
@@ -840,6 +865,7 @@ export default function ClientPortal() {
             </Button>
           </div>
         </section>
+        )}
 
         {/* Section D — Custom Packages */}
         <section className="glass rounded-2xl p-8 border border-slate-700/40 text-center space-y-4">
