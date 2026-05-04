@@ -57,8 +57,32 @@ Deno.serve(async (req) => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-  const users = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
-  const user = users?.[0];
+
+  // Look up account in AppUser (client portal) first, then fall back to User (staff/CRM directory).
+  // Each lookup wrapped in its own try so a transient AppUser error doesn't defeat the User fallback.
+  let user;
+  let userEntity;
+  try {
+    const appUsers = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
+    if (appUsers?.[0]) {
+      user = appUsers[0];
+      userEntity = 'AppUser';
+    }
+  } catch (err) {
+    console.error('[auth-login] AppUser lookup failed:', err);
+  }
+
+  if (!user) {
+    try {
+      const legacyUsers = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+      if (legacyUsers?.[0]) {
+        user = legacyUsers[0];
+        userEntity = 'User';
+      }
+    } catch (err) {
+      console.error('[auth-login] User lookup failed:', err);
+    }
+  }
 
   if (!user) {
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
@@ -72,7 +96,7 @@ Deno.serve(async (req) => {
     // Re-generate OTP so they can verify
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    await base44.asServiceRole.entities.AppUser.update(user.id, {
+    await base44.asServiceRole.entities[userEntity].update(user.id, {
       pending_otp_code: otp,
       pending_otp_expires_at: expires,
       pending_otp_purpose: 'signup_verification'
@@ -89,15 +113,15 @@ Deno.serve(async (req) => {
     if (newCount >= 5) {
       updateData.lockout_until = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     }
-    await base44.asServiceRole.entities.AppUser.update(user.id, updateData);
+    await base44.asServiceRole.entities[userEntity].update(user.id, updateData);
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  // Valid password — generate MFA OTP stored on AppUser record
+  // Valid password — generate MFA OTP stored on the matching entity's record
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-  await base44.asServiceRole.entities.AppUser.update(user.id, {
+  await base44.asServiceRole.entities[userEntity].update(user.id, {
     pending_otp_code: otp,
     pending_otp_expires_at: expires,
     pending_otp_purpose: 'login_mfa',

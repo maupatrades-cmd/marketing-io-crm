@@ -11,8 +11,31 @@ Deno.serve(async (req) => {
   const normalizedEmail = email.toLowerCase().trim();
   const now = new Date();
 
-  const users = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
-  const user = users?.[0];
+  // Look up account in AppUser (client portal) first, then fall back to User (staff/CRM directory).
+  // Each lookup wrapped in its own try so a transient AppUser error doesn't defeat the User fallback.
+  let user;
+  let userEntity;
+  try {
+    const appUsers = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
+    if (appUsers?.[0]) {
+      user = appUsers[0];
+      userEntity = 'AppUser';
+    }
+  } catch (err) {
+    console.error('[auth-verify-otp] AppUser lookup failed:', err);
+  }
+
+  if (!user) {
+    try {
+      const legacyUsers = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+      if (legacyUsers?.[0]) {
+        user = legacyUsers[0];
+        userEntity = 'User';
+      }
+    } catch (err) {
+      console.error('[auth-verify-otp] User lookup failed:', err);
+    }
+  }
 
   let otpValid = false;
   
@@ -77,7 +100,7 @@ Deno.serve(async (req) => {
       userUpdate.failed_login_count = 0;
     }
 
-    await base44.asServiceRole.entities.AppUser.update(user.id, userUpdate);
+    await base44.asServiceRole.entities[userEntity].update(user.id, userUpdate);
 
     return Response.json({
       token,
