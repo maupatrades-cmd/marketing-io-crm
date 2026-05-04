@@ -3,7 +3,7 @@ import { MapPin, Globe, Users, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LogoUploadEditor from './LogoUploadEditor';
 
-export default function HeroSection({ client, heroImageUrl, isLoadingImage, onLogoUpdate }) {
+export default function HeroSection({ client, heroImageUrl, isLoadingImage, copy, onLogoUpdate }) {
   const [showLogoEditor, setShowLogoEditor] = useState(false);
   const [logoFile, setLogoFile] = useState(client?.logo_file);
   return (
@@ -30,7 +30,15 @@ export default function HeroSection({ client, heroImageUrl, isLoadingImage, onLo
         )}
 
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+
+        {copy && (
+          <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-8 sm:px-10 sm:pb-12">
+            <p className="text-lg sm:text-2xl md:text-3xl font-bold text-white max-w-3xl drop-shadow-lg leading-tight">
+              {copy}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Client Branding Section */}

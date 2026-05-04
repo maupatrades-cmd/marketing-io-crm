@@ -2,8 +2,9 @@ import { getProductById } from "@/data/ProductCatalog";
 
 const PACKAGE_IDS = ['ignite', 'accelerate', 'dominate'];
 
-export default function LeadHero({ client, heroImageUrl, onEnquire }) {
+export default function LeadHero({ client, heroImageUrl, copy, onEnquire }) {
   const firstName = client.contact_person?.split(' ')[0] || client.business_name;
+  const headline = copy || `Let's grow ${client.business_name}.`;
 
   return (
     <section className="relative overflow-hidden rounded-2xl border-2 border-primary/30 mb-8">
@@ -23,7 +24,7 @@ export default function LeadHero({ client, heroImageUrl, onEnquire }) {
           Welcome, {firstName}
         </p>
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
-          Let's grow {client.business_name}.
+          {headline}
         </h1>
         <p className="text-base md:text-lg text-slate-300 max-w-2xl mx-auto mb-8">
           Pick the marketing foundation that fits where you are right now. We'll handle the rest — strategy, content, growth.

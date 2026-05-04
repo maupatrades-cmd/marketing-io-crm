@@ -43,6 +43,7 @@ export default function ClientPortal() {
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [splashDismissed, setSplashDismissed] = useState(false);
   const [heroImageUrl, setHeroImageUrl] = useState(null);
+  const [heroImageCopy, setHeroImageCopy] = useState(null);
   const [loadingHeroImage, setLoadingHeroImage] = useState(false);
 
   const unsubscribesRef = useRef([]);
@@ -116,13 +117,28 @@ export default function ClientPortal() {
         // Generate hero image
         setLoadingHeroImage(true);
         try {
+          const hasPackage = !!(c.package && c.package !== 'none');
+          // ClientAddOn linkage isn't wired up yet — for active clients,
+          // surface every addon ID as "missing" so the scenario picker can
+          // target a pain pool. Lead/no-package clients hit the
+          // no_foundation pool regardless of this list.
+          const allAddonIds = PRODUCT_CATALOG
+            .filter(p => p.type === 'addon')
+            .map(p => p.id);
+          const missingAddons = hasPackage ? allAddonIds : [];
+
           const res = await base44.functions.invoke('generate-hero-image', {
             business_name: c.business_name,
             industry: c.industry,
-            package: c.package
+            package: c.package,
+            has_package: hasPackage,
+            missing_addons: missingAddons
           });
           if (res.data?.url) {
             setHeroImageUrl(res.data.url);
+          }
+          if (res.data?.copy) {
+            setHeroImageCopy(res.data.copy);
           }
         } catch (err) {
           console.error('Failed to generate hero image:', err);
@@ -280,6 +296,7 @@ export default function ClientPortal() {
           <LeadHero
             client={client}
             heroImageUrl={heroImageUrl}
+            copy={heroImageCopy}
             onEnquire={handleEnquire}
           />
         )}
@@ -290,6 +307,7 @@ export default function ClientPortal() {
             client={client}
             heroImageUrl={heroImageUrl}
             isLoadingImage={loadingHeroImage}
+            copy={heroImageCopy}
             onLogoUpdate={(url) => {
               setClient(prev => ({ ...prev, logo_file: url }));
             }}
