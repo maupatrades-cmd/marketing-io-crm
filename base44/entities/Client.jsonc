@@ -28,6 +28,17 @@
     },
     "industry": {
       "type": "string",
+      "enum": [
+        "retail",
+        "services",
+        "construction",
+        "hospitality",
+        "beauty",
+        "health",
+        "professional",
+        "education",
+        "other"
+      ],
       "description": "Business industry / sector"
     },
     "status": {
@@ -187,6 +198,116 @@
     "hero_image_scenario": {
       "type": "string",
       "description": "Scenario pool name used to generate the cached hero image"
+    },
+    "years_in_business": {
+      "type": "string",
+      "enum": ["starting", "less_than_1", "1_to_3", "3_to_5", "5_to_10", "10_plus"]
+    },
+    "number_of_employees": {
+      "type": "string",
+      "enum": ["just_me", "2_to_5", "6_to_15", "16_to_50", "50_plus"]
+    },
+    "business_city": {
+      "type": "string",
+      "description": "City the business operates in"
+    },
+    "business_address": {
+      "type": "string",
+      "description": "Full physical address (signup step 2)"
+    },
+    "business_province": {
+      "type": "string",
+      "enum": [
+        "gauteng",
+        "western_cape",
+        "kwazulu_natal",
+        "eastern_cape",
+        "free_state",
+        "limpopo",
+        "mpumalanga",
+        "north_west",
+        "northern_cape"
+      ]
+    },
+    "monthly_revenue_range": {
+      "type": "string",
+      "enum": ["under_20k", "20k_to_50k", "50k_to_150k", "150k_to_500k", "500k_plus"]
+    },
+    "twelve_month_goal": {
+      "type": "string",
+      "enum": ["same_steady", "double_revenue", "five_x_growth", "sell_business", "open_branches"]
+    },
+    "biggest_challenge": {
+      "type": "string",
+      "enum": [
+        "not_enough_leads",
+        "customers_dont_return",
+        "cant_compete",
+        "dont_know_marketing",
+        "too_busy_doing_work",
+        "bad_reputation",
+        "all_above"
+      ]
+    },
+    "new_customers_target": {
+      "type": "string",
+      "enum": ["5_to_10", "10_to_25", "25_to_50", "50_to_100", "100_plus"]
+    },
+    "monthly_marketing_budget": {
+      "type": "string",
+      "enum": ["under_500", "500_to_1500", "1500_to_3000", "3000_to_7000", "7000_plus"]
+    },
+    "current_marketing_assets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Multi-select of assets the client already has (website, whatsapp_automation, active_social, gmb_claimed, paid_ads, email_marketing, crm)"
+    },
+    "agency_history": {
+      "type": "string",
+      "enum": ["yes_didnt_work", "yes_too_expensive", "never", "tried_diy"]
+    },
+    "urgency_level": {
+      "type": "string",
+      "enum": ["yesterday", "within_1_month", "within_3_months", "planning_ahead", "no_rush"]
+    },
+    "founder_inspiration": {
+      "type": "string",
+      "description": "Free-form: what inspired the founder"
+    },
+    "competitor_envy": {
+      "type": "string",
+      "description": "Free-form: what a competitor is doing the founder wishes they were"
+    },
+    "preferred_contact_channels": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Multi-select: phone, whatsapp, email, sms"
+    },
+    "best_call_time": {
+      "type": "string",
+      "enum": ["morning", "lunch", "afternoon", "evening", "weekend_only"]
+    },
+    "wants_consultation_call": {
+      "type": "boolean",
+      "default": false
+    },
+    "wants_personalized_proposal": {
+      "type": "boolean",
+      "default": false
+    },
+    "lead_score": {
+      "type": "string",
+      "enum": ["hot", "warm", "nurture", "cold", "unqualified"],
+      "description": "Calculated lead score from signup answers"
+    },
+    "lead_score_calculated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signup_completed_steps": {
+      "type": "number",
+      "default": 1,
+      "description": "How many of the 5 signup steps the lead completed"
     }
   },
   "required": [

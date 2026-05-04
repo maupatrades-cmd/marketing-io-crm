@@ -84,6 +84,28 @@
       "type": "string",
       "format": "date-time",
       "description": "When reset token expires"
+    },
+    "first_name": {
+      "type": "string",
+      "description": "User first name (multi-step signup)"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "User last name (multi-step signup)"
+    },
+    "mobile_number": {
+      "type": "string",
+      "description": "Mobile number, SA format (+27 or 0-prefixed, 10 digits if local)"
+    },
+    "popia_consent_given": {
+      "type": "boolean",
+      "default": false,
+      "description": "POPIA marketing-communication consent flag"
+    },
+    "popia_consent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When POPIA consent was given"
     }
   },
   "required": [
