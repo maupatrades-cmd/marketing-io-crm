@@ -1,0 +1,53 @@
+{
+  "name": "ClientThread",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Reference to Client (one thread per client)"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Denormalised business name"
+    },
+    "participants": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "User/AppUser IDs of all participants"
+    },
+    "consultant_id": {
+      "type": "string",
+      "description": "Assigned account admin user_id"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "Owner user_id (Thapelo)"
+    },
+    "last_message_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_message_preview": {
+      "type": "string",
+      "description": "First 100 chars of last message"
+    },
+    "unread_count_client": {
+      "type": "integer",
+      "default": 0
+    },
+    "unread_count_consultant": {
+      "type": "integer",
+      "default": 0
+    },
+    "unread_count_owner": {
+      "type": "integer",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "archived"],
+      "default": "active"
+    }
+  },
+  "required": ["client_id"]
+}
