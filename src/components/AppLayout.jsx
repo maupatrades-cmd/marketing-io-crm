@@ -89,7 +89,7 @@ const OWNER_NAV = [
 export default function AppLayout({ children, title, subtitle }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [switchedRole, setSwitchedRole] = useState(null);
   
   useEffect(() => {
@@ -366,6 +366,13 @@ export default function AppLayout({ children, title, subtitle }) {
             <BarChart2 className="w-4 h-4 shrink-0" />
             Client Portal
           </Link>
+          <button
+            onClick={logout}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs hover:bg-destructive/10 hover:text-destructive transition-all w-full"
+            style={{ color: "#6b6b85" }}>
+            <LogOut className="w-4 h-4 shrink-0" />
+            Sign Out
+          </button>
         </div>
       </aside>
 

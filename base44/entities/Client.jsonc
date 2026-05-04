@@ -167,6 +167,10 @@
       "type": "string",
       "description": "JSON object with notification settings (email_deliverable_ready, email_invoice_issued, etc.)"
     },
+    "logo_file": {
+      "type": "string",
+      "description": "URL of client's uploaded business logo"
+    },
     "hero_image_url": {
       "type": "string",
       "description": "Cached portal hero image URL (24h TTL)"

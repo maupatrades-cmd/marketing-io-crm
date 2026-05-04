@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
   let userId = null;
 
   // 1. Find user
-  const users = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+  const users = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
   const user = users?.[0];
   userId = user?.id || null;
 
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     }
 
     // 4. Delete the User
-    await base44.asServiceRole.entities.User.delete(userId);
+    await base44.asServiceRole.entities.AppUser.delete(userId);
     deleted.user = true;
   }
 

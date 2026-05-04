@@ -75,17 +75,27 @@ Deno.serve(async (req) => {
   }
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Step 3: Check existing app user
-  console.log('[auth-register] Step: checking existing app user for', normalizedEmail);
-  let existing;
+  // Step 3: Check existing account in BOTH AppUser and User entities. A staff/owner
+  // account in User with this email would otherwise be shadowed by a new AppUser row
+  // (auth-login prefers AppUser), silently locking the legacy account out of login.
+  console.log('[auth-register] Step: checking existing account for', normalizedEmail);
   try {
-    existing = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
+    const existingAppUser = await base44.asServiceRole.entities.AppUser.filter({ email: normalizedEmail });
+    if (existingAppUser && existingAppUser.length > 0) {
+      return Response.json({ error: 'Account already exists with this email' }, { status: 409 });
+    }
   } catch (err) {
     console.error('[auth-register] appuser_lookup_failed:', err.message);
     return Response.json({ error: 'appuser_lookup_failed', detail: err.message }, { status: 500 });
   }
-  if (existing && existing.length > 0) {
-    return Response.json({ error: 'Account already exists with this email' }, { status: 409 });
+  try {
+    const existingUser = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+    if (existingUser && existingUser.length > 0) {
+      return Response.json({ error: 'Account already exists with this email' }, { status: 409 });
+    }
+  } catch (err) {
+    console.error('[auth-register] user_lookup_failed:', err.message);
+    return Response.json({ error: 'user_lookup_failed', detail: err.message }, { status: 500 });
   }
 
   // Step 4: Hash password

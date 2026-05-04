@@ -8,12 +8,32 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Token is required.' }, { status: 400 });
   }
 
-  const users = await base44.asServiceRole.entities.User.filter({ session_token: token });
-  if (!users || users.length === 0) {
-    return Response.json({ error: 'Invalid session' }, { status: 401 });
+  // Look up session in AppUser (client portal) first, then fall back to User (staff/CRM directory).
+  // Each lookup wrapped in its own try so a transient AppUser error doesn't defeat the User fallback.
+  let user;
+  try {
+    const appUsers = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
+    if (appUsers?.[0]) {
+      user = appUsers[0];
+    }
+  } catch (err) {
+    console.error('[auth-me] AppUser lookup failed:', err);
   }
 
-  const user = users[0];
+  if (!user) {
+    try {
+      const legacyUsers = await base44.asServiceRole.entities.User.filter({ session_token: token });
+      if (legacyUsers?.[0]) {
+        user = legacyUsers[0];
+      }
+    } catch (err) {
+      console.error('[auth-me] User lookup failed:', err);
+    }
+  }
+
+  if (!user) {
+    return Response.json({ error: 'Invalid session' }, { status: 401 });
+  }
 
   if (!user.session_expires_at || new Date(user.session_expires_at) < new Date()) {
     return Response.json({ error: 'Session expired' }, { status: 401 });
