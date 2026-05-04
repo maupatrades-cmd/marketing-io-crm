@@ -38,9 +38,31 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Token is required.' }, { status: 400 });
   }
 
-  // Find user by reset token (query User entity, not AppUser)
-  const users = await base44.asServiceRole.entities.User.filter({ password_reset_token: token });
-  const user = users?.[0];
+  // Look up the reset token in AppUser (client portal) first, then User (staff/CRM directory).
+  // Each lookup is wrapped in its own try so a transient error on AppUser doesn't defeat the User fallback.
+  let user;
+  let userEntity;
+  try {
+    const appUsers = await base44.asServiceRole.entities.AppUser.filter({ password_reset_token: token });
+    if (appUsers?.[0]) {
+      user = appUsers[0];
+      userEntity = 'AppUser';
+    }
+  } catch (err) {
+    console.error('[reset-password] AppUser lookup failed:', err);
+  }
+
+  if (!user) {
+    try {
+      const legacyUsers = await base44.asServiceRole.entities.User.filter({ password_reset_token: token });
+      if (legacyUsers?.[0]) {
+        user = legacyUsers[0];
+        userEntity = 'User';
+      }
+    } catch (err) {
+      console.error('[reset-password] User lookup failed:', err);
+    }
+  }
 
   if (!user || !user.password_reset_expires_at) {
     return Response.json({ error: 'invalid_token', message: 'This reset link is invalid or has already been used.' }, { status: 400 });
@@ -62,7 +84,7 @@ Deno.serve(async (req) => {
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
 
-  await base44.asServiceRole.entities.User.update(user.id, {
+  await base44.asServiceRole.entities[userEntity].update(user.id, {
     password_hash: passwordHash,
     password_reset_token: null,
     password_reset_expires_at: null,
