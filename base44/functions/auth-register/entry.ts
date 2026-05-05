@@ -190,6 +190,49 @@ Deno.serve(async (req) => {
     console.error('[auth-register] OTP email send failed (non-fatal):', emailErr.message);
   }
 
+  // ---------------------------------------------------------------------------
+  // Step 9: Lead routing (non-blocking append — must NEVER fail signup).
+  //   - Tag the just-created Client as a 'lead' with self_signup source +
+  //     canonical app_user_id link. assigned_consultant_id intentionally left
+  //     NULL so it surfaces in the owner's Lead Inbox for allocation.
+  //   - Fire-and-forget owner notification email.
+  // ---------------------------------------------------------------------------
+  try {
+    if (createdClientId) {
+      try {
+        await base44.asServiceRole.entities.Client.update(createdClientId, {
+          lifecycle_stage: 'lead',
+          lead_source_type: 'self_signup',
+          app_user_id: newUser.id
+        });
+      } catch (leadFieldsErr) {
+        console.error('[auth-register] lead-field tagging failed (non-fatal):', leadFieldsErr?.message);
+      }
+
+      let ownerExists = false;
+      try {
+        const owners = await base44.asServiceRole.entities.User.filter({ role: 'owner' });
+        ownerExists = Array.isArray(owners) ? owners.length > 0 : !!owners;
+      } catch (_) {}
+
+      if (ownerExists) {
+        base44.functions.invoke('send-owner-lead-notification', {
+          lead_id: createdClientId,
+          business_name: businessName.trim(),
+          contact_person: fullName.trim(),
+          email: normalizedEmail,
+          phone: rawMobile || phone?.trim() || '',
+          signup_at: new Date().toISOString()
+        }).catch((notifErr) => {
+          console.error('[auth-register] send-owner-lead-notification failed (non-fatal):', notifErr?.message);
+        });
+        console.log('[auth-register] new lead routed to owner inbox:', createdClientId);
+      }
+    }
+  } catch (leadErr) {
+    console.error('[auth-register] lead routing failed (non-blocking):', leadErr?.message);
+  }
+
   console.log('[auth-register] Step: complete — user_id:', newUser.id);
   return Response.json({ user_id: newUser.id, client_id: createdClientId, email: normalizedEmail }, { status: 200 });
 });

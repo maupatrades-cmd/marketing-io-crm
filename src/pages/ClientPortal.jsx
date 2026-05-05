@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { getCurrentUser } from "@/lib/customAuth";
@@ -50,6 +52,8 @@ export default function ClientPortal() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [contactOpen, setContactOpen] = useState(false);
   const [outstandingInvoices, setOutstandingInvoices] = useState([]);
+  const [connectingConsultant, setConnectingConsultant] = useState(false);
+  const navigate = useNavigate();
  
 
   const unsubscribesRef = useRef([]);
@@ -222,6 +226,131 @@ export default function ClientPortal() {
   const handleEnquire = (product) => {
     setSelectedProduct(product);
     setModalOpen(true);
+  };
+
+  // State-aware "Talk to Consultant" / "Message your team" handler.
+  //
+  //   STATE 1 — client has an assigned consultant: open or create the standard
+  //             3-way thread (client + consultant + owner) and navigate to it.
+  //   STATE 2 — no consultant assigned yet: open or create a
+  //             pre_consultant_assignment thread (client + owner only). On
+  //             create only, post a welcome message from the owner.
+  //   STATE 3 — no owner / hard error: surface a toast and stay put.
+  //
+  // No gating on lifecycle_stage — every signed-up user can open a thread.
+  const handleTalkToConsultant = async () => {
+    if (connectingConsultant) return;
+    if (!client?.id) {
+      toast.error('We could not find your account. Please refresh and try again.');
+      return;
+    }
+    setConnectingConsultant(true);
+    try {
+      const consultantId =
+        client.assigned_consultant_id
+        || client.assigned_field_agent
+        || null;
+
+      // STATE 1 — consultant assigned: standard thread.
+      if (consultantId) {
+        let thread = null;
+        try {
+          const existing = await base44.entities.ClientThread.filter({
+            client_id: client.id,
+            thread_type: 'standard'
+          });
+          thread = Array.isArray(existing) ? existing[0] : existing;
+        } catch (err) {
+          console.error('[handleTalkToConsultant] standard thread lookup failed:', err);
+        }
+
+        if (!thread) {
+          let ownerId = null;
+          try {
+            const owners = await base44.entities.User.filter({ role: 'owner' });
+            const owner = Array.isArray(owners) ? owners[0] : owners;
+            ownerId = owner?.id || null;
+          } catch (err) {
+            console.error('[handleTalkToConsultant] owner lookup failed:', err);
+          }
+          const participants = [client.client_user_id, consultantId, ownerId].filter(Boolean);
+          thread = await base44.entities.ClientThread.create({
+            client_id: client.id,
+            client_name: client.business_name || '',
+            participants,
+            consultant_id: consultantId,
+            owner_id: ownerId,
+            thread_type: 'standard',
+            status: 'active'
+          });
+        }
+
+        navigate(`/client/messages/${thread.id}`);
+        return;
+      }
+
+      // STATE 2 — no consultant: pre_consultant_assignment thread.
+      let owner = null;
+      try {
+        const owners = await base44.entities.User.filter({ role: 'owner' });
+        owner = Array.isArray(owners) ? owners[0] : owners;
+      } catch (err) {
+        console.error('[handleTalkToConsultant] owner lookup failed:', err);
+      }
+      if (!owner?.id) {
+        // STATE 3 — no owner record exists.
+        toast.error('Support is being set up. Please use Contact us for now.');
+        return;
+      }
+
+      let thread = null;
+      try {
+        const existing = await base44.entities.ClientThread.filter({
+          client_id: client.id,
+          thread_type: 'pre_consultant_assignment'
+        });
+        thread = Array.isArray(existing) ? existing[0] : existing;
+      } catch (err) {
+        console.error('[handleTalkToConsultant] pre-assignment thread lookup failed:', err);
+      }
+
+      if (thread) {
+        // Idempotent — do NOT post another welcome.
+        navigate(`/client/messages/${thread.id}`);
+        return;
+      }
+
+      // Create thread + post welcome (one-time).
+      const participants = [client.client_user_id, owner.id].filter(Boolean);
+      thread = await base44.entities.ClientThread.create({
+        client_id: client.id,
+        client_name: client.business_name || '',
+        participants,
+        owner_id: owner.id,
+        thread_type: 'pre_consultant_assignment',
+        status: 'active'
+      });
+
+      try {
+        await base44.entities.ClientThreadMessage.create({
+          thread_id: thread.id,
+          client_id: client.id,
+          sender_id: owner.id,
+          sender_name: owner.full_name || owner.name || '',
+          sender_role: 'owner',
+          message: "Welcome to Marketing iO! I'll allocate a dedicated consultant within 24 hours. In the meantime, feel free to ask any questions or browse our products and purchase directly — your consultant will help you onboard."
+        });
+      } catch (err) {
+        console.error('[handleTalkToConsultant] welcome message create failed:', err);
+      }
+
+      navigate(`/client/messages/${thread.id}`);
+    } catch (err) {
+      console.error('[handleTalkToConsultant] flow failed:', err);
+      toast.error('Could not connect to consultant. Please try again or use Contact us.');
+    } finally {
+      setConnectingConsultant(false);
+    }
   };
 
   const handleSubmitted = async () => {
@@ -940,6 +1069,10 @@ export default function ClientPortal() {
                   </AccordionContent>
                 </AccordionItem>
 
+                {/* TODO(portal-polish): inline FAQ links to /client/messages can land
+                    users on an empty Messages page if no thread exists. Route them through
+                    the same handleTalkToConsultant flow as the primary CTA below in a
+                    follow-up polish PR. */}
                 <AccordionItem value="custom-packages" className="glass rounded-lg border-0">
                   <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
                     Do you offer custom packages?
@@ -956,15 +1089,18 @@ export default function ClientPortal() {
           <div className="mt-8 p-4 glass rounded-lg border-border/50 text-center">
             <p className="text-sm text-muted-foreground mb-3">Still stuck?</p>
             <Button
-              onClick={() => window.location.href = '/client/messages'}
-              className="gradient-bg text-white relative"
+              onClick={handleTalkToConsultant}
+              disabled={connectingConsultant}
+              className="gradient-bg text-white relative disabled:opacity-70"
             >
-              {unreadMessages > 0 && (
+              {unreadMessages > 0 && !connectingConsultant && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-background">
                   {unreadMessages > 99 ? '99+' : unreadMessages}
                 </span>
               )}
-              Message your team {unreadMessages > 0 ? `(${unreadMessages})` : ''}→
+              {connectingConsultant
+                ? 'Connecting…'
+                : `Message your team ${unreadMessages > 0 ? `(${unreadMessages})` : ''}→`}
             </Button>
           </div>
         </section>

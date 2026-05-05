@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone, UserPlus } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import ClientSidebar from "@/components/ClientSidebar";
@@ -64,6 +65,7 @@ const STAFF_NAV = {
 
 const OWNER_NAV = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/owner/leads", label: "Lead Inbox", icon: UserPlus, badgeKey: "leadInbox" },
   { path: "/inbox", label: "Inbox", icon: MessageSquare },
   { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
   { path: "/playbooks", label: "Playbooks", icon: BookOpen },
@@ -94,11 +96,29 @@ export default function AppLayout({ children, title, subtitle }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
   const [switchedRole, setSwitchedRole] = useState(null);
-  
+  const [leadCount, setLeadCount] = useState(0);
+
   useEffect(() => {
     const stored = localStorage.getItem("__owner_switched_role");
     setSwitchedRole(stored);
   }, []);
+
+  // Owner-only: count of unallocated leads to badge the Lead Inbox sidebar item.
+  useEffect(() => {
+    if (user?.role !== "owner") return;
+    let cancelled = false;
+    base44.entities.Client
+      .filter({ lifecycle_stage: "lead" }, "-created_date", 500)
+      .then(rows => {
+        if (cancelled) return;
+        const list = Array.isArray(rows) ? rows : (rows ? [rows] : []);
+        setLeadCount(list.length);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user?.role]);
+
+  const navBadges = { leadInbox: leadCount };
 
   const displayRole = switchedRole || user?.role;
 
@@ -303,8 +323,9 @@ export default function AppLayout({ children, title, subtitle }) {
               </Link>
               </>
               )}
-          {(STAFF_NAV[displayRole] || OWNER_NAV).map(({ path, label, icon: Icon }) => {
+          {(STAFF_NAV[displayRole] || OWNER_NAV).map(({ path, label, icon: Icon, badgeKey }) => {
             const active = location.pathname === path;
+            const badge = badgeKey ? (navBadges[badgeKey] || 0) : 0;
             return (
               <Link
                 key={path}
@@ -318,7 +339,12 @@ export default function AppLayout({ children, title, subtitle }) {
                 style={active ? {} : { color: "#a8a8c0" }}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                {label}
+                <span className="flex-1 min-w-0 truncate">{label}</span>
+                {badge > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-rose-500 text-white">
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                )}
               </Link>
             );
           })}

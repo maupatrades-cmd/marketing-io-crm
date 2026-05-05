@@ -165,6 +165,19 @@
     "clawback_payment_id": {
       "type": "string"
     },
+    "reattributed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Set when commission is reassigned from one user to another (e.g. owner → field_agent within 7-day allocation window)"
+    },
+    "reattributed_from": {
+      "type": "string",
+      "description": "Original user_id (typically owner) before reattribution"
+    },
+    "reattributed_by": {
+      "type": "string",
+      "description": "User.id of the owner/admin who triggered the reattribution"
+    },
     "payroll_month": {
       "type": "string",
       "description": "YYYY-MM pay period"

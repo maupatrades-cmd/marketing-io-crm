@@ -308,6 +308,32 @@
       "type": "number",
       "default": 1,
       "description": "How many of the 5 signup steps the lead completed"
+    },
+    "lifecycle_stage": {
+      "type": "string",
+      "enum": ["lead", "qualified", "active", "churned", "disqualified"],
+      "default": "lead",
+      "description": "Sales lifecycle stage. New self-signups land as 'lead'; owner promotes to 'qualified' on allocation."
+    },
+    "lead_source_type": {
+      "type": "string",
+      "enum": [
+        "cpc_outbound",
+        "field_direct",
+        "fnc_reverse_referral",
+        "self_signup",
+        "partner_referral"
+      ],
+      "default": "self_signup",
+      "description": "How the lead arrived. self_signup is the portal registration default."
+    },
+    "app_user_id": {
+      "type": "string",
+      "description": "AppUser.id of the signed-up user. Mirrors client_user_id for the canonical commission/lead-routing field set."
+    },
+    "assigned_consultant_id": {
+      "type": "string",
+      "description": "User.id of the field agent / CPC currently allocated to this client. NULL until owner allocates from /owner/leads."
     }
   },
   "required": [
