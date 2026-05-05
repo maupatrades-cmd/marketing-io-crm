@@ -1,191 +1,309 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { getCurrentUser } from '@/lib/customAuth';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Send, MessageSquare, AlertCircle } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { getCurrentUser } from "@/lib/customAuth";
+import { Send, MessageSquare } from "lucide-react";
 
-export default function ClientMessages() {
-  const [communications, setCommunications] = useState([]);
-  const [client, setClient] = useState(null);
-  const [user, setUser] = useState(null);
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("general_inquiry");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
+const ROLE_STYLE = {
+  client:     { ring: 'ring-purple-500/40',  bg: 'bg-purple-500',  badge: 'bg-purple-500/15 text-purple-300 border-purple-500/40', label: 'You' },
+  consultant: { ring: 'ring-sky-500/40',     bg: 'bg-sky-500',     badge: 'bg-sky-500/15 text-sky-300 border-sky-500/40',         label: 'Consultant' },
+  owner:      { ring: 'ring-amber-500/40',   bg: 'bg-amber-500',   badge: 'bg-amber-500/15 text-amber-300 border-amber-500/40',    label: 'Owner' },
+  head_of_marketing: { ring: 'ring-pink-500/40', bg: 'bg-pink-500', badge: 'bg-pink-500/15 text-pink-300 border-pink-500/40',     label: 'Head of Marketing' }
+};
 
-  const fetchCommunications = async (clientId) => {
-    const comms = await base44.entities.ClientCommunication.filter({ client_id: clientId }, "-created_date", 50);
-    setCommunications(Array.isArray(comms) ? comms : []);
-    setLastUpdated(new Date());
-  };
+function initials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+}
 
-  useEffect(() => {
-    getCurrentUser().then(async (me) => {
-      if (!me) { window.location.href = '/login'; return; }
-      setUser(me);
-      const clients = await base44.entities.Client.filter({ email: me.email });
-      if (clients.length > 0) {
-        const c = Array.isArray(clients) ? clients[0] : clients;
-        setClient(c);
-        await fetchCommunications(c.id);
-      }
-      setLoading(false);
-    });
-  }, []);
+function timeFmt(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleString('en-ZA', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+}
 
-  // Real-time polling every 30 seconds
-  useEffect(() => {
-    if (!client) return;
-    const interval = setInterval(() => {
-      fetchCommunications(client.id);
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [client]);
+function MessageBubble({ msg, isSelf, totalParticipants }) {
+  if (msg.is_system_message) {
+    return (
+      <div className="flex justify-center my-3">
+        <div className="text-[11px] text-slate-400 italic bg-slate-800/40 border border-slate-700/50 rounded-full px-4 py-1.5">
+          {msg.message}
+        </div>
+      </div>
+    );
+  }
 
-  const handleSend = async () => {
-    if (!subject.trim() || !message.trim() || !client || !user) return;
-    setSending(true);
-    try {
-      await base44.entities.ClientCommunication.create({
-        client_id: client.id,
-        client_name: client.business_name,
-        sender_id: user.id,
-        sender_name: user.full_name,
-        sender_email: user.email,
-        message_type: messageType,
-        subject: subject.trim(),
-        message: message.trim(),
-        priority: messageType === "urgent_issue" ? "urgent" : "normal",
-      });
-      setSubject("");
-      setMessage("");
-      setMessageType("general_inquiry");
-      await fetchCommunications(client.id);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (loading) return <LoadingSpinner />;
+  const style = ROLE_STYLE[msg.sender_role] || ROLE_STYLE.consultant;
+  const readByAll = totalParticipants && Array.isArray(msg.read_by) && msg.read_by.length >= totalParticipants;
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold gradient-text mb-6">Send a Message to Owner/Admin</h1>
-
-        {/* Message Compose */}
-        <div className="glass rounded-xl p-6 mb-6">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Subject *</label>
-                <Input 
-                  value={subject} 
-                  onChange={(e) => setSubject(e.target.value)} 
-                  placeholder="e.g., Deliverable question, Payment issue..."
-                  className="bg-secondary/50 border-border/50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Message Type *</label>
-                <Select value={messageType} onValueChange={setMessageType}>
-                  <SelectTrigger className="bg-secondary/50 border-border/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general_inquiry">General Inquiry</SelectItem>
-                    <SelectItem value="support_request">Support Request</SelectItem>
-                    <SelectItem value="feedback">Feedback</SelectItem>
-                    <SelectItem value="urgent_issue">Urgent Issue</SelectItem>
-                    <SelectItem value="billing_inquiry">Billing Question</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Message *</label>
-              <Textarea 
-                value={message} 
-                onChange={(e) => setMessage(e.target.value)} 
-                placeholder="Write your message here..."
-                className="bg-secondary/50 border-border/50 min-h-32"
-              />
-            </div>
-
-            <Button 
-              onClick={handleSend} 
-              disabled={!subject.trim() || !message.trim() || sending}
-              className="gradient-bg text-white w-full md:w-auto"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              {sending ? "Sending..." : "Send Message"}
-            </Button>
-          </div>
+    <div className={`flex gap-3 my-3 ${isSelf ? 'flex-row-reverse' : ''}`}>
+      <div className={`w-9 h-9 rounded-full ${style.bg} flex items-center justify-center text-white text-xs font-bold ring-2 ${style.ring} shrink-0`}>
+        {initials(msg.sender_name)}
+      </div>
+      <div className={`flex-1 min-w-0 max-w-[75%] ${isSelf ? 'items-end' : 'items-start'} flex flex-col`}>
+        <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
+          isSelf
+            ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white rounded-br-sm'
+            : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-sm'
+        }`}>
+          {msg.message}
         </div>
-
-        {/* Communication History */}
-        <div>
-          <h2 className="text-lg font-semibold text-foreground mb-4">Message History</h2>
-          <p className="text-xs text-muted-foreground text-center mb-4">Last updated: {lastUpdated.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}</p>
-
-          <div className="space-y-3">
-            {communications.length === 0 ? (
-              <div className="glass rounded-xl p-8 text-center">
-                <MessageSquare className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
-                <p className="text-muted-foreground">No messages sent yet</p>
-              </div>
-            ) : (
-              communications.map(comm => (
-                <div key={comm.id} className="glass rounded-xl p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{comm.subject}</h3>
-                      <div className="flex gap-2 mt-1 flex-wrap">
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                          {comm.message_type.replace(/_/g, ' ')}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          comm.status === 'new' ? 'bg-yellow-500/20 text-yellow-400' :
-                          comm.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
-                          comm.status === 'resolved' ? 'bg-green-500/20 text-green-400' :
-                          'bg-muted/50 text-muted-foreground'
-                        }`}>
-                          {comm.status}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(comm.created_date).toLocaleDateString("en-ZA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{comm.message}</p>
-
-                  {comm.response_message && (
-                    <div className="bg-secondary/50 rounded-lg p-3 mt-3 border-l-2 border-primary">
-                      <p className="text-xs font-semibold text-foreground mb-1">Response from {comm.responded_by_name}:</p>
-                      <p className="text-sm text-muted-foreground">{comm.response_message}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {new Date(comm.responded_at).toLocaleDateString("en-ZA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+        <div className={`flex items-center gap-2 mt-1 text-[10px] text-slate-500 ${isSelf ? 'flex-row-reverse' : ''}`}>
+          <span className="font-medium text-slate-400">{isSelf ? 'You' : msg.sender_name}</span>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded border ${style.badge}`}>{style.label}</span>
+          <span title={timeFmt(msg.created_date)}>{timeFmt(msg.created_date)}</span>
+          {isSelf && readByAll && <span className="text-emerald-400">✓✓ Read</span>}
         </div>
       </div>
     </div>
   );
 }
 
+function ParticipantStrip({ thread, owner, consultant, client }) {
+  const list = [
+    { label: client?.contact_person || 'You', role: 'client' },
+    consultant && { label: consultant.full_name, role: 'consultant' },
+    owner && { label: owner.full_name || 'Thapelo Maupa', role: 'owner' }
+  ].filter(Boolean);
+
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      {list.map((p, i) => {
+        const style = ROLE_STYLE[p.role] || ROLE_STYLE.consultant;
+        return (
+          <div key={i} className="flex items-center gap-2">
+            <div className={`w-7 h-7 rounded-full ${style.bg} flex items-center justify-center text-white text-[10px] font-bold ring-2 ${style.ring}`}>
+              {initials(p.label)}
+            </div>
+            <span className="text-xs text-slate-300">{p.label}</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${style.badge}`}>{style.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function ClientMessages() {
+  const [user, setUser] = useState(null);
+  const [client, setClient] = useState(null);
+  const [thread, setThread] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [owner, setOwner] = useState(null);
+  const [consultant, setConsultant] = useState(null);
+  const [error, setError] = useState('');
+  const scrollRef = useRef(null);
+
+  // Initial load: user → client → thread + messages.
+  useEffect(() => {
+    (async () => {
+      const me = await getCurrentUser();
+      if (!me) { window.location.href = '/login'; return; }
+      setUser(me);
+
+      const clients = await base44.entities.Client.filter({ email: me.email });
+      const c = Array.isArray(clients) ? clients[0] : clients;
+      if (!c) { setError('No client account linked to your login.'); setLoading(false); return; }
+      setClient(c);
+
+      try {
+        const res = await base44.functions.invoke('get-or-create-client-thread', {
+          client_id: c.id,
+          current_user_id: me.id,
+          current_user_role: 'client'
+        });
+        const data = res.data || {};
+        if (data.error) {
+          setError(data.error === 'forbidden' ? "You don't have permission to view this thread." : data.error);
+        } else {
+          setThread(data.thread);
+          setMessages(data.messages || []);
+        }
+      } catch (err) {
+        console.error('[ClientMessages] thread load failed:', err);
+        setError('Failed to load thread.');
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  // Resolve owner + consultant once we have a thread (best-effort, names only).
+  useEffect(() => {
+    if (!thread) return;
+    (async () => {
+      if (thread.consultant_id) {
+        try {
+          const u = await base44.entities.User.filter({ id: thread.consultant_id });
+          setConsultant(Array.isArray(u) ? u[0] : u);
+        } catch (_) {}
+      }
+      if (thread.owner_id) {
+        try {
+          const u = await base44.entities.User.filter({ id: thread.owner_id });
+          setOwner(Array.isArray(u) ? u[0] : u);
+        } catch (_) {}
+      }
+    })();
+  }, [thread?.consultant_id, thread?.owner_id]);
+
+  // Poll every 10s for new messages.
+  useEffect(() => {
+    if (!thread || !user) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await base44.functions.invoke('list-thread-messages', {
+          thread_id: thread.id,
+          current_user_id: user.id,
+          current_user_role: 'client'
+        });
+        const data = res.data || {};
+        if (data.thread) setThread(data.thread);
+        if (Array.isArray(data.messages)) setMessages(data.messages);
+      } catch (err) {
+        console.error('[ClientMessages] poll failed:', err);
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [thread?.id, user?.id]);
+
+  // Auto-scroll to bottom when messages change.
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSend = async (e) => {
+    e?.preventDefault?.();
+    if (!draft.trim() || !thread || !user || sending) return;
+    setSending(true);
+    const optimistic = {
+      id: `tmp-${Date.now()}`,
+      thread_id: thread.id,
+      sender_id: user.id,
+      sender_name: user.full_name || user.first_name || 'You',
+      sender_role: 'client',
+      message: draft.trim(),
+      created_date: new Date().toISOString(),
+      read_by: [user.id]
+    };
+    setMessages(prev => [...prev, optimistic]);
+    const text = draft.trim();
+    setDraft('');
+    try {
+      const res = await base44.functions.invoke('send-thread-message', {
+        thread_id: thread.id,
+        sender_id: user.id,
+        message: text
+      });
+      const data = res.data || {};
+      if (data.error) {
+        // Roll back optimistic add and surface the error.
+        setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+        setError(data.error === 'forbidden' ? "You can't post here." : 'Send failed.');
+        setDraft(text);
+      } else if (data.message) {
+        // Replace optimistic with the real one.
+        setMessages(prev => prev.map(m => m.id === optimistic.id ? data.message : m));
+      }
+    } catch (err) {
+      console.error('[ClientMessages] send failed:', err);
+      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+      setDraft(text);
+      setError('Send failed. Try again.');
+    }
+    setSending(false);
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  if (error && !thread) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="glass rounded-xl p-6 text-center max-w-sm">
+          <MessageSquare className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalParticipants = (thread?.participants || []).length || 3;
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <div className="border-b border-slate-700/40 bg-slate-950/80 backdrop-blur-md">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <h1 className="text-xl font-bold text-foreground">Your Marketing iO Team</h1>
+          <div className="mt-3">
+            <ParticipantStrip thread={thread} owner={owner} consultant={consultant} client={client} />
+          </div>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          {messages.length === 0 ? (
+            <div className="text-center py-16">
+              <MessageSquare className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No messages yet — say hi.</p>
+            </div>
+          ) : (
+            messages.map(msg => (
+              <MessageBubble
+                key={msg.id}
+                msg={msg}
+                isSelf={msg.sender_id === user?.id}
+                totalParticipants={totalParticipants}
+              />
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Composer */}
+      <div className="border-t border-slate-700/40 bg-slate-950/60 backdrop-blur-md">
+        <form onSubmit={handleSend} className="max-w-4xl mx-auto px-4 py-3 flex items-end gap-2">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend(e);
+              }
+            }}
+            placeholder="Message your team…"
+            rows={1}
+            className="flex-1 resize-none bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/60 max-h-40"
+          />
+          <button
+            type="submit"
+            disabled={!draft.trim() || sending}
+            className="shrink-0 flex items-center gap-1.5 px-4 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition"
+            style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
+          >
+            <Send className="w-4 h-4" />
+            <span className="hidden sm:inline">Send</span>
+          </button>
+        </form>
+        {error && thread && (
+          <p className="max-w-4xl mx-auto px-4 pb-2 text-xs text-red-400">{error}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function LoadingSpinner() {
-  return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" /></div>;
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+    </div>
+  );
 }
