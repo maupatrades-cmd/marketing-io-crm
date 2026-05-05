@@ -83,7 +83,9 @@ Deno.serve(async (req) => {
     const m_payment_id = crypto.randomUUID();
     const invoiceType = invoice.type || invoice.invoice_type || 'setup_fee';
 
-    // Create Payment record.
+    // Create Payment record. Snapshot closer + lead-source attribution from
+    // the invoice so the commission engine has frozen identifiers even if the
+    // invoice is later edited.
     const payment = await base44.asServiceRole.entities.Payment.create({
       client_id: invoice.client_id,
       client_name: client.business_name,
@@ -93,7 +95,10 @@ Deno.serve(async (req) => {
       type: invoiceType,
       status: 'pending',
       gateway: 'payfast',
-      gateway_reference: m_payment_id
+      gateway_reference: m_payment_id,
+      closer_id: invoice.closer_id || null,
+      lead_source_user_id: invoice.lead_source_user_id || null,
+      commission_calculated: false
     });
 
     // Move invoice to pending_payment + link payment.

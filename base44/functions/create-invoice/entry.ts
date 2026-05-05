@@ -25,7 +25,18 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'invalid_json' }, { status: 400 });
   }
 
-  const { client_id, line_items, type, due_date, contract_id, deal_id, send_email } = body || {};
+  const {
+    client_id,
+    line_items,
+    type,
+    due_date,
+    contract_id,
+    deal_id,
+    closer_id,
+    lead_source_user_id,
+    lead_source_type,
+    send_email
+  } = body || {};
 
   if (!client_id) return Response.json({ error: 'client_id required' }, { status: 400 });
   if (!Array.isArray(line_items) || line_items.length === 0) {
@@ -38,6 +49,23 @@ Deno.serve(async (req) => {
   const client = Array.isArray(clients) ? clients[0] : clients;
   if (!client) {
     return Response.json({ error: 'Client not found' }, { status: 404 });
+  }
+
+  // Orphan-handling: every invoice must have a closer_id so the commission
+  // engine can attribute it. If the caller didn't supply one, fall back to
+  // the owner User. This keeps direct/inbound/self-signup deals attributable.
+  let resolvedCloserId = closer_id || null;
+  if (!resolvedCloserId) {
+    try {
+      const owners = await base44.asServiceRole.entities.User.filter({ role: 'owner' });
+      const owner = Array.isArray(owners) ? owners[0] : owners;
+      if (owner?.id) {
+        resolvedCloserId = owner.id;
+        console.log('[create-invoice] orphan invoice auto-assigned to owner', { client_id, owner_id: owner.id });
+      }
+    } catch (err) {
+      console.error('[create-invoice] owner lookup failed:', err);
+    }
   }
 
   // Build line items with resolved prices.
@@ -105,6 +133,9 @@ Deno.serve(async (req) => {
     status: 'issued',
     contract_id: contract_id || null,
     deal_id: deal_id || null,
+    closer_id: resolvedCloserId,
+    lead_source_user_id: lead_source_user_id || null,
+    lead_source_type: lead_source_type || 'self_signup',
     payment_method: 'payfast'
   });
 

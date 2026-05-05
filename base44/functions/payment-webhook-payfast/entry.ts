@@ -235,6 +235,13 @@ async function processIPN(req: Request, raw: string, sourceIp: string) {
         console.error('[payment-webhook-payfast] receipt email failed:', err);
       });
 
+    // Fire-and-forget commission calculation. The function is idempotent —
+    // it short-circuits if Payment.commission_calculated is already true.
+    base44.functions.invoke('calculate-commission', { payment_id: payment.id })
+      .catch((err: any) => {
+        console.error('[payment-webhook-payfast] calculate-commission failed:', err);
+      });
+
     return;
   }
 
