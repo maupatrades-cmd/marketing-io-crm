@@ -49,7 +49,7 @@ export default function ClientPortal() {
   const [loadingHeroImage, setLoadingHeroImage] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [contactOpen, setContactOpen] = useState(false);
-  const [unreadMessages, setUnreadMessages] = useState(0);
+ 
 
   const unsubscribesRef = useRef([]);
 
