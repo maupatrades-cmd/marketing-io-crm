@@ -5,13 +5,16 @@ import { getCurrentUser } from "@/lib/customAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, FileText, AlertCircle, CreditCard, Loader2 } from "lucide-react";
+import { Download, FileText, AlertCircle, CreditCard, Loader2, Banknote, XCircle } from "lucide-react";
+import EftModal from "@/components/clientportal/EftModal";
+import CancelInvoiceModal from "@/components/clientportal/CancelInvoiceModal";
 
 const BANK_DETAILS = {
-  bank: "Standard Bank",
+  bank: "Absa",
   accountHolder: "Marketing iO (Pty) Ltd",
-  accountNumber: "123456789",
-  branchCode: "050001",
+  accountType: "Cheque Account",
+  accountNumber: "4125761781",
+  branchCode: "632005"
 };
 
 // Mirrors the status gate inside base44/functions/payment-create-checkout/entry.ts
@@ -26,6 +29,8 @@ export default function ClientInvoices() {
   const [selectedInv, setSelectedInv] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [payingInvoiceId, setPayingInvoiceId] = useState(null);
+  const [eftInvoice, setEftInvoice] = useState(null);
+  const [cancelInvoice, setCancelInvoice] = useState(null);
 
   const fetchInvoices = async (clientId) => {
     const invs = await base44.entities.Invoice.filter({ client_id: clientId }, "-created_date", 100);
@@ -119,6 +124,7 @@ export default function ClientInvoices() {
           <div className="space-y-1 text-xs text-foreground">
             <p><strong>Bank:</strong> {BANK_DETAILS.bank}</p>
             <p><strong>Account Holder:</strong> {BANK_DETAILS.accountHolder}</p>
+            <p><strong>Account Type:</strong> {BANK_DETAILS.accountType}</p>
             <p><strong>Account Number:</strong> {BANK_DETAILS.accountNumber}</p>
             <p><strong>Branch Code:</strong> {BANK_DETAILS.branchCode}</p>
             <p className="text-muted-foreground mt-2">Please use your invoice number as the reference when paying.</p>
@@ -243,6 +249,30 @@ export default function ClientInvoices() {
                     </Button>
                   );
                 })()}
+
+                {/* Pay via EFT — alternative to PayFast. Available for any invoice
+                    that hasn't been settled yet (matches the same status set as Pay Now). */}
+                {PAYABLE_STATUSES.includes(selectedInv.status) && (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => setEftInvoice(selectedInv)}
+                  >
+                    <Banknote className="w-4 h-4" /> Pay via EFT
+                  </Button>
+                )}
+
+                {/* Cancel invoice — only for unpaid invoices (same status set as payable). */}
+                {PAYABLE_STATUSES.includes(selectedInv.status) && (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 border-rose-500/40 text-rose-300 hover:bg-rose-950/30 hover:text-rose-200"
+                    onClick={() => setCancelInvoice(selectedInv)}
+                  >
+                    <XCircle className="w-4 h-4" /> Cancel invoice
+                  </Button>
+                )}
+
                 {selectedInv.invoice_pdf_url && (
                   <Button variant="outline" className="w-full gap-2" asChild>
                     <a href={selectedInv.invoice_pdf_url} target="_blank" rel="noopener noreferrer">
@@ -255,6 +285,25 @@ export default function ClientInvoices() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* EFT alternative — bank details + invoice number reference. */}
+      <EftModal
+        invoice={eftInvoice}
+        bankDetails={BANK_DETAILS}
+        isOpen={!!eftInvoice}
+        onClose={() => setEftInvoice(null)}
+      />
+
+      {/* Self-service invoice cancellation. */}
+      <CancelInvoiceModal
+        invoice={cancelInvoice}
+        isOpen={!!cancelInvoice}
+        onClose={() => setCancelInvoice(null)}
+        onCancelled={() => {
+          if (client?.id) fetchInvoices(client.id);
+          setSelectedInv(null);
+        }}
+      />
     </div>
   );
 }

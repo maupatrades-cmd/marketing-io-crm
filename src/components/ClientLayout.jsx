@@ -12,6 +12,7 @@ export default function ClientLayout() {
   const [client, setClient] = useState(null);
   const [unpaidInvoices, setUnpaidInvoices] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadActivity, setUnreadActivity] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const location = useLocation();
@@ -34,9 +35,10 @@ export default function ClientLayout() {
         if (!c) return;
         setClient(c);
 
-        const [invs, threads] = await Promise.all([
+        const [invs, threads, activities] = await Promise.all([
           base44.entities.Invoice.filter({ client_id: c.id }, '-created_date', 100).catch(() => []),
-          base44.entities.ClientThread.filter({ client_id: c.id }).catch(() => [])
+          base44.entities.ClientThread.filter({ client_id: c.id }).catch(() => []),
+          base44.entities.ClientActivityLog.filter({ client_id: c.id, read_at: null }, '-created_date', 100).catch(() => [])
         ]);
         if (cancelled) return;
 
@@ -48,6 +50,9 @@ export default function ClientLayout() {
         const totalUnread = (Array.isArray(threads) ? threads : [])
           .reduce((sum, t) => sum + (t.unread_count_client || 0), 0);
         setUnreadMessages(totalUnread);
+
+        const activityCount = (Array.isArray(activities) ? activities : []).length;
+        setUnreadActivity(activityCount);
       } catch (err) {
         console.error('[ClientLayout] load failed:', err);
       }
@@ -56,8 +61,8 @@ export default function ClientLayout() {
   }, [authUser]);
 
   const unreadCounts = useMemo(
-    () => ({ invoices: unpaidInvoices, messages: unreadMessages }),
-    [unpaidInvoices, unreadMessages]
+    () => ({ invoices: unpaidInvoices, messages: unreadMessages, activity: unreadActivity }),
+    [unpaidInvoices, unreadMessages, unreadActivity]
   );
 
   return (

@@ -242,6 +242,25 @@ async function processIPN(req: Request, raw: string, sourceIp: string) {
         console.error('[payment-webhook-payfast] calculate-commission failed:', err);
       });
 
+    // Portal activity feed entry — non-blocking, fire-and-forget.
+    if (invoice) {
+      const invNumber = invoice.invoice_number || (invoice.id || '').slice(0, 8);
+      const amountLabel = Number(payment.amount || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      base44.functions.invoke('log-client-activity', {
+        client_id: invoice.client_id,
+        user_id: payment.client_user_id || '',
+        client_name: payment.client_name || invoice.client_name || '',
+        title: `Payment received — R${amountLabel}`,
+        body: `Thank you. Your invoice ${invNumber} is paid. We're getting started on delivery.`,
+        icon: 'CheckCircle',
+        category: 'success',
+        source: 'payment',
+        link: '/client/invoices'
+      }).catch((err: any) => {
+        console.error('[payment-webhook-payfast] log-client-activity failed (non-fatal):', err?.message);
+      });
+    }
+
     return;
   }
 

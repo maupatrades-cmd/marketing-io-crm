@@ -172,6 +172,18 @@
     },
     "notes": {
       "type": "string"
+    },
+    "cancellation_reason": {
+      "type": "string",
+      "description": "Free-text reason captured when client cancels an unpaid invoice"
+    },
+    "cancelled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cancelled_by": {
+      "type": "string",
+      "description": "AppUser.id who clicked cancel — usually the client themselves for self-service cancellations"
     }
   },
   "required": [
