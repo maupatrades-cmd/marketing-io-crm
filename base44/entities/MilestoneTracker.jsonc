@@ -1,0 +1,27 @@
+{
+  "name": "MilestoneTracker",
+  "type": "object",
+  "properties": {
+    "user_id": { "type": "string" },
+    "user_name": { "type": "string" },
+    "current_batch_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Deals 1-5 in current batch (resets to 0 after milestone fires)"
+    },
+    "total_milestones_hit": {
+      "type": "integer",
+      "default": 0
+    },
+    "current_batch_deal_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "IDs of deals in the in-progress batch awaiting milestone"
+    },
+    "last_milestone_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": ["user_id"]
+}

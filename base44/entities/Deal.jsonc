@@ -116,6 +116,35 @@
       "type": "string",
       "description": "Reason if closed_lost"
     },
+    "lead_source_user_id": {
+      "type": "string",
+      "description": "User who originally sourced this lead — may differ from closer (CPC closure-bonus attribution)"
+    },
+    "lead_source_type": {
+      "type": "string",
+      "enum": [
+        "cpc_outbound",
+        "field_direct",
+        "fnc_reverse_referral",
+        "self_signup",
+        "partner_referral"
+      ],
+      "default": "self_signup",
+      "description": "Canonical lead-source classification used by the commission engine"
+    },
+    "package_id": {
+      "type": "string",
+      "description": "Product / package id from PRODUCT_CATALOG that this deal sold"
+    },
+    "closer_deal_sequence_number": {
+      "type": "integer",
+      "description": "1-based position of this deal within the closer's milestone batch (1-5)"
+    },
+    "contributes_to_milestone": {
+      "type": "boolean",
+      "default": false,
+      "description": "True for ignite/accelerate/dominate; false for street_pulse/township_pulse/passive add-ons"
+    },
     "notes": {
       "type": "string"
     }

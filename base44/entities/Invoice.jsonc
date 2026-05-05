@@ -25,7 +25,8 @@
         "addon_setup",
         "once_off_product",
         "combined",
-        "monthly_subscription"
+        "monthly_subscription",
+        "recurring_addon"
       ],
       "default": "monthly_retainer"
     },
@@ -36,7 +37,8 @@
         "addon_setup",
         "once_off_product",
         "combined",
-        "monthly_subscription"
+        "monthly_subscription",
+        "recurring_addon"
       ],
       "description": "PayFast-flow canonical invoice type. Mirrors invoice_type for new records."
     },
@@ -148,6 +150,25 @@
     },
     "contract_id": {
       "type": "string"
+    },
+    "closer_id": {
+      "type": "string",
+      "description": "User who closed the deal — frozen on this invoice for commission attribution"
+    },
+    "lead_source_user_id": {
+      "type": "string",
+      "description": "User who sourced the lead (CPC/field agent). May differ from closer."
+    },
+    "lead_source_type": {
+      "type": "string",
+      "enum": [
+        "cpc_outbound",
+        "field_direct",
+        "fnc_reverse_referral",
+        "self_signup",
+        "partner_referral"
+      ],
+      "default": "self_signup"
     },
     "notes": {
       "type": "string"

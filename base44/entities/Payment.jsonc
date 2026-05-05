@@ -9,7 +9,7 @@
     "currency": { "type": "string", "default": "ZAR" },
     "type": {
       "type": "string",
-      "enum": ["setup_fee", "addon_setup", "once_off_product", "combined", "monthly_subscription"]
+      "enum": ["setup_fee", "addon_setup", "once_off_product", "combined", "monthly_subscription", "recurring_addon"]
     },
     "status": {
       "type": "string",
@@ -26,7 +26,20 @@
     "gateway_payment_status": { "type": "string" },
     "ipn_payload": { "type": "object" },
     "failed_reason": { "type": "string" },
-    "completed_at": { "type": "string", "format": "date-time" }
+    "completed_at": { "type": "string", "format": "date-time" },
+    "closer_id": {
+      "type": "string",
+      "description": "Snapshot from invoice — frozen at payment-create time for commission attribution"
+    },
+    "lead_source_user_id": {
+      "type": "string",
+      "description": "Snapshot from invoice — lead sourcer for CPC closure bonus attribution"
+    },
+    "commission_calculated": {
+      "type": "boolean",
+      "default": false,
+      "description": "Idempotency flag for calculate-commission"
+    }
   },
   "required": ["client_id", "invoice_id", "amount", "type", "status", "gateway_reference"]
 }
