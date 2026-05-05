@@ -1,156 +1,203 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Home, ClipboardList, CheckSquare, Receipt, BarChart2, FileText, Upload, Mail, User, Bell, LogOut, Menu, X, AlertCircle } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { Link, useLocation } from 'react-router-dom';
+import {
+  Home,
+  ShoppingCart,
+  FileText,
+  FileSignature,
+  MessageSquare,
+  CheckCircle,
+  Phone,
+  Settings,
+  LogOut,
+  Lightbulb,
+  Menu,
+  X
+} from 'lucide-react';
+import { destroySession } from '@/lib/customAuth';
 
-export default function ClientSidebar({ mobileOpen, setMobileOpen, user }) {
+const SIDEBAR_BG = '#0f172a';
+const HOVER_BG = 'rgba(255,255,255,0.04)';
+const ACTIVE_GRADIENT = 'linear-gradient(90deg, rgba(167,100,230,0.18), rgba(236,72,153,0.18))';
+
+const PRIMARY_NAV = [
+  { path: '/client-portal',       label: 'Dashboard',           icon: Home },
+  { path: '/client/products',     label: 'Products & Services', icon: ShoppingCart },
+  { path: '/client/invoices',     label: 'Invoices',            icon: FileText,      badgeKey: 'invoices' },
+  { path: '/client/contracts',    label: 'Contracts',           icon: FileSignature },
+  { path: '/client/messages',     label: 'Messages',            icon: MessageSquare, badgeKey: 'messages' },
+  { path: '/client/deliverables', label: 'Deliverables',        icon: CheckCircle }
+];
+
+function initials(client, user) {
+  const src = client?.business_name || client?.contact_person || user?.full_name || user?.email || '?';
+  const parts = String(src).trim().split(/\s+/).slice(0, 2);
+  return parts.map(p => p[0]?.toUpperCase()).join('') || '?';
+}
+
+function NavRow({ to, label, Icon, badge = 0, active, onNavigate, color }) {
+  return (
+    <Link
+      to={to}
+      onClick={onNavigate}
+      className="relative flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm transition"
+      style={{
+        background: active ? ACTIVE_GRADIENT : 'transparent',
+        color: color || (active ? '#f4f4fa' : '#a8a8c0')
+      }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.background = HOVER_BG; }}
+      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+    >
+      <Icon className="w-4 h-4 shrink-0" />
+      <span className="flex-1 min-w-0 truncate">{label}</span>
+      {badge > 0 && (
+        <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-rose-500 text-white">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function NavButton({ label, Icon, onClick, color = '#a8a8c0' }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm transition text-left"
+      style={{ background: 'transparent', color }}
+      onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+    >
+      <Icon className="w-4 h-4 shrink-0" />
+      <span className="flex-1 min-w-0 truncate">{label}</span>
+    </button>
+  );
+}
+
+export default function ClientSidebar({
+  client,
+  user,
+  unreadCounts = {},
+  mobileOpen = false,
+  setMobileOpen = () => {},
+  onContact = () => {}
+}) {
   const location = useLocation();
-  const [client, setClient] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [pendingDeliverables, setPendingDeliverables] = useState(0);
-  const [unpaidInvoices, setUnpaidInvoices] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  const [onboardingIncomplete, setOnboardingIncomplete] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        // Find client by email
-        const clients = await base44.entities.Client.filter({ email: user?.email });
-        const currentClient = Array.isArray(clients) ? clients[0] : clients;
-        if (currentClient) {
-          setClient(currentClient);
-          
-          // Load notifications
-          const notifs = await base44.entities.ClientNotification.filter({ client_id: currentClient.id, is_read: false });
-          setUnreadCount(Array.isArray(notifs) ? notifs.length : (notifs ? 1 : 0));
-          
-          // Load deliverables count
-          const delivs = await base44.entities.Deliverable.filter({ client_id: currentClient.id, status: "pending_client_review" });
-          setPendingDeliverables(Array.isArray(delivs) ? delivs.length : (delivs ? 1 : 0));
-          
-          // Load unpaid invoices
-          const invoices = await base44.entities.Invoice.filter({ client_id: currentClient.id, status: "issued" });
-          setUnpaidInvoices(Array.isArray(invoices) ? invoices.length : (invoices ? 1 : 0));
-          
-          // Check onboarding status
-          const submissions = await base44.entities.ClientOnboardingSubmission.filter({ client_id: currentClient.id });
-          const sub = Array.isArray(submissions) ? submissions[0] : submissions;
-          setOnboardingIncomplete(!sub || sub.submission_status !== "submitted");
-        }
-      } catch (err) {
-        console.error("ClientSidebar load error:", err);
-      }
-    };
-    if (user?.email) load();
-  }, [user?.email]);
-
-  const items = [
-    { path: "/client-portal", label: "Home", icon: Home },
-    ...(onboardingIncomplete ? [{ path: "/client/onboarding-form", label: "Onboarding", icon: ClipboardList, badge: null }] : []),
-    { path: "/client/deliverables", label: "Deliverables", icon: CheckSquare, badge: pendingDeliverables > 0 ? pendingDeliverables : null },
-    { path: "/client/invoices", label: "Invoices", icon: Receipt, badge: unpaidInvoices > 0 ? unpaidInvoices : null },
-    { path: "/client/reports", label: "Reports", icon: BarChart2 },
-    { path: "/client/contracts", label: "Contracts", icon: FileText },
-    { path: "/client/uploads", label: "Files", icon: Upload },
-    { path: "/client/messages", label: "Messages", icon: Mail, badge: unreadMessages > 0 ? unreadMessages : null },
-    { path: "/client/profile", label: "Profile", icon: User },
-  ];
-
-  const logout = () => {
-    import('@/lib/customAuth').then(({ destroySession }) => {
-      destroySession(user?.id).then(() => {
-        window.location.href = '/login';
-      });
-    });
+  const handleSignOut = async () => {
+    try {
+      await destroySession(user?.id);
+    } catch (err) {
+      console.error('[ClientSidebar] signout failed:', err);
+    }
+    window.location.href = '/login';
   };
+
+  const stage = client?.lifecycle_stage || 'lead';
+  const stageColor = stage === 'active'
+    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+    : stage === 'qualified'
+      ? 'bg-amber-500/20 text-amber-200 border-amber-500/30'
+      : 'bg-slate-700/50 text-slate-300 border-slate-600/40';
+
+  const closeOnNav = () => setMobileOpen(false);
 
   return (
     <>
-      {/* Mobile toggle */}
-      <button className="lg:hidden fixed top-4 left-4 z-50" onClick={() => setMobileOpen(!mobileOpen)}>
+      {/* Mobile hamburger */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg"
+        style={{ background: SIDEBAR_BG, color: '#f4f4fa', border: '1px solid rgba(255,255,255,0.07)' }}
+        aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+      >
         {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
-      {/* Mobile overlay */}
+      {/* Mobile backdrop */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-30 bg-black/70 lg:hidden" onClick={() => setMobileOpen(false)} />
+        <div
+          className="md:hidden fixed inset-0 z-30 bg-black/70"
+          onClick={() => setMobileOpen(false)}
+        />
       )}
 
-      {/* Sidebar */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40 w-58 flex flex-col
-        transition-transform duration-300 lg:pt-0 pt-16
-        ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0 lg:static lg:flex
-      `} style={{ width: 224, background: "rgba(10,10,20,0.95)", borderRight: "1px solid rgba(255,255,255,0.07)" }}>
-
-        {/* Logo + Client Name */}
-        <div className="px-4 py-4 border-b space-y-3" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-          <img
-            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
-            alt="Marketing iO"
-            className="w-full max-w-[168px] object-contain"
-            style={{ filter: "invert(1) brightness(2)", mixBlendMode: "screen" }}
-          />
-          {client && (
-            <div className="text-xs">
-              <p className="text-muted-foreground">Client</p>
-              <p className="text-sm font-semibold text-foreground truncate">{client.business_name}</p>
-            </div>
-          )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col transition-transform duration-300
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0 md:static`}
+        style={{
+          width: 240,
+          background: SIDEBAR_BG,
+          borderRight: '1px solid rgba(255,255,255,0.07)'
+        }}
+      >
+        {/* Logo + subtitle */}
+        <div
+          className="px-5 py-5 flex items-center gap-3"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'linear-gradient(135deg,#a764e6 0%,#ec4899 100%)' }}
+          >
+            <Lightbulb className="w-5 h-5 text-white" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-white leading-tight truncate">Marketing iO</p>
+            <p className="text-[11px] text-slate-400 leading-tight">Client Portal</p>
+          </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {items.map(({ path, label, icon: Icon, badge }) => {
-            const active = location.pathname === path;
-            return (
-              <Link
-                key={path}
-                to={path}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative ${
-                  active
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
-                }`}
-                style={active ? {} : { color: "#a8a8c0" }}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
-                {badge && (
-                  <span className="ml-auto text-xs bg-accent text-accent-foreground rounded-full px-2 py-0.5 font-semibold">
-                    {badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto py-3 space-y-0.5">
+          {PRIMARY_NAV.map(({ path, label, icon: Icon, badgeKey }) => (
+            <NavRow
+              key={path}
+              to={path}
+              label={label}
+              Icon={Icon}
+              badge={badgeKey ? (unreadCounts[badgeKey] || 0) : 0}
+              active={location.pathname === path || (path === '/client-portal' && location.pathname === '/')}
+              onNavigate={closeOnNav}
+            />
+          ))}
+
+          <div className="my-3 mx-4" style={{ height: 0.5, background: 'rgba(255,255,255,0.08)' }} />
+
+          <NavButton label="Contact us" Icon={Phone} onClick={() => { onContact(); closeOnNav(); }} />
+          <NavRow
+            to="/client/settings"
+            label="Settings"
+            Icon={Settings}
+            active={location.pathname === '/client/settings'}
+            onNavigate={closeOnNav}
+          />
+          <NavButton label="Sign out" Icon={LogOut} onClick={handleSignOut} color="#f87171" />
         </nav>
 
-        {/* Footer */}
-        <div className="p-3 border-t space-y-2" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-          <Link to="/client-portal" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 text-xs transition-all relative" style={{ color: "#6b6b85" }}>
-            <Bell className="w-4 h-4 shrink-0" />
-            Notifications
-            {unreadCount > 0 && (
-              <span className="ml-auto bg-accent text-accent-foreground text-xs rounded-full px-2 py-0.5 font-semibold">
-                {unreadCount}
-              </span>
-            )}
-          </Link>
-          <div className="text-xs px-3 py-2 text-muted-foreground">
-            <p className="font-semibold mb-1">Need help?</p>
-            <p>support@marketingio.co.za</p>
-          </div>
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 text-destructive text-xs font-medium transition-all"
+        {/* Profile card */}
+        <div className="px-3 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <div
+            className="flex items-center gap-3 px-2 py-2 rounded-xl"
+            style={{ background: 'rgba(255,255,255,0.03)' }}
           >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#a764e6,#ec4899)' }}
+            >
+              {initials(client, user)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-white truncate">
+                {client?.business_name || user?.full_name || user?.email || '—'}
+              </p>
+              <span className={`mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${stageColor}`}>
+                {stage}
+              </span>
+            </div>
+          </div>
         </div>
       </aside>
     </>

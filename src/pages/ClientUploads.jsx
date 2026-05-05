@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/customAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Trash2, Download, Image, FileText, FolderOpen, CheckCircle2, AlertCircle, Loader2, File } from "lucide-react";
-import AppLayout from "@/components/AppLayout";
 import { notifyClient } from "@/lib/clientNotifier";
 
 const FILE_TYPES = [
@@ -128,15 +127,17 @@ export default function ClientUploads() {
   const countByType = (type) => uploads.filter(u => u.file_type === type).length;
 
   if (loading) return (
-    <AppLayout title="Brand Assets" subtitle="Your uploaded files">
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
-    </AppLayout>
+    <div className="min-h-full bg-background p-6 flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+    </div>
   );
 
   return (
-    <AppLayout title="Brand Assets" subtitle="Upload and manage your brand files">
+    <div className="min-h-full bg-background p-6">
+      <header className="max-w-4xl mx-auto mb-6">
+        <h1 className="text-xl font-bold text-foreground">Brand Assets</h1>
+        <p className="text-sm text-muted-foreground">Upload and manage your brand files</p>
+      </header>
       <div className="max-w-4xl mx-auto space-y-6">
 
         {/* Toast */}
@@ -289,6 +290,6 @@ export default function ClientUploads() {
           )}
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }
