@@ -106,6 +106,21 @@
       "type": "string",
       "format": "date-time",
       "description": "When POPIA consent was given"
+    },
+    "deletion_pending": {
+      "type": "boolean",
+      "default": false,
+      "description": "True after the user requested account deletion. Account enters 30-day grace per POPIA before hard delete."
+    },
+    "deletion_requested_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp the user clicked 'Delete account'. Hard delete eligible after deletion_requested_at + 30 days."
+    },
+    "force_logout_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Server-side bump used by 'Sign out everywhere'. Sessions issued before this timestamp should be treated as invalid by auth-me."
     }
   },
   "required": [
