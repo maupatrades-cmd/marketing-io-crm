@@ -1,0 +1,35 @@
+import { Phone, Mail, MessageCircle } from 'lucide-react';
+
+const WHATSAPP_NUMBER = '27731539633';
+
+export default function PortalFooter() {
+  return (
+    <footer className="border-t border-slate-700/40 bg-slate-950/60 mt-12">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+          <a href="tel:0101020534" className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition">
+            <Phone className="w-4 h-4 text-primary shrink-0" />
+            <span>010 102 0534</span>
+          </a>
+          <a href="mailto:info@marketingio.co.za" className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition">
+            <Mail className="w-4 h-4 text-primary shrink-0" />
+            <span>info@marketingio.co.za</span>
+          </a>
+          <a
+            href={`https://wa.me/${WHATSAPP_NUMBER}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition"
+          >
+            <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>WhatsApp +27 73 153 9633</span>
+          </a>
+        </div>
+        <div className="mt-4 pt-4 border-t border-slate-700/40 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+          <p>Marketing iO (Pty) Ltd · CIPC 2026303502 · 75 Marshall Street, Polokwane 0699</p>
+          <p className="italic text-purple-400/80">Too good to stay hidden.</p>
+        </div>
+      </div>
+    </footer>
+  );
+}

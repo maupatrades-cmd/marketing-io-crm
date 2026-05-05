@@ -97,6 +97,10 @@
     "read_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "metadata": {
+      "type": "string",
+      "description": "JSON string of structured metadata (source, category, etc) — used by guided contact flows"
     }
   },
   "required": [
