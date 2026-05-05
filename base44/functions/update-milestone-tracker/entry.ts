@@ -107,7 +107,12 @@ Deno.serve(async (req) => {
     for (const c of list) {
       if (c.status !== 'pending_milestone') continue;
       if (!['retainer_commission', 'addon_retainer_commission'].includes(c.type)) continue;
-      if (c.deal_id && !newDealIds.includes(c.deal_id)) continue;
+      // Require explicit deal_id match. A pending_milestone commission with
+      // no deal_id (e.g. self-signup with no Deal record) must not be pulled
+      // into another closer's milestone batch — it stays pending_milestone
+      // until resolved separately.
+      if (!c.deal_id) continue;
+      if (!newDealIds.includes(c.deal_id)) continue;
       try {
         await base44.asServiceRole.entities.Commission.update(c.id, {
           status: 'pending_payment',
