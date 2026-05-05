@@ -1,0 +1,32 @@
+{
+  "name": "Payment",
+  "type": "object",
+  "properties": {
+    "client_id": { "type": "string" },
+    "client_name": { "type": "string" },
+    "invoice_id": { "type": "string" },
+    "amount": { "type": "number" },
+    "currency": { "type": "string", "default": "ZAR" },
+    "type": {
+      "type": "string",
+      "enum": ["setup_fee", "addon_setup", "once_off_product", "combined", "monthly_subscription"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "successful", "failed", "cancelled", "refunded"],
+      "default": "pending"
+    },
+    "gateway": {
+      "type": "string",
+      "enum": ["payfast", "ozow", "manual"],
+      "default": "payfast"
+    },
+    "gateway_reference": { "type": "string", "description": "Our internal m_payment_id (UUID)" },
+    "gateway_pf_payment_id": { "type": "string" },
+    "gateway_payment_status": { "type": "string" },
+    "ipn_payload": { "type": "object" },
+    "failed_reason": { "type": "string" },
+    "completed_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["client_id", "invoice_id", "amount", "type", "status", "gateway_reference"]
+}

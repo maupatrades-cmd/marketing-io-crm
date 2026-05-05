@@ -78,6 +78,8 @@ import DeliverableQuality from './pages/DeliverableQuality';
 import LeadScoring from './pages/LeadScoring';
 import OwnerCampaigns from './pages/OwnerCampaigns';
 import Unsubscribe from './pages/Unsubscribe';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentCancelled from './pages/PaymentCancelled';
 
 
 
@@ -188,6 +190,9 @@ const AuthenticatedApp = () => {
       <Route path="/client/subscription" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientSubscription /></RouteGuard>} />
       <Route path="/client/billing-update" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientBillingUpdate /></RouteGuard>} />
       
+      <Route path="/payment-success" element={<PaymentSuccess />} />
+      <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 

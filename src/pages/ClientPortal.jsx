@@ -49,6 +49,7 @@ export default function ClientPortal() {
   const [loadingHeroImage, setLoadingHeroImage] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [contactOpen, setContactOpen] = useState(false);
+  const [outstandingInvoices, setOutstandingInvoices] = useState([]);
  
 
   const unsubscribesRef = useRef([]);
@@ -205,6 +206,19 @@ export default function ClientPortal() {
     };
   }, [authUser]);
 
+  useEffect(() => {
+    if (!client?.id) return;
+    base44.entities.Invoice
+      .filter({ client_id: client.id }, "-created_date", 50)
+      .then(rows => {
+        const open = (Array.isArray(rows) ? rows : []).filter(
+          inv => inv.status === 'issued' || inv.status === 'pending_payment'
+        );
+        setOutstandingInvoices(open);
+      })
+      .catch(() => {});
+  }, [client?.id]);
+
   const handleEnquire = (product) => {
     setSelectedProduct(product);
     setModalOpen(true);
@@ -339,6 +353,46 @@ export default function ClientPortal() {
               setClient(prev => ({ ...prev, logo_file: url }));
             }}
           />
+        )}
+
+        {outstandingInvoices.length > 0 && (
+          <section className="rounded-2xl border-2 border-amber-500/40 bg-amber-950/20 p-6">
+            <h3 className="text-lg font-bold text-amber-200 mb-3">
+              💳 You have {outstandingInvoices.length} unpaid invoice{outstandingInvoices.length > 1 ? 's' : ''}
+            </h3>
+            <div className="space-y-2">
+              {outstandingInvoices.map(inv => {
+                const total = Number(inv.total ?? inv.total_amount ?? inv.amount ?? 0);
+                return (
+                  <div key={inv.id} className="flex items-center justify-between bg-slate-900/40 rounded-xl p-4">
+                    <div>
+                      <p className="font-semibold text-white">Invoice {inv.invoice_number || inv.id}</p>
+                      <p className="text-sm text-slate-400">R{total.toLocaleString()} due</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await base44.functions.invoke('payment-create-checkout', { invoice_id: inv.id });
+                          const url = res?.data?.checkout_url || res?.checkout_url;
+                          if (url) {
+                            window.location.href = url;
+                          } else {
+                            alert('Could not start payment. Please contact support.');
+                          }
+                        } catch (err) {
+                          console.error(err);
+                          alert('Payment system unavailable. Try again or contact support.');
+                        }
+                      }}
+                      className="bg-gradient-to-br from-emerald-600 to-emerald-500 text-white px-5 py-2 rounded-xl font-semibold hover:scale-105 transition"
+                    >
+                      Pay R{total.toLocaleString()} →
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {/* SECTION 2 — ACTION REQUIRED */}
