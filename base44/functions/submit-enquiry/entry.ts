@@ -206,6 +206,21 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Portal activity feed entry — non-blocking, fire-and-forget.
+  base44.functions.invoke('log-client-activity', {
+    client_id: client.id,
+    user_id: client.client_user_id || client.app_user_id || '',
+    client_name: client.business_name || '',
+    title: `Hooray — you selected ${product.name}!`,
+    body: 'Your enquiry is in. A consultant will reach out shortly to walk you through next steps.',
+    icon: 'PartyPopper',
+    category: 'success',
+    source: 'enquiry',
+    link: '/client/products'
+  }).catch((err: any) => {
+    console.error('[submit-enquiry] log-client-activity failed (non-fatal):', err?.message);
+  });
+
   console.log('[submit-enquiry] Success:', enquiry.id);
   return Response.json({
     success: true,

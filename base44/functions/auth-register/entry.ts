@@ -233,6 +233,23 @@ Deno.serve(async (req) => {
     console.error('[auth-register] lead routing failed (non-blocking):', leadErr?.message);
   }
 
+  // Step 10: Portal activity feed entry — non-blocking, fire-and-forget.
+  if (createdClientId) {
+    base44.functions.invoke('log-client-activity', {
+      client_id: createdClientId,
+      user_id: newUser.id,
+      client_name: businessName.trim(),
+      title: 'Welcome to Marketing iO!',
+      body: 'Your account is set up. Browse products, message your consultant, or upload your brand assets to get started.',
+      icon: 'Sparkles',
+      category: 'success',
+      source: 'signup',
+      link: '/client-portal'
+    }).catch((err: any) => {
+      console.error('[auth-register] log-client-activity failed (non-fatal):', err?.message);
+    });
+  }
+
   console.log('[auth-register] Step: complete — user_id:', newUser.id);
   return Response.json({ user_id: newUser.id, client_id: createdClientId, email: normalizedEmail }, { status: 200 });
 });

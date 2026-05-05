@@ -144,6 +144,21 @@ Deno.serve(async (req) => {
       .catch((err: any) => console.error('[create-invoice] send-invoice-email failed:', err));
   }
 
+  // Portal activity feed entry — non-blocking, fire-and-forget.
+  base44.functions.invoke('log-client-activity', {
+    client_id,
+    user_id: client.client_user_id || client.app_user_id || '',
+    client_name: client.business_name || '',
+    title: `Invoice ${invoice_number} issued`,
+    body: `R${Number(total).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due${due_date ? ' by ' + due_date : ''}. Pay online via PayFast or EFT.`,
+    icon: 'FileText',
+    category: 'info',
+    source: 'invoice',
+    link: '/client/invoices'
+  }).catch((err: any) => {
+    console.error('[create-invoice] log-client-activity failed (non-fatal):', err?.message);
+  });
+
   return Response.json({
     success: true,
     invoice_id: invoice.id,
