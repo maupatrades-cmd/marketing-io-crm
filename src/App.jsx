@@ -67,6 +67,11 @@ import OwnerFinancials from './pages/OwnerFinancials';
 import OwnerReports from './pages/OwnerReports';
 import OwnerSettings from './pages/OwnerSettings';
 import CommissionDashboard from './pages/owner/CommissionDashboard';
+import ClientLayout from './components/ClientLayout';
+import ClientProducts from './pages/ClientProducts';
+import ClientSettings from './pages/ClientSettings';
+import InvoiceDetail from './pages/InvoiceDetail';
+import ClientThreadDetail from './pages/ClientThreadDetail';
 import ClientOrderAddOns from './pages/ClientOrderAddOns';
 import ClientOrderDomain from './pages/ClientOrderDomain';
 import ClientOrderEmail from './pages/ClientOrderEmail';
@@ -122,7 +127,6 @@ const AuthenticatedApp = () => {
       {/* Add your page Route elements here */}
       <Route path="/" element={user?.role === "owner" ? <OwnerDashboard /> : <LandingRedirect />} />
       <Route path="/design-preview" element={<DesignPreview />} />
-      <Route path="/client-portal" element={<ClientPortal />} />
       <Route path="/clients" element={<Clients />} />
       <Route path="/clients/:id" element={<RouteGuard allowedRoles={["owner", "admin"]} fallbackPath="/"><OwnerClientDetail /></RouteGuard>} />
       <Route path="/inbox" element={<RouteGuard allowedRoles={["owner", "admin"]} fallbackPath="/"><OwnerInbox /></RouteGuard>} />
@@ -174,23 +178,32 @@ const AuthenticatedApp = () => {
       <Route path="/staff/communications" element={<StaffCommunications />} />
       <Route path="/staff/image-generator" element={<RouteGuard allowedRoles={["admin", "owner", "head_of_tech"]} fallbackPath="/staff"><StaffImageGenerator /></RouteGuard>} />
       
-      {/* Client Portal Routes — require client role */}
-      <Route path="/client-onboarding" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOnboardingWizard /></RouteGuard>} />
-      <Route path="/client/onboarding-form" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOnboardingFormFull /></RouteGuard>} />
-      <Route path="/client/invoices" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientInvoices /></RouteGuard>} />
-      <Route path="/client/deliverables" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientDeliverables /></RouteGuard>} />
-      <Route path="/client/reports" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientReports /></RouteGuard>} />
-      <Route path="/client/contracts" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientContracts /></RouteGuard>} />
-      <Route path="/client/uploads" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientUploads /></RouteGuard>} />
-      <Route path="/client/messages" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientMessages /></RouteGuard>} />
-      <Route path="/client/profile" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientProfile /></RouteGuard>} />
-      <Route path="/client/project-status" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientProjectStatus /></RouteGuard>} />
-      <Route path="/client/order-addons" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderAddOns /></RouteGuard>} />
-      <Route path="/client/order-domain" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderDomain /></RouteGuard>} />
-      <Route path="/client/order-email" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrderEmail /></RouteGuard>} />
-      <Route path="/client/orders" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientOrders /></RouteGuard>} />
-      <Route path="/client/subscription" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientSubscription /></RouteGuard>} />
-      <Route path="/client/billing-update" element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientBillingUpdate /></RouteGuard>} />
+      {/* Client Portal Routes — require client role. All wrapped in ClientLayout
+          which provides the persistent sidebar + Outlet. */}
+      <Route element={<RouteGuard allowedRoles={["client"]} fallbackPath="/"><ClientLayout /></RouteGuard>}>
+        <Route path="/client-portal" element={<ClientPortal />} />
+        <Route path="/client/products" element={<ClientProducts />} />
+        <Route path="/client/invoices" element={<ClientInvoices />} />
+        <Route path="/client/invoices/:invoiceId" element={<InvoiceDetail />} />
+        <Route path="/client/contracts" element={<ClientContracts />} />
+        <Route path="/client/messages" element={<ClientMessages />} />
+        <Route path="/client/messages/:threadId" element={<ClientThreadDetail />} />
+        <Route path="/client/deliverables" element={<ClientDeliverables />} />
+        <Route path="/client/settings" element={<ClientSettings />} />
+        {/* Existing client routes — kept inside ClientLayout so they share the sidebar. */}
+        <Route path="/client-onboarding" element={<ClientOnboardingWizard />} />
+        <Route path="/client/onboarding-form" element={<ClientOnboardingFormFull />} />
+        <Route path="/client/reports" element={<ClientReports />} />
+        <Route path="/client/uploads" element={<ClientUploads />} />
+        <Route path="/client/profile" element={<ClientProfile />} />
+        <Route path="/client/project-status" element={<ClientProjectStatus />} />
+        <Route path="/client/order-addons" element={<ClientOrderAddOns />} />
+        <Route path="/client/order-domain" element={<ClientOrderDomain />} />
+        <Route path="/client/order-email" element={<ClientOrderEmail />} />
+        <Route path="/client/orders" element={<ClientOrders />} />
+        <Route path="/client/subscription" element={<ClientSubscription />} />
+        <Route path="/client/billing-update" element={<ClientBillingUpdate />} />
+      </Route>
       
       <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/payment-cancelled" element={<PaymentCancelled />} />
