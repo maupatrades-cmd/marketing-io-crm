@@ -14,6 +14,8 @@ import SplashScreen from "@/components/clientportal/SplashScreen";
 import HeroSection from "@/components/clientportal/HeroSection";
 import LeadHero from "@/components/clientportal/LeadHero";
 import ChatWidget from "@/components/clientportal/ChatWidget";
+import ContactCenterModal from "@/components/clientportal/ContactCenterModal";
+import PortalFooter from "@/components/PortalFooter";
 import { PRODUCT_CATALOG, getProductsByType, getProductById } from "@/data/ProductCatalog";
 
 const PACKAGE_LABELS = {
@@ -45,6 +47,7 @@ export default function ClientPortal() {
   const [heroImageUrl, setHeroImageUrl] = useState(null);
   const [heroImageCopy, setHeroImageCopy] = useState(null);
   const [loadingHeroImage, setLoadingHeroImage] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   const unsubscribesRef = useRef([]);
@@ -287,8 +290,16 @@ export default function ClientPortal() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setContactOpen(true)}
+              className="text-xs"
+            >
+              <MessageSquare className="w-3.5 h-3.5 mr-1" /> Contact
+            </Button>
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => window.location.href = '/client/subscription'}
               className="text-xs"
@@ -954,12 +965,23 @@ export default function ClientPortal() {
 
       {/* Chat Widget */}
       {client && user && (
-        <ChatWidget 
+        <ChatWidget
           client={client}
           user={user}
           onAdmin={deal?.closer_id}
         />
       )}
+
+      {/* Contact Center — guided WhatsApp + email/owner shortcuts */}
+      <ContactCenterModal
+        client={client}
+        user={user}
+        isOpen={contactOpen}
+        onClose={() => setContactOpen(false)}
+      />
+
+      {/* Global portal footer */}
+      <PortalFooter />
     </div>
   );
 }

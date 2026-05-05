@@ -3,6 +3,7 @@ import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import ClientSidebar from "@/components/ClientSidebar";
+import PortalFooter from "@/components/PortalFooter";
 
 const STAFF_NAV = {
   field_agent: [
@@ -125,6 +126,7 @@ export default function AppLayout({ children, title, subtitle }) {
           </header>
           <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
             {children}
+            <PortalFooter />
           </main>
         </div>
       </div>
@@ -396,6 +398,7 @@ export default function AppLayout({ children, title, subtitle }) {
         </header>
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           {children}
+          <PortalFooter />
         </main>
       </div>
     </div>
