@@ -973,13 +973,12 @@ export default function ClientPortal() {
         />
       )}
 
-      {/* Contact Center — guided WhatsApp + email/owner shortcuts */}
-      <ContactCenterModal
-        client={client}
-        user={user}
-        isOpen={contactOpen}
-        onClose={() => setContactOpen(false)}
-      />
+      {contactOpen && (
+        <ContactCenterModal
+          client={client}
+          onClose={() => setContactOpen(false)}
+        />
+      )}
 
       {/* Global portal footer */}
       <PortalFooter />

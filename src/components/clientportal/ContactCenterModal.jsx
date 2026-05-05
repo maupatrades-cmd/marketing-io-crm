@@ -1,147 +1,133 @@
 import { useState } from 'react';
-import { X, MessageCircle, Mail, AlertTriangle, Building2 } from 'lucide-react';
+import { Phone, User, AlertTriangle, X } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import WhatsAppContactFlow, { buildMessage } from './WhatsAppContactFlow';
 
-const HEAD_EMAIL = 'head@marketingio.co.za';
-const MARKETING_EMAIL = 'marketing@marketingio.co.za';
-const WHATSAPP_NUMBER = '27731539633';
+export default function ContactCenterModal({ client, onClose }) {
+  const [view, setView] = useState('main');
 
-function Card({ icon: Icon, title, subtitle, accent = 'primary', onClick }) {
-  const accentClass = {
-    primary: 'border-primary/40 hover:border-primary',
-    success: 'border-emerald-500/40 hover:border-emerald-500',
-    warning: 'border-orange-500/40 hover:border-orange-500',
-    destructive: 'border-destructive/40 hover:border-destructive'
-  }[accent];
-
-  const iconAccent = {
-    primary: 'text-primary',
-    success: 'text-emerald-400',
-    warning: 'text-orange-400',
-    destructive: 'text-destructive'
-  }[accent];
-
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left bg-slate-800/60 hover:bg-slate-800 border ${accentClass} rounded-xl p-4 min-h-[88px] transition flex items-start gap-3`}
-    >
-      <Icon className={`w-6 h-6 shrink-0 ${iconAccent}`} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-white">{title}</p>
-        <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{subtitle}</p>
-      </div>
-    </button>
-  );
-}
-
-export default function ContactCenterModal({ client, user, isOpen, onClose }) {
-  const [view, setView] = useState('cards'); // 'cards' | 'whatsapp_flow'
-
-  if (!isOpen) return null;
+  const firstName = client?.contact_person?.split(' ')[0] || 'there';
 
   const handleContactOwner = () => {
-    const subject = encodeURIComponent(`Contact request from ${client?.business_name || 'a client'}`);
-    const body = encodeURIComponent(
-      `Hi,\n\n${client?.contact_person || ''} from ${client?.business_name || ''} would like to speak with the owner.\n\n— Sent from Marketing iO Portal`
-    );
-    window.location.href = `mailto:${HEAD_EMAIL}?subject=${subject}&body=${body}`;
+    const subject = encodeURIComponent(`Direct from ${client?.business_name || 'a client'} — ${client?.contact_person || ''}`);
+    const body = encodeURIComponent(`Hi Thapelo,\n\n`);
+    window.location.href = `mailto:head@marketingio.co.za?subject=${subject}&body=${body}`;
   };
 
-  const handleHeadOfMarketing = () => {
-    const subject = encodeURIComponent(`Marketing question from ${client?.business_name || 'a client'}`);
-    const body = encodeURIComponent(
-      `Hi Head of Marketing,\n\n${client?.contact_person || ''} from ${client?.business_name || ''} would like to discuss marketing strategy.\n\n— Sent from Marketing iO Portal`
-    );
-    window.location.href = `mailto:${MARKETING_EMAIL}?subject=${subject}&body=${body}`;
-  };
+  const handleComplaint = () => {
+    const message = `Hi Marketing iO, my name is ${client?.contact_person || 'a client'} from ${client?.business_name || 'my business'}. I would like to lodge a complaint about: `;
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/27731539633?text=${encoded}`, '_blank');
 
-  // Lodge Complaint — opens WhatsApp pre-filled with a complaint template AND
-  // logs a high-priority complaint to ClientCommunication. We reuse the same
-  // log-whatsapp-contact backend so the escalation email + audit trail are
-  // identical to the guided flow.
-  const handleLodgeComplaint = () => {
-    const message = buildMessage(client, 'complaint', 'urgent', 'service_quality', '');
-    if (client?.id) {
-      base44.functions.invoke('log-whatsapp-contact', {
-        client_id: client.id,
-        category: 'complaint',
-        urgency: 'urgent',
-        specific: 'service_quality',
-        free_text: 'Lodged via Lodge Complaint shortcut — please follow up.',
-        message
-      }).catch(err => {
-        console.error('[ContactCenterModal] complaint log failed:', err);
+    try {
+      base44.functions.invoke('log-complaint', { client_id: client?.id }).catch(err => {
+        console.error('[ContactCenter] complaint log failed:', err);
       });
+    } catch (err) {
+      console.error('[ContactCenter] complaint trigger failed:', err);
     }
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
-    onClose?.();
+
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="w-full max-w-lg my-auto">
-        {view === 'cards' && (
-          <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
-            <div className="px-5 pt-4 pb-3 border-b border-slate-700/60 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-white">How can we help?</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Pick the option that fits your need.</p>
-              </div>
-              <button onClick={onClose} className="text-slate-400 hover:text-slate-200">
-                <X className="w-4 h-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-slate-900 border border-slate-700/50 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+
+        <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
+          <h2 className="text-2xl font-bold text-white">
+            {view === 'main' ? `How can we help, ${firstName}?` : 'Get in touch'}
+          </h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6">
+          {view === 'main' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+              <button
+                onClick={() => setView('contact_info')}
+                className="group bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-primary rounded-xl p-6 text-left transition-all"
+              >
+                <Phone className="w-8 h-8 text-primary mb-3" />
+                <p className="text-lg font-bold text-white mb-1">Contact Us</p>
+                <p className="text-sm text-slate-400">View our contact details</p>
+              </button>
+
+              <button
+                onClick={handleContactOwner}
+                className="group bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-primary rounded-xl p-6 text-left transition-all"
+              >
+                <User className="w-8 h-8 text-primary mb-3" />
+                <p className="text-lg font-bold text-white mb-1">Contact Owner</p>
+                <p className="text-sm text-slate-400">Direct line to Thapelo Maupa, Founder</p>
+              </button>
+
+              <button
+                onClick={handleComplaint}
+                className="group bg-slate-800/60 hover:bg-red-950/30 border border-slate-700/50 hover:border-red-500/50 rounded-xl p-6 text-left transition-all"
+              >
+                <AlertTriangle className="w-8 h-8 text-red-400 mb-3" />
+                <p className="text-lg font-bold text-white mb-1">Complaints</p>
+                <p className="text-sm text-slate-400">Lodge a formal complaint</p>
               </button>
             </div>
+          )}
 
-            <div className="p-4 space-y-3">
-              <Card
-                icon={MessageCircle}
-                title="Contact Us"
-                subtitle="Guided WhatsApp flow — pick category, urgency, and specifics. Best for support, billing, updates."
-                accent="success"
-                onClick={() => setView('whatsapp_flow')}
-              />
-              <Card
-                icon={Building2}
-                title="Contact the Owner"
-                subtitle="Direct email to the owner. Use for executive matters or partnership conversations."
-                accent="primary"
-                onClick={handleContactOwner}
-              />
-              <Card
-                icon={Mail}
-                title="Head of Marketing"
-                subtitle="Email the marketing lead. Use for strategy, campaign direction, performance reviews."
-                accent="warning"
-                onClick={handleHeadOfMarketing}
-              />
-              <Card
-                icon={AlertTriangle}
-                title="Lodge a Complaint"
-                subtitle="Formal complaint — sends WhatsApp + alerts the owner immediately. Use only for serious issues."
-                accent="destructive"
-                onClick={handleLodgeComplaint}
-              />
+          {view === 'contact_info' && (
+            <div className="space-y-4">
+              <button
+                onClick={() => setView('main')}
+                className="text-sm text-primary hover:underline mb-2"
+              >
+                ← Back
+              </button>
+
+              <div className="bg-slate-800/40 rounded-xl p-6 space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">☎</span>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">Phone</p>
+                    <a href="tel:0101020534" className="text-white hover:text-primary">010 102 0534</a>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">✉</span>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">Email</p>
+                    <a href="mailto:info@marketingio.co.za" className="text-white hover:text-primary">info@marketingio.co.za</a>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">🌐</span>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">Website</p>
+                    <a href="https://www.marketingio.co.za" target="_blank" rel="noopener noreferrer" className="text-white hover:text-primary">www.marketingio.co.za</a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">📍</span>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">Address</p>
+                    <p className="text-white">75 Marshall Street<br/>Polokwane 0699</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">🕐</span>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">Hours</p>
+                    <p className="text-white">Monday - Friday, 8am - 5pm</p>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <div className="px-5 py-3 border-t border-slate-700/60 text-center">
-              <p className="text-[11px] text-slate-500">
-                ☎ <a href="tel:0101020534" className="text-slate-400 hover:text-slate-200">010 102 0534</a>
-                {' · '}
-                <a href={`mailto:info@marketingio.co.za`} className="text-slate-400 hover:text-slate-200">info@marketingio.co.za</a>
-              </p>
-            </div>
-          </div>
-        )}
-
-        {view === 'whatsapp_flow' && (
-          <WhatsAppContactFlow
-            client={client}
-            user={user}
-            onClose={() => { setView('cards'); onClose?.(); }}
-          />
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
