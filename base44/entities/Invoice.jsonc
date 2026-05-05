@@ -21,16 +21,47 @@
         "once_off",
         "per_sms",
         "cancellation_fee",
-        "acceleration_amount"
+        "acceleration_amount",
+        "addon_setup",
+        "once_off_product",
+        "combined",
+        "monthly_subscription"
       ],
       "default": "monthly_retainer"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "setup_fee",
+        "addon_setup",
+        "once_off_product",
+        "combined",
+        "monthly_subscription"
+      ],
+      "description": "PayFast-flow canonical invoice type. Mirrors invoice_type for new records."
     },
     "description": {
       "type": "string"
     },
+    "line_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": { "type": "string" },
+          "product_name": { "type": "string" },
+          "description": { "type": "string" },
+          "amount": { "type": "number" },
+          "quantity": { "type": "integer", "default": 1 }
+        }
+      }
+    },
     "amount": {
       "type": "number",
       "description": "Invoice amount in ZAR"
+    },
+    "subtotal": {
+      "type": "number"
     },
     "vat_applicable": {
       "type": "boolean",
@@ -43,9 +74,21 @@
     "total_amount": {
       "type": "number"
     },
+    "total": {
+      "type": "number",
+      "description": "PayFast-flow canonical total. Mirrors total_amount for new records."
+    },
+    "currency": {
+      "type": "string",
+      "default": "ZAR"
+    },
     "issue_date": {
       "type": "string",
       "format": "date"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
     },
     "due_date": {
       "type": "string",
@@ -56,6 +99,8 @@
       "enum": [
         "draft",
         "sent",
+        "issued",
+        "pending_payment",
         "paid",
         "overdue",
         "failed",
@@ -75,9 +120,16 @@
         "other"
       ]
     },
+    "payment_id": {
+      "type": "string"
+    },
     "payment_date": {
       "type": "string",
       "format": "date"
+    },
+    "paid_at": {
+      "type": "string",
+      "format": "date-time"
     },
     "debit_run_date": {
       "type": "string",
@@ -92,6 +144,9 @@
       "format": "date"
     },
     "deal_id": {
+      "type": "string"
+    },
+    "contract_id": {
       "type": "string"
     },
     "notes": {
