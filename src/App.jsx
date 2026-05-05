@@ -66,6 +66,7 @@ import OwnerClientDetail from './pages/OwnerClientDetail';
 import OwnerFinancials from './pages/OwnerFinancials';
 import OwnerReports from './pages/OwnerReports';
 import OwnerSettings from './pages/OwnerSettings';
+import CommissionDashboard from './pages/owner/CommissionDashboard';
 import ClientOrderAddOns from './pages/ClientOrderAddOns';
 import ClientOrderDomain from './pages/ClientOrderDomain';
 import ClientOrderEmail from './pages/ClientOrderEmail';
@@ -162,6 +163,7 @@ const AuthenticatedApp = () => {
       <Route path="/deliverable-quality" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><DeliverableQuality /></RouteGuard>} />
       <Route path="/lead-scoring" element={<RouteGuard allowedRoles={["owner", "admin", "field_agent", "cpc"]} fallbackPath="/"><LeadScoring /></RouteGuard>} />
       <Route path="/owner/campaigns" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><OwnerCampaigns /></RouteGuard>} />
+      <Route path="/owner/commissions" element={<CommissionDashboard />} />
       <Route path="/unsubscribe" element={<Unsubscribe />} />
 
       {/* Staff Portal Routes */}

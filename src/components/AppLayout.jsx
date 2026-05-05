@@ -75,6 +75,7 @@ const OWNER_NAV = [
   { path: "/leads", label: "Leads", icon: Zap },
   { path: "/lead-scoring", label: "Lead Scoring", icon: Target },
   { path: "/commissions", label: "Commissions", icon: DollarSign },
+  { path: "/owner/commissions", label: "Commission Engine", icon: DollarSign },
   { path: "/invoices", label: "Invoices", icon: FileText },
   { path: "/receipts", label: "Receipts", icon: Receipt },
   { path: "/contracts", label: "Contracts", icon: File },
