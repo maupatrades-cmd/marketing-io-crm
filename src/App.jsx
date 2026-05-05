@@ -71,6 +71,7 @@ import LeadInbox from './pages/owner/LeadInbox';
 import ClientLayout from './components/ClientLayout';
 import ClientProducts from './pages/ClientProducts';
 import ClientSettings from './pages/ClientSettings';
+import ClientActivity from './pages/ClientActivity';
 import InvoiceDetail from './pages/InvoiceDetail';
 import ClientThreadDetail from './pages/ClientThreadDetail';
 import ClientOrderAddOns from './pages/ClientOrderAddOns';
@@ -192,6 +193,7 @@ const AuthenticatedApp = () => {
         <Route path="/client/messages" element={<ClientMessages />} />
         <Route path="/client/messages/:threadId" element={<ClientThreadDetail />} />
         <Route path="/client/deliverables" element={<ClientDeliverables />} />
+        <Route path="/client/activity" element={<ClientActivity />} />
         <Route path="/client/settings" element={<ClientSettings />} />
         {/* Existing client routes — kept inside ClientLayout so they share the sidebar. */}
         <Route path="/client-onboarding" element={<ClientOnboardingWizard />} />

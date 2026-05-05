@@ -11,7 +11,8 @@ import {
   LogOut,
   Lightbulb,
   Menu,
-  X
+  X,
+  Bell
 } from 'lucide-react';
 import { destroySession } from '@/lib/customAuth';
 
@@ -25,6 +26,7 @@ const PRIMARY_NAV = [
   { path: '/client/invoices',     label: 'Invoices',            icon: FileText,      badgeKey: 'invoices' },
   { path: '/client/contracts',    label: 'Contracts',           icon: FileSignature },
   { path: '/client/messages',     label: 'Messages',            icon: MessageSquare, badgeKey: 'messages' },
+  { path: '/client/activity',     label: 'Activity',            icon: Bell,          badgeKey: 'activity' },
   { path: '/client/deliverables', label: 'Deliverables',        icon: CheckCircle }
 ];
 
