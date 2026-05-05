@@ -60,6 +60,7 @@ import ClientReports from './pages/ClientReports';
 import ClientContracts from './pages/ClientContracts';
 import ClientUploads from './pages/ClientUploads';
 import ClientMessages from './pages/ClientMessages';
+import OwnerInbox from './pages/OwnerInbox';
 import ClientProfile from './pages/ClientProfile';
 import OwnerClientDetail from './pages/OwnerClientDetail';
 import OwnerFinancials from './pages/OwnerFinancials';
@@ -121,6 +122,7 @@ const AuthenticatedApp = () => {
       <Route path="/client-portal" element={<ClientPortal />} />
       <Route path="/clients" element={<Clients />} />
       <Route path="/clients/:id" element={<RouteGuard allowedRoles={["owner", "admin"]} fallbackPath="/"><OwnerClientDetail /></RouteGuard>} />
+      <Route path="/inbox" element={<RouteGuard allowedRoles={["owner", "admin"]} fallbackPath="/"><OwnerInbox /></RouteGuard>} />
       <Route path="/deals" element={<Deals />} />
       <Route path="/leads" element={<Leads />} />
       <Route path="/commissions" element={<Commissions />} />

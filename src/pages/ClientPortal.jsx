@@ -48,6 +48,7 @@ export default function ClientPortal() {
   const [heroImageCopy, setHeroImageCopy] = useState(null);
   const [loadingHeroImage, setLoadingHeroImage] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   const unsubscribesRef = useRef([]);
 
@@ -180,6 +181,19 @@ export default function ClientPortal() {
         } catch (err) {
           console.error('Subscription error:', err);
         }
+
+        // Read-only peek at the chat thread's unread counter so the
+        // "Message your team" CTA can show a badge without resetting unread.
+        const peekUnread = async () => {
+          try {
+            const threads = await base44.entities.ClientThread.filter({ client_id: c.id });
+            const t = Array.isArray(threads) ? threads[0] : threads;
+            setUnreadMessages(t?.unread_count_client || 0);
+          } catch (_) {}
+        };
+        peekUnread();
+        const unreadInterval = setInterval(peekUnread, 30000);
+        unsubscribesRef.current.push(() => clearInterval(unreadInterval));
       }
       setLoading(false);
     };
@@ -886,11 +900,16 @@ export default function ClientPortal() {
           {/* CTA to contact */}
           <div className="mt-8 p-4 glass rounded-lg border-border/50 text-center">
             <p className="text-sm text-muted-foreground mb-3">Still stuck?</p>
-            <Button 
+            <Button
               onClick={() => window.location.href = '/client/messages'}
-              className="gradient-bg text-white"
+              className="gradient-bg text-white relative"
             >
-              Message your team →
+              {unreadMessages > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-background">
+                  {unreadMessages > 99 ? '99+' : unreadMessages}
+                </span>
+              )}
+              Message your team {unreadMessages > 0 ? `(${unreadMessages})` : ''}→
             </Button>
           </div>
         </section>

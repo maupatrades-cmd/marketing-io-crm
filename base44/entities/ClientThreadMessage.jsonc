@@ -1,0 +1,48 @@
+{
+  "name": "ClientThreadMessage",
+  "type": "object",
+  "properties": {
+    "thread_id": {
+      "type": "string",
+      "description": "Reference to ClientThread"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "Denormalised for filtering"
+    },
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "sender_role": {
+      "type": "string",
+      "enum": ["client", "consultant", "owner", "head_of_marketing"],
+      "description": "Sender's role for UI display"
+    },
+    "sender_avatar_url": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string",
+      "description": "Plain text message"
+    },
+    "attachments": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Array of file URLs (future use)"
+    },
+    "read_by": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "User IDs who have read this message"
+    },
+    "is_system_message": {
+      "type": "boolean",
+      "default": false,
+      "description": "True for auto-generated thread events"
+    }
+  },
+  "required": ["thread_id", "sender_id", "message"]
+}
