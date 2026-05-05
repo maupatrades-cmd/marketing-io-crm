@@ -1,16 +1,39 @@
-import { useState } from 'react';
-import { Phone, User, AlertTriangle, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Phone, User, AlertTriangle, X, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
+
+const OWNER_EMAIL = 'head@marketingio.co.za';
 
 export default function ContactCenterModal({ client, onClose }) {
   const [view, setView] = useState('main');
+  const [fallbackReady, setFallbackReady] = useState(false);
+  const fallbackTimerRef = useRef(null);
 
   const firstName = client?.contact_person?.split(' ')[0] || 'there';
 
+  useEffect(() => () => {
+    if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+  }, []);
+
   const handleContactOwner = () => {
-    const subject = encodeURIComponent(`Direct from ${client?.business_name || 'a client'} — ${client?.contact_person || ''}`);
-    const body = encodeURIComponent(`Hi Thapelo,\n\n`);
-    window.location.href = `mailto:head@marketingio.co.za?subject=${subject}&body=${body}`;
+    const subject = encodeURIComponent('Direct message to Marketing iO Owner');
+    const body = encodeURIComponent('Hi,\n\n');
+    window.location.href = `mailto:${OWNER_EMAIL}?subject=${subject}&body=${body}`;
+    setFallbackReady(false);
+    setView('owner_fallback');
+    if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+    fallbackTimerRef.current = setTimeout(() => setFallbackReady(true), 1500);
+  };
+
+  const copyOwnerEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(OWNER_EMAIL);
+      toast.success('Email address copied');
+    } catch (err) {
+      console.error('[ContactCenter] clipboard write failed:', err);
+      toast.error('Could not copy. Please select the address manually.');
+    }
   };
 
   const handleComplaint = () => {
@@ -35,7 +58,11 @@ export default function ContactCenterModal({ client, onClose }) {
 
         <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
           <h2 className="text-2xl font-bold text-white">
-            {view === 'main' ? `How can we help, ${firstName}?` : 'Get in touch'}
+            {view === 'main'
+              ? `How can we help, ${firstName}?`
+              : view === 'owner_fallback'
+                ? 'Contact the Founder'
+                : 'Get in touch'}
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800">
             <X className="w-5 h-5" />
@@ -61,7 +88,7 @@ export default function ContactCenterModal({ client, onClose }) {
               >
                 <User className="w-8 h-8 text-primary mb-3" />
                 <p className="text-lg font-bold text-white mb-1">Contact Owner</p>
-                <p className="text-sm text-slate-400">Direct line to Thapelo Maupa, Founder</p>
+                <p className="text-sm text-slate-400">Send a direct message to the founder. Replies within 24 hours.</p>
               </button>
 
               <button
@@ -72,6 +99,38 @@ export default function ContactCenterModal({ client, onClose }) {
                 <p className="text-lg font-bold text-white mb-1">Complaints</p>
                 <p className="text-sm text-slate-400">Lodge a formal complaint</p>
               </button>
+            </div>
+          )}
+
+          {view === 'owner_fallback' && (
+            <div className="space-y-4">
+              <button
+                onClick={() => setView('main')}
+                className="text-sm text-primary hover:underline mb-2"
+              >
+                ← Back
+              </button>
+
+              <div className="bg-slate-800/40 rounded-xl p-6 space-y-4">
+                {!fallbackReady ? (
+                  <p className="text-sm text-slate-300">Opening your email app…</p>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-sm text-slate-300 mb-1">If your email app didn't open, send a message to:</p>
+                      <p className="text-base font-semibold text-white break-all">{OWNER_EMAIL}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={copyOwnerEmail}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-slate-700 hover:bg-slate-600 transition"
+                    >
+                      <Copy className="w-4 h-4" />
+                      Copy email address
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           )}
 
