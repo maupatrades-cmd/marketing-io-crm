@@ -47,6 +47,7 @@ export default function ClientPortal() {
   const [heroImageUrl, setHeroImageUrl] = useState(null);
   const [heroImageCopy, setHeroImageCopy] = useState(null);
   const [loadingHeroImage, setLoadingHeroImage] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [contactOpen, setContactOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
 
