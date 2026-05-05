@@ -36,11 +36,10 @@ export default function ClientProfile() {
 
   if (loading) return <LoadingSpinner />;
 
+  // Notifications + Security tabs moved to /client/settings (single Settings page).
   const TABS = [
     { id: "business", label: "Business Info" },
     { id: "contact", label: "Contact Info" },
-    { id: "notifications", label: "Notifications" },
-    { id: "security", label: "Security" },
     { id: "subscription", label: "Subscription" },
   ];
 
@@ -90,37 +89,6 @@ export default function ClientProfile() {
                 </select>
               </div>
               <p className="text-xs text-muted-foreground">Email on file: {client.email}</p>
-            </div>
-          )}
-
-          {activeTab === "notifications" && (
-            <div className="space-y-3">
-              {[
-                { key: "email_deliverable_ready", label: "Email when deliverable is ready" },
-                { key: "email_invoice_issued", label: "Email when invoice is issued" },
-                { key: "email_monthly_report", label: "Email when monthly report is ready" },
-                { key: "email_payment_received", label: "Email when payment is received" },
-              ].map(n => (
-                <label key={n.key} className="flex items-center gap-2">
-                  <input type="checkbox" defaultChecked className="rounded" />
-                  <span className="text-sm text-foreground">{n.label}</span>
-                </label>
-              ))}
-            </div>
-          )}
-
-          {activeTab === "security" && (
-            <div className="space-y-4">
-              <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
-                <p className="text-sm font-semibold text-primary">Two-Factor Authentication</p>
-                <p className="text-xs text-muted-foreground mt-1">Required for all accounts — already enabled</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Recent Logins</label>
-                <div className="space-y-2 text-xs text-muted-foreground">
-                  <p>•Last login: {new Date().toLocaleDateString("en-ZA")}</p>
-                </div>
-              </div>
             </div>
           )}
 
