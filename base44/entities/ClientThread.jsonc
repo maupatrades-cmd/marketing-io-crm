@@ -47,6 +47,12 @@
       "type": "string",
       "enum": ["active", "archived"],
       "default": "active"
+    },
+    "thread_type": {
+      "type": "string",
+      "enum": ["standard", "pre_consultant_assignment"],
+      "default": "standard",
+      "description": "standard = client + consultant + owner; pre_consultant_assignment = client + owner only, before a consultant is allocated"
     }
   },
   "required": ["client_id"]
