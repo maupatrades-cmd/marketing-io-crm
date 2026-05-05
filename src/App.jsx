@@ -67,6 +67,7 @@ import OwnerFinancials from './pages/OwnerFinancials';
 import OwnerReports from './pages/OwnerReports';
 import OwnerSettings from './pages/OwnerSettings';
 import CommissionDashboard from './pages/owner/CommissionDashboard';
+import LeadInbox from './pages/owner/LeadInbox';
 import ClientLayout from './components/ClientLayout';
 import ClientProducts from './pages/ClientProducts';
 import ClientSettings from './pages/ClientSettings';
@@ -168,6 +169,8 @@ const AuthenticatedApp = () => {
       <Route path="/lead-scoring" element={<RouteGuard allowedRoles={["owner", "admin", "field_agent", "cpc"]} fallbackPath="/"><LeadScoring /></RouteGuard>} />
       <Route path="/owner/campaigns" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><OwnerCampaigns /></RouteGuard>} />
       <Route path="/owner/commissions" element={<CommissionDashboard />} />
+      <Route path="/owner/leads" element={<LeadInbox />} />
+      <Route path="/owner/leads/:leadId" element={<LeadInbox />} />
       <Route path="/unsubscribe" element={<Unsubscribe />} />
 
       {/* Staff Portal Routes */}

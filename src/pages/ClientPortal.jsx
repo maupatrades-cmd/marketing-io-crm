@@ -1069,6 +1069,10 @@ export default function ClientPortal() {
                   </AccordionContent>
                 </AccordionItem>
 
+                {/* TODO(portal-polish): inline FAQ links to /client/messages can land
+                    users on an empty Messages page if no thread exists. Route them through
+                    the same handleTalkToConsultant flow as the primary CTA below in a
+                    follow-up polish PR. */}
                 <AccordionItem value="custom-packages" className="glass rounded-lg border-0">
                   <AccordionTrigger className="px-4 py-3 hover:bg-secondary/30">
                     Do you offer custom packages?
