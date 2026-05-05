@@ -81,14 +81,44 @@ Deno.serve(async (req) => {
     }
 
     const m_payment_id = crypto.randomUUID();
-    const invoiceType = invoice.type || invoice.invoice_type || 'setup_fee';
+
+    // Normalise invoice type → valid Payment.type enum. Invoice.invoice_type
+    // accepts ~13 values (monthly_retainer, add_on_monthly, per_sms, etc.) but
+    // Payment.type only accepts 6. Older test invoices default to
+    // 'monthly_retainer', which would reject Payment.create with 500.
+    // Fall back to 'setup_fee' for any unmapped value.
+    const PAYMENT_TYPE_ENUM = new Set([
+      'setup_fee', 'addon_setup', 'once_off_product',
+      'combined', 'monthly_subscription', 'recurring_addon'
+    ]);
+    const INVOICE_TO_PAYMENT_TYPE: Record<string, string> = {
+      // Direct passthroughs (already valid).
+      setup_fee: 'setup_fee',
+      addon_setup: 'addon_setup',
+      once_off_product: 'once_off_product',
+      combined: 'combined',
+      monthly_subscription: 'monthly_subscription',
+      recurring_addon: 'recurring_addon',
+      // Legacy / Invoice-only values mapped to the closest Payment value.
+      add_on_setup: 'addon_setup',
+      add_on_monthly: 'recurring_addon',
+      monthly_retainer: 'monthly_subscription',
+      once_off: 'once_off_product',
+      // Anything else (per_sms, cancellation_fee, acceleration_amount) falls
+      // through to setup_fee below — they shouldn't be PayFast-payable anyway.
+    };
+    const rawType = String(invoice.type || invoice.invoice_type || 'setup_fee');
+    const invoiceType = INVOICE_TO_PAYMENT_TYPE[rawType]
+      || (PAYMENT_TYPE_ENUM.has(rawType) ? rawType : 'setup_fee');
 
     // Create Payment record. Snapshot closer + lead-source attribution from
     // the invoice so the commission engine has frozen identifiers even if the
-    // invoice is later edited.
-    const payment = await base44.asServiceRole.entities.Payment.create({
+    // invoice is later edited. Build payload conditionally so we don't pass
+    // `null` for typed string fields — some Base44 schema validators reject
+    // that and surface as a 500 from the catch block.
+    const paymentPayload: Record<string, any> = {
       client_id: invoice.client_id,
-      client_name: client.business_name,
+      client_name: client.business_name || '',
       invoice_id: invoice.id,
       amount: invoiceTotal,
       currency: 'ZAR',
@@ -96,10 +126,12 @@ Deno.serve(async (req) => {
       status: 'pending',
       gateway: 'payfast',
       gateway_reference: m_payment_id,
-      closer_id: invoice.closer_id || null,
-      lead_source_user_id: invoice.lead_source_user_id || null,
       commission_calculated: false
-    });
+    };
+    if (invoice.closer_id) paymentPayload.closer_id = invoice.closer_id;
+    if (invoice.lead_source_user_id) paymentPayload.lead_source_user_id = invoice.lead_source_user_id;
+
+    const payment = await base44.asServiceRole.entities.Payment.create(paymentPayload);
 
     // Move invoice to pending_payment + link payment.
     await base44.asServiceRole.entities.Invoice.update(invoice.id, {
