@@ -1,47 +1,57 @@
 import { createHash } from 'node:crypto';
 
 // =============================================================================
-// PayFast signature generator — Step 3 of 10.
+// PayFast signature generator — Step 4 of 10.
 //
-// Computes the MD5 signature PayFast Standard requires before redirecting a
-// buyer to the hosted checkout. Reads the merchant credentials and URLs from
-// Base44 secrets — the passphrase NEVER leaves the server.
+// Step 3 added MD5 signing. Step 4 adds:
+//   - Server-side package lookup (amount + names + description come from a
+//     trusted server source, never from the browser).
+//   - Unique m_payment_id per transaction, generated server-side only.
+//   - custom_str1 / custom_str2 hooks for reconciliation metadata.
 //
-// PayFast's 6 signing rules, applied below:
-//   1. Take all form fields except `signature` itself.
-//   2. Sort in PayFast's documented field order — NOT alphabetical.
-//   3. URL-encode each value PHP-style: spaces → '+', uppercase hex.
-//   4. Build query string `key1=value1&key2=value2&...`.
+// PayFast's 6 signing rules still apply:
+//   1. Take all form fields except `signature`.
+//   2. Use PayFast's documented field order — NOT alphabetical.
+//   3. URL-encode each value PHP-style (spaces → '+', uppercase hex).
+//   4. Build query `key1=value1&key2=value2&...`.
 //   5. Append `&passphrase=URL_ENCODED_PASSPHRASE`.
-//   6. MD5 the result → 32 lowercase hex chars.
+//   6. MD5 → 32 lowercase hex chars.
 //
-// We also skip empty optional fields entirely (they are NOT signed, NOT
-// POSTed) — anything in the signature must also be in the eventual form, and
-// vice versa, or PayFast rejects with "signature mismatch".
+// Skip-empty rule: any field that's empty string is excluded from BOTH the
+// signed string and the POSTed form. That keeps "what's signed" === "what's
+// POSTed", which is what PayFast cross-checks before accepting the request.
 // =============================================================================
 
-// PHP-style urlencode equivalent.
-//
-// JavaScript's encodeURIComponent already produces uppercase hex (%2F, %26,
-// etc.) and leaves [A-Za-z0-9-_.~!*'()] unencoded. PHP's urlencode is almost
-// identical except it encodes spaces as `+` rather than `%20`. The single
-// .replace() below bridges that gap and matches PayFast's reference Java/PHP
-// implementations on every character class their docs guarantee will appear
-// in form values.
-//
-// Test cases (verified by the runner below when DEBUG_TESTS=true):
-//   "Ignite Setup"       → "Ignite+Setup"
-//   "john@doe.com"       → "john%40doe.com"
-//   "Test & Co."         → "Test+%26+Co."
-//   "0823456789"         → "0823456789"   (digits unchanged)
-//   "3980.00"            → "3980.00"      (digits + dot unchanged)
-//   "https://x.co/a b"   → "https%3A%2F%2Fx.co%2Fa+b"
-function payfastUrlEncode(value: string): string {
-  return encodeURIComponent(value).replace(/%20/g, '+');
-}
+// Mirrored from src/config/payfastPackages.js — keep in sync until we move
+// packages to a DB table in a later step.
+const PACKAGES: Array<{
+  id: string;
+  name: string;
+  description: string;
+  amount: string;
+}> = [
+  {
+    id: 'ignite',
+    name: 'Ignite Setup',
+    description: 'Marketing iO Ignite package - one-time setup fee',
+    amount: '3980.00',
+  },
+  {
+    id: 'spark',
+    name: 'Spark Setup',
+    description: 'Marketing iO Spark package - one-time setup fee',
+    amount: '1980.00',
+  },
+  {
+    id: 'ignite-test',
+    name: 'Sandbox Test',
+    description: 'Sandbox test transaction',
+    amount: '10.00',
+  },
+];
 
-// PayFast's documented field order for the Standard / Redirect flow.
-// DO NOT alphabetize — order is part of the signed string.
+// PayFast's documented field order for the Standard / Redirect flow with
+// custom + tracking fields. DO NOT alphabetize.
 const FIELD_ORDER = [
   'merchant_id',
   'merchant_key',
@@ -52,26 +62,39 @@ const FIELD_ORDER = [
   'name_last',
   'email_address',
   'cell_number',
+  'm_payment_id',
   'amount',
   'item_name',
+  'item_description',
+  'custom_str1',
+  'custom_str2',
 ] as const;
 
-// Customer fields are optional — if blank, they're skipped from BOTH the
-// signed string and the POSTed form. Required fields fail loud below.
+// Optional fields — empty values get dropped from BOTH signature and form.
 const OPTIONAL_FIELDS = new Set([
   'name_first',
   'name_last',
   'email_address',
   'cell_number',
+  'item_description',
+  'custom_str1',
+  'custom_str2',
 ]);
 
-function buildSignature(
-  fields: Record<string, string>,
-  passphrase: string
-): string {
-  // Step 1+2: walk fields in PayFast's documented order, NOT alphabetical.
-  // Step 3: PHP-style URL encoding on each trimmed value.
-  // Step 4: assemble `key=value&key=value`.
+// PHP-style urlencode equivalent.
+//
+// Test cases (verified by `__debug_tests: true`):
+//   "Ignite Setup"       → "Ignite+Setup"
+//   "john@doe.com"       → "john%40doe.com"
+//   "Test & Co."         → "Test+%26+Co."
+//   "0823456789"         → "0823456789"
+//   "3980.00"            → "3980.00"
+//   "https://x.co/a b"   → "https%3A%2F%2Fx.co%2Fa+b"
+function payfastUrlEncode(value: string): string {
+  return encodeURIComponent(value).replace(/%20/g, '+');
+}
+
+function buildSignature(fields: Record<string, string>, passphrase: string): string {
   const queryString = FIELD_ORDER
     .filter((key) => {
       const v = fields[key];
@@ -80,18 +103,42 @@ function buildSignature(
     .map((key) => `${key}=${payfastUrlEncode(String(fields[key]).trim())}`)
     .join('&');
 
-  // Step 5: append URL-encoded passphrase. Passphrase is required in V2 of
-  // PayFast Standard (we always have one — the function 500s if it's missing).
   const stringToHash = `${queryString}&passphrase=${payfastUrlEncode(passphrase)}`;
-
-  // Step 6: MD5 → 32 lowercase hex chars.
   return createHash('md5').update(stringToHash).digest('hex');
 }
 
-// Tiny self-test runner for the URL encoder. Triggered by passing
-// { __debug_tests: true } in the JSON body — useful while iterating, ignored
-// in normal traffic.
-function runEncoderTests(): { ok: boolean; failures: Array<{ input: string; expected: string; got: string }> } {
+// `MIO-YYYYMMDDTHHmmss-XXXXXX` — server-time UTC + 6 random uppercase
+// alphanumeric chars. ~2.1B IDs per second-bucket; we expect <<1 per second
+// in practice, so collisions are vanishingly unlikely.
+const MID_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+function randomToken(len: number): string {
+  const buf = new Uint8Array(len);
+  crypto.getRandomValues(buf);
+  let out = '';
+  for (let i = 0; i < len; i++) {
+    out += MID_ALPHABET[buf[i] % MID_ALPHABET.length];
+  }
+  return out;
+}
+
+function generateMPaymentId(): string {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const stamp =
+    `${d.getUTCFullYear()}` +
+    `${pad(d.getUTCMonth() + 1)}` +
+    `${pad(d.getUTCDate())}` +
+    `T` +
+    `${pad(d.getUTCHours())}` +
+    `${pad(d.getUTCMinutes())}` +
+    `${pad(d.getUTCSeconds())}`;
+  return `MIO-${stamp}-${randomToken(6)}`;
+}
+
+function runEncoderTests(): {
+  ok: boolean;
+  failures: Array<{ input: string; expected: string; got: string }>;
+} {
   const cases: Array<[string, string]> = [
     ['Ignite Setup',     'Ignite+Setup'],
     ['john@doe.com',     'john%40doe.com'],
@@ -106,7 +153,6 @@ function runEncoderTests(): { ok: boolean; failures: Array<{ input: string; expe
 }
 
 Deno.serve(async (req) => {
-  // Optional debug self-test — useful during development.
   let body: any;
   try {
     body = await req.json();
@@ -147,38 +193,55 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Pull customer/payment inputs from the request. Validate the required
-  // ones (amount + item_name); customer fields are optional.
-  const amount       = String(body?.amount ?? '').trim();
-  const itemName     = String(body?.item_name ?? '').trim();
+  // Required: package_id. Customer fields are optional.
+  const packageId    = String(body?.package_id ?? '').trim();
   const nameFirst    = String(body?.name_first ?? '').trim();
   const nameLast     = String(body?.name_last ?? '').trim();
   const emailAddress = String(body?.email_address ?? '').trim();
   const cellNumber   = String(body?.cell_number ?? '').trim();
 
-  if (!amount || !/^\d+\.\d{2}$/.test(amount)) {
+  if (!packageId) {
+    return Response.json({ error: 'package_id is required' }, { status: 400 });
+  }
+
+  const pkg = PACKAGES.find((p) => p.id === packageId);
+  if (!pkg) {
     return Response.json(
-      { error: 'amount must be a string like "3980.00" (2 decimal places, no symbol)' },
+      { error: `Unknown package_id: ${packageId}` },
       { status: 400 }
     );
   }
-  if (!itemName) {
-    return Response.json({ error: 'item_name is required' }, { status: 400 });
+
+  // Sanity check the catalogue itself — guards against typos when this list
+  // is hand-edited.
+  if (!/^\d+\.\d{2}$/.test(pkg.amount)) {
+    console.error('[payfast-sign] invalid amount in PACKAGES catalogue:', pkg);
+    return Response.json(
+      { error: 'Server package catalogue has an invalid amount' },
+      { status: 500 }
+    );
   }
 
-  // Build the signed/POSTed field set — in order, skipping empty optionals.
+  const mPaymentId = generateMPaymentId();
+
+  // Build the signed/POSTed field set in PayFast's documented order. Empty
+  // optionals (e.g. custom_str2 until step 6) are dropped below.
   const candidate: Record<string, string> = {
-    merchant_id:   merchantId!,
-    merchant_key:  merchantKey!,
-    return_url:    returnUrl!,
-    cancel_url:    cancelUrl!,
-    notify_url:    notifyUrl!,
-    name_first:    nameFirst,
-    name_last:     nameLast,
-    email_address: emailAddress,
-    cell_number:   cellNumber,
-    amount,
-    item_name:     itemName,
+    merchant_id:      merchantId!,
+    merchant_key:     merchantKey!,
+    return_url:       returnUrl!,
+    cancel_url:       cancelUrl!,
+    notify_url:       notifyUrl!,
+    name_first:       nameFirst,
+    name_last:        nameLast,
+    email_address:    emailAddress,
+    cell_number:      cellNumber,
+    m_payment_id:     mPaymentId,
+    amount:           pkg.amount,
+    item_name:        pkg.name,
+    item_description: pkg.description,
+    custom_str1:      pkg.id,
+    custom_str2:      '',          // reserved for client_id in Step 6.
   };
 
   const fields: Record<string, string> = {};
@@ -195,5 +258,6 @@ Deno.serve(async (req) => {
   return Response.json({
     fields,
     process_url: processUrl,
+    m_payment_id: mPaymentId,
   });
 });

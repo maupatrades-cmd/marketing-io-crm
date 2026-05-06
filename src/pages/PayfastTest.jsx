@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { PAYFAST_PACKAGES, DEFAULT_PACKAGE_ID } from '@/config/payfastPackages';
 
-// Step 3 of 10 — PayFast test form with signed redirect.
-// The amount + item_name stay hardcoded for this step. Real values come in
-// step 4 once we wire it to actual invoices.
-const TEST_AMOUNT = '3980.00';
-const TEST_ITEM_NAME = 'Ignite Setup';
+// Step 4 of 10 — PayFast test form with dynamic package + m_payment_id.
+//
+// The amount/item_name/item_description are NOT sent from the browser. We
+// only send package_id; the function looks the rest up in its mirrored
+// catalogue. That way a tampered DevTools request can at worst pick a
+// different package — never set R3,980 to R10.
 
 const DEFAULTS = {
   name_first:    'John',
@@ -14,10 +16,10 @@ const DEFAULTS = {
   cell_number:   '0823456789',
 };
 
-// Build a hidden <form>, fill it from the signed fields returned by the
-// payfast-sign function, append it to the document, and submit. This is the
-// cleanest browser-native way to redirect-with-POST that doesn't risk React
-// re-rendering between sign and submit.
+// Show the user their reference for ~1 second before redirecting. Long
+// enough to read, short enough not to feel laggy.
+const REFERENCE_VISIBLE_MS = 1100;
+
 function postSignedFormToPayFast(processUrl, fields) {
   const form = document.createElement('form');
   form.method = 'post';
@@ -36,10 +38,22 @@ function postSignedFormToPayFast(processUrl, fields) {
   form.submit();
 }
 
+function formatRand(amount) {
+  // amount is always "1234.56"; render as R1,234.56.
+  const [whole, cents] = amount.split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `R${grouped}.${cents}`;
+}
+
 export default function PayfastTest() {
+  const [packageId, setPackageId] = useState(DEFAULT_PACKAGE_ID);
   const [customer, setCustomer] = useState(DEFAULTS);
   const [submitting, setSubmitting] = useState(false);
+  const [reference, setReference] = useState(null);
   const [error, setError] = useState(null);
+
+  const selectedPackage = PAYFAST_PACKAGES.find((p) => p.id === packageId)
+    || PAYFAST_PACKAGES[0];
 
   const handleChange = (key) => (e) =>
     setCustomer((prev) => ({ ...prev, [key]: e.target.value }));
@@ -47,11 +61,11 @@ export default function PayfastTest() {
   const handlePay = async (e) => {
     e.preventDefault();
     setError(null);
+    setReference(null);
     setSubmitting(true);
     try {
       const res = await base44.functions.invoke('payfast-sign', {
-        amount:        TEST_AMOUNT,
-        item_name:     TEST_ITEM_NAME,
+        package_id:    packageId,
         name_first:    customer.name_first,
         name_last:     customer.name_last,
         email_address: customer.email_address,
@@ -64,8 +78,12 @@ export default function PayfastTest() {
         setSubmitting(false);
         return;
       }
-      // Hand off to PayFast — page will navigate away on submit().
-      postSignedFormToPayFast(data.process_url, data.fields);
+
+      // Show the reference briefly, then hand off to PayFast.
+      setReference(data.m_payment_id || data.fields.m_payment_id || null);
+      setTimeout(() => {
+        postSignedFormToPayFast(data.process_url, data.fields);
+      }, REFERENCE_VISIBLE_MS);
     } catch (err) {
       console.error('[PayfastTest] sign request failed:', err);
       setError('Could not reach the signing service. Please try again.');
@@ -78,14 +96,45 @@ export default function PayfastTest() {
       <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-6">
         <div>
           <h1 className="text-2xl font-bold gradient-text">PayFast Test Checkout</h1>
-          <p className="text-xs text-slate-500 mt-1">Step 3 — signed sandbox redirect</p>
+          <p className="text-xs text-slate-500 mt-1">Step 4 — dynamic package + reference</p>
         </div>
 
-        <div className="border border-slate-800 rounded-xl p-4 bg-slate-950/40">
-          <p className="text-xs text-slate-400 uppercase tracking-wider">Package</p>
-          <p className="text-xl font-semibold mt-1">Ignite Setup</p>
-          <p className="text-3xl font-bold text-emerald-400 mt-2">R3,980.00</p>
-        </div>
+        <fieldset className="space-y-2">
+          <legend className="text-xs text-slate-400 uppercase tracking-wider mb-1">
+            Choose package
+          </legend>
+          {PAYFAST_PACKAGES.map((pkg) => {
+            const checked = packageId === pkg.id;
+            return (
+              <label
+                key={pkg.id}
+                className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 cursor-pointer transition ${
+                  checked
+                    ? 'border-purple-500 bg-purple-950/30'
+                    : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="package"
+                    value={pkg.id}
+                    checked={checked}
+                    onChange={() => setPackageId(pkg.id)}
+                    className="accent-purple-500"
+                  />
+                  <div>
+                    <p className="font-medium text-sm">{pkg.name}</p>
+                    <p className="text-xs text-slate-500">{pkg.description}</p>
+                  </div>
+                </div>
+                <span className="font-bold text-emerald-400 whitespace-nowrap">
+                  {formatRand(pkg.amount)}
+                </span>
+              </label>
+            );
+          })}
+        </fieldset>
 
         <form onSubmit={handlePay} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -101,22 +150,32 @@ export default function PayfastTest() {
             </div>
           )}
 
+          {reference && (
+            <div className="bg-emerald-950/30 border border-emerald-500/40 text-emerald-200 rounded-xl p-3 text-sm">
+              <p className="text-xs uppercase tracking-wider text-emerald-300/80">Your reference</p>
+              <p className="font-mono mt-1 break-all">{reference}</p>
+              <p className="text-xs text-emerald-400/70 mt-1">Redirecting to PayFast…</p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={submitting}
             className="w-full bg-gradient-to-br from-purple-600 to-pink-500 text-white px-6 py-3 rounded-xl font-semibold hover:scale-[1.02] transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {submitting ? 'Signing & redirecting…' : 'Pay Now — R3,980.00'}
+            {submitting
+              ? reference ? 'Redirecting…' : 'Signing…'
+              : `Pay Now — ${formatRand(selectedPackage.amount)}`}
           </button>
         </form>
 
         <div className="text-xs text-slate-400 border-t border-slate-800 pt-4 leading-relaxed">
           <p className="font-semibold text-slate-300 mb-1">Test instructions</p>
           <p>
-            Edit the customer fields if you like, then click <strong>Pay Now</strong>. The browser
-            will be redirected to <code className="text-slate-200">sandbox.payfast.co.za</code>{' '}
-            with a signed form. PayFast should pre-fill your name and email on its checkout
-            page. Use sandbox test card{' '}
+            Pick a package (Sandbox Test = R10.00 is selected by default), tweak the customer
+            fields if you like, then click <strong>Pay Now</strong>. You'll see your reference
+            number for ~1 second, then the browser redirects to{' '}
+            <code className="text-slate-200">sandbox.payfast.co.za</code>. Use sandbox test card{' '}
             <code className="text-slate-200">4000 0000 0000 0002</code>, any future expiry, any CVV.
           </p>
         </div>
