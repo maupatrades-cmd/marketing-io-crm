@@ -498,25 +498,6 @@ export default function ClientPortal() {
                       <p className="font-semibold text-white">Invoice {inv.invoice_number || inv.id}</p>
                       <p className="text-sm text-slate-400">R{total.toLocaleString()} due</p>
                     </div>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const res = await base44.functions.invoke('payment-create-checkout', { invoice_id: inv.id });
-                          const url = res?.data?.checkout_url || res?.checkout_url;
-                          if (url) {
-                            window.location.href = url;
-                          } else {
-                            alert('Could not start payment. Please contact support.');
-                          }
-                        } catch (err) {
-                          console.error(err);
-                          alert('Payment system unavailable. Try again or contact support.');
-                        }
-                      }}
-                      className="bg-gradient-to-br from-emerald-600 to-emerald-500 text-white px-5 py-2 rounded-xl font-semibold hover:scale-105 transition"
-                    >
-                      Pay R{total.toLocaleString()} →
-                    </button>
                   </div>
                 );
               })}
