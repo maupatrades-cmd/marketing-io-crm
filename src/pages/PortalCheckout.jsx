@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate, useParams, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { getCurrentUser } from '@/lib/customAuth';
 import {
   DEFAULT_PACKAGE_ID,
   findPackage,
@@ -8,19 +9,26 @@ import {
 } from '@/config/payfastPackages';
 
 // ---------------------------------------------------------------------------
-// Step 5 of 10 — public Marketing iO checkout page.
+// Step 6 of 10 — authenticated portal checkout.
+// Route: /portal/checkout/:packageId.
 //
-// Route: /checkout/:packageId. If :packageId is unknown or inactive we fall
-// back to /checkout/<DEFAULT_PACKAGE_ID> with a <Navigate replace>, so the
-// browser history doesn't accumulate dead URLs.
+// Differences from /checkout/:packageId (Checkout.jsx):
+//   - Requires a logged-in client. Anonymous visitors bounce to
+//     /login?next=/portal/checkout/<packageId> so they land back here after
+//     signing in.
+//   - Pre-fills the form from the client's saved details.
+//   - Sends the session token along with the form so the server-side
+//     payfast-checkout-init function can derive client_id from the session,
+//     NOT from anything the page sends. (Defence-in-depth — the function
+//     ignores any client_id in the body.)
 // ---------------------------------------------------------------------------
 
-const NAME_REGEX  = /^[\p{L}\s\-']{2,50}$/u;       // letters + spaces + - + '
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;  // brief's regex
-const SA_CELL     = /^0[6-8]\d{8}$/;               // SA mobile after normalize
+const NAME_REGEX  = /^[\p{L}\s\-']{2,50}$/u;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SA_CELL     = /^0[6-8]\d{8}$/;
+const SESSION_KEY = 'mio_session_token';
+const REFERENCE_VISIBLE_MS = 1100;
 
-// Strip spaces/dashes/parens, drop a leading +, then convert a leading 27 to
-// 0 — gives a single canonical 0XXXXXXXXX form to validate.
 function normaliseCell(raw) {
   const stripped = String(raw || '').replace(/[\s\-()]+/g, '').replace(/^\+/, '');
   if (/^27\d{9}$/.test(stripped)) return '0' + stripped.slice(2);
@@ -31,30 +39,25 @@ function validateField(name, value) {
   const v = String(value ?? '').trim();
   switch (name) {
     case 'name_first':
-    case 'name_last': {
+    case 'name_last':
       if (!v) return 'Required.';
       if (v.length < 2) return 'Must be at least 2 characters.';
       if (v.length > 50) return 'Must be 50 characters or fewer.';
       if (!NAME_REGEX.test(v)) return 'Letters, spaces, hyphens and apostrophes only.';
       return '';
-    }
-    case 'email_address': {
+    case 'email_address':
       if (!v) return 'Required.';
       if (!EMAIL_REGEX.test(v)) return 'Please enter a valid email address.';
       return '';
-    }
-    case 'cell_number': {
+    case 'cell_number':
       if (!v) return 'Required.';
-      const n = normaliseCell(v);
-      if (!SA_CELL.test(n)) return 'Enter a SA cell number (e.g. 082 345 6789).';
+      if (!SA_CELL.test(normaliseCell(v))) return 'Enter a SA cell number (e.g. 082 345 6789).';
       return '';
-    }
-    case 'company_name': {
+    case 'company_name':
       if (!v) return 'Required.';
       if (v.length < 2) return 'Must be at least 2 characters.';
       if (v.length > 100) return 'Must be 100 characters or fewer.';
       return '';
-    }
     default:
       return '';
   }
@@ -83,76 +86,135 @@ function postSignedFormToPayFast(processUrl, fields) {
   form.submit();
 }
 
-const REFERENCE_VISIBLE_MS = 1100;
+// Pre-fill best-effort from a Client row. We try the obvious shapes; if a
+// field is missing the form just stays blank for the user to fill.
+function prefillFromClient(client) {
+  const fullName = String(client?.contact_person || '').trim();
+  const parts = fullName.split(/\s+/).filter(Boolean);
+  return {
+    name_first:    parts[0] || '',
+    name_last:     parts.length > 1 ? parts.slice(1).join(' ') : '',
+    email_address: String(client?.email || '').trim(),
+    cell_number:   String(client?.phone || '').trim(),
+    company_name:  String(client?.business_name || '').trim(),
+  };
+}
 
-export default function Checkout() {
+export default function PortalCheckout() {
   const { packageId } = useParams();
+  const location = useLocation();
 
-  // Unknown / inactive → bounce to default. `replace` so the bad URL doesn't
-  // sit in browser history.
-  if (!packageId || !isActivePackage(packageId)) {
-    return <Navigate to={`/checkout/${DEFAULT_PACKAGE_ID}`} replace />;
+  const [authState, setAuthState] = useState('checking'); // 'checking' | 'ok' | 'unauthenticated'
+  const [client, setClient] = useState(null);
+  const [loadingClient, setLoadingClient] = useState(true);
+  const [clientError, setClientError] = useState(null);
+
+  // Auth check on mount.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const user = await getCurrentUser();
+      if (cancelled) return;
+      if (!user) {
+        setAuthState('unauthenticated');
+        return;
+      }
+      setAuthState('ok');
+      try {
+        const found = await base44.entities.Client.filter({ client_user_id: user.id });
+        const c = Array.isArray(found) ? found[0] : found;
+        if (!cancelled) setClient(c || null);
+      } catch (err) {
+        console.error('[PortalCheckout] Client lookup failed:', err);
+        if (!cancelled) setClientError('Could not load your client profile.');
+      } finally {
+        if (!cancelled) setLoadingClient(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Bad packageId — bounce to default. Done after we know auth so the
+  // packageId redirect doesn't fire for unauth'd users (cleaner UX).
+  if (packageId && !isActivePackage(packageId)) {
+    return <Navigate to={`/portal/checkout/${DEFAULT_PACKAGE_ID}`} replace />;
+  }
+
+  if (authState === 'checking') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <p className="text-sm text-slate-400">Checking your session…</p>
+      </div>
+    );
+  }
+
+  if (authState === 'unauthenticated') {
+    const next = encodeURIComponent(location.pathname);
+    return <Navigate to={`/login?next=${next}`} replace />;
   }
 
   const pkg = findPackage(packageId);
+  if (!pkg) {
+    return <Navigate to={`/portal/checkout/${DEFAULT_PACKAGE_ID}`} replace />;
+  }
 
-  return <CheckoutForm pkg={pkg} />;
+  return (
+    <CheckoutForm
+      pkg={pkg}
+      client={client}
+      loadingClient={loadingClient}
+      clientError={clientError}
+    />
+  );
 }
 
-function CheckoutForm({ pkg }) {
+function CheckoutForm({ pkg, client, loadingClient, clientError }) {
   const [form, setForm] = useState({
-    name_first:    '',
-    name_last:     '',
-    email_address: '',
-    cell_number:   '',
-    company_name:  '',
+    name_first: '', name_last: '', email_address: '', cell_number: '', company_name: '',
   });
   const [touched, setTouched] = useState({});
   const [agreed, setAgreed] = useState(false);
-  const [phase, setPhase] = useState('idle'); // 'idle' | 'signing' | 'redirecting'
+  const [phase, setPhase] = useState('idle');
   const [reference, setReference] = useState(null);
   const [error, setError] = useState(null);
 
-  const errors = useMemo(
-    () => ({
-      name_first:    validateField('name_first',    form.name_first),
-      name_last:     validateField('name_last',     form.name_last),
-      email_address: validateField('email_address', form.email_address),
-      cell_number:   validateField('cell_number',   form.cell_number),
-      company_name:  validateField('company_name',  form.company_name),
-    }),
-    [form]
-  );
+  // Pre-fill once client is loaded. Empty form fields stay editable.
+  useEffect(() => {
+    if (client) setForm(prefillFromClient(client));
+  }, [client]);
+
+  const errors = useMemo(() => ({
+    name_first:    validateField('name_first',    form.name_first),
+    name_last:     validateField('name_last',     form.name_last),
+    email_address: validateField('email_address', form.email_address),
+    cell_number:   validateField('cell_number',   form.cell_number),
+    company_name:  validateField('company_name',  form.company_name),
+  }), [form]);
 
   const formValid = Object.values(errors).every((e) => !e);
-  const canSubmit = formValid && agreed && phase === 'idle';
+  const canSubmit = formValid && agreed && phase === 'idle' && !loadingClient;
 
-  const showRetainer =
-    pkg.contract_months > 0 && Number(pkg.monthly_retainer) > 0;
+  const showRetainer = pkg.contract_months > 0 && Number(pkg.monthly_retainer) > 0;
 
-  const setField = (key) => (e) => {
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
-  };
-  const markTouched = (key) => () =>
-    setTouched((prev) => ({ ...prev, [key]: true }));
+  const setField = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
+  const markTouched = (key) => () => setTouched((p) => ({ ...p, [key]: true }));
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     if (!canSubmit) {
-      // Reveal all errors on a forced submit.
       setTouched({
         name_first: true, name_last: true, email_address: true,
         cell_number: true, company_name: true,
       });
       return;
     }
-
     setPhase('signing');
     try {
-      // payfast-checkout-init does the lookup-or-create Client step AND the
-      // pending Payment row write AND the signing in a single round trip.
-      // Anonymous flow: no session_token, server creates a Client(status='lead').
+      const sessionToken = localStorage.getItem(SESSION_KEY) || '';
+      // The server uses session_token to derive client_id authoritatively —
+      // we deliberately do NOT send a client_id from here (it would be
+      // ignored anyway).
       const res = await base44.functions.invoke('payfast-checkout-init', {
         package_id:    pkg.id,
         name_first:    form.name_first.trim(),
@@ -160,10 +222,11 @@ function CheckoutForm({ pkg }) {
         email_address: form.email_address.trim(),
         cell_number:   normaliseCell(form.cell_number),
         company_name:  form.company_name.trim(),
+        session_token: sessionToken,
       });
       const data = res?.data ?? res;
       if (!data?.fields || !data?.process_url) {
-        console.error('[Checkout] payfast-checkout-init returned no fields/process_url:', res);
+        console.error('[PortalCheckout] payfast-checkout-init returned no fields/process_url:', res);
         setError(data?.error || 'Could not generate a secure payment link. Please try again.');
         setPhase('idle');
         return;
@@ -174,7 +237,7 @@ function CheckoutForm({ pkg }) {
         postSignedFormToPayFast(data.process_url, data.fields);
       }, REFERENCE_VISIBLE_MS);
     } catch (err) {
-      console.error('[Checkout] sign request failed:', err);
+      console.error('[PortalCheckout] init failed:', err);
       setError('We could not reach our payment system. Please try again in a moment.');
       setPhase('idle');
     }
@@ -183,90 +246,48 @@ function CheckoutForm({ pkg }) {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
-        {/* ============== Package summary ============== */}
         <header className="mb-8">
           <CategoryBadge category={pkg.category} />
-          <h1 className="text-3xl sm:text-4xl font-bold gradient-text mt-3">
-            {pkg.name}
-          </h1>
+          <h1 className="text-3xl sm:text-4xl font-bold gradient-text mt-3">{pkg.name}</h1>
           <div className="mt-4">
             <p className="text-xs text-slate-400 uppercase tracking-wider">Once-off setup fee</p>
-            <p className="text-4xl sm:text-5xl font-bold text-emerald-400 mt-1">
-              {formatRand(pkg.amount)}
-            </p>
+            <p className="text-4xl sm:text-5xl font-bold text-emerald-400 mt-1">{formatRand(pkg.amount)}</p>
             {showRetainer && (
               <p className="text-sm text-slate-400 mt-2">
                 Then{' '}
-                <span className="text-slate-200 font-semibold">
-                  {formatRand(pkg.monthly_retainer)}/month
-                </span>{' '}
+                <span className="text-slate-200 font-semibold">{formatRand(pkg.monthly_retainer)}/month</span>{' '}
                 for {pkg.contract_months} months
                 <span className="text-slate-500"> (debit order, billed separately)</span>
               </p>
             )}
           </div>
           <p className="mt-5 text-sm text-slate-300 leading-relaxed">{pkg.description}</p>
+          {client?.business_name && (
+            <p className="mt-3 text-xs text-slate-500">
+              Paying as <span className="text-slate-300 font-semibold">{client.business_name}</span>
+            </p>
+          )}
         </header>
 
-        {/* ============== Form ============== */}
         <form onSubmit={onSubmit} noValidate className="space-y-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8">
           <h2 className="text-lg font-semibold text-slate-100">Your details</h2>
 
+          {clientError && (
+            <div className="bg-amber-950/40 border border-amber-500/40 text-amber-200 rounded-xl p-3 text-sm">
+              {clientError}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field
-              label="First name"
-              value={form.name_first}
-              onChange={setField('name_first')}
-              onBlur={markTouched('name_first')}
-              error={touched.name_first ? errors.name_first : ''}
-              autoComplete="given-name"
-            />
-            <Field
-              label="Last name"
-              value={form.name_last}
-              onChange={setField('name_last')}
-              onBlur={markTouched('name_last')}
-              error={touched.name_last ? errors.name_last : ''}
-              autoComplete="family-name"
-            />
+            <Field label="First name" value={form.name_first} onChange={setField('name_first')} onBlur={markTouched('name_first')} error={touched.name_first ? errors.name_first : ''} autoComplete="given-name" />
+            <Field label="Last name"  value={form.name_last}  onChange={setField('name_last')}  onBlur={markTouched('name_last')}  error={touched.name_last ? errors.name_last : ''}  autoComplete="family-name" />
           </div>
+          <Field label="Email address" type="email" value={form.email_address} onChange={setField('email_address')} onBlur={markTouched('email_address')} error={touched.email_address ? errors.email_address : ''} autoComplete="email" />
+          <Field label="Cell number" value={form.cell_number} onChange={setField('cell_number')} onBlur={markTouched('cell_number')} error={touched.cell_number ? errors.cell_number : ''} inputMode="tel" autoComplete="tel" help="South African mobile — e.g. 082 345 6789, +27 82 345 6789." />
+          <Field label="Company name" value={form.company_name} onChange={setField('company_name')} onBlur={markTouched('company_name')} error={touched.company_name ? errors.company_name : ''} autoComplete="organization" />
 
-          <Field
-            label="Email address"
-            type="email"
-            value={form.email_address}
-            onChange={setField('email_address')}
-            onBlur={markTouched('email_address')}
-            error={touched.email_address ? errors.email_address : ''}
-            autoComplete="email"
-          />
-          <Field
-            label="Cell number"
-            value={form.cell_number}
-            onChange={setField('cell_number')}
-            onBlur={markTouched('cell_number')}
-            error={touched.cell_number ? errors.cell_number : ''}
-            inputMode="tel"
-            autoComplete="tel"
-            help="South African mobile — e.g. 082 345 6789, +27 82 345 6789."
-          />
-          <Field
-            label="Company name"
-            value={form.company_name}
-            onChange={setField('company_name')}
-            onBlur={markTouched('company_name')}
-            error={touched.company_name ? errors.company_name : ''}
-            autoComplete="organization"
-          />
-
-          {/* Terms */}
           <label className="flex items-start gap-3 text-sm text-slate-300 select-none">
-            <input
-              type="checkbox"
-              checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
-              className="mt-1 accent-purple-500"
-            />
+            <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1 accent-purple-500" />
             <span>
               I have read and agree to the{' '}
               <a href="#" className="text-purple-300 underline hover:text-purple-200">Service Agreement</a>,{' '}
@@ -276,11 +297,8 @@ function CheckoutForm({ pkg }) {
           </label>
 
           {error && (
-            <div className="bg-red-950/40 border border-red-500/40 text-red-300 rounded-xl p-3 text-sm">
-              {error}
-            </div>
+            <div className="bg-red-950/40 border border-red-500/40 text-red-300 rounded-xl p-3 text-sm">{error}</div>
           )}
-
           {phase === 'redirecting' && reference && (
             <div className="bg-emerald-950/30 border border-emerald-500/40 text-emerald-200 rounded-xl p-3 text-sm">
               <p className="text-xs uppercase tracking-wider text-emerald-300/80">Reference</p>
@@ -295,15 +313,13 @@ function CheckoutForm({ pkg }) {
             className="w-full bg-gradient-to-br from-purple-600 to-pink-500 text-white px-6 py-3 rounded-xl font-semibold transition hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {phase === 'signing'
-              ? 'Generating secure payment link…'
+              ? 'Setting up your payment…'
               : phase === 'redirecting'
                 ? 'Redirecting…'
                 : `Pay Now — ${formatRand(pkg.amount)}`}
           </button>
 
-          <p className="text-center text-xs text-slate-500">
-            Secure payment powered by PayFast
-          </p>
+          <p className="text-center text-xs text-slate-500">Secure payment powered by PayFast</p>
         </form>
 
         <footer className="mt-10 text-center">
@@ -348,4 +364,3 @@ function Field({ label, value, onChange, onBlur, error, type = 'text', inputMode
     </label>
   );
 }
-
