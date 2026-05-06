@@ -88,6 +88,7 @@ import OwnerCampaigns from './pages/OwnerCampaigns';
 import Unsubscribe from './pages/Unsubscribe';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancelled from './pages/PaymentCancelled';
+import PayfastTest from './pages/PayfastTest';
 
 
 
@@ -212,6 +213,7 @@ const AuthenticatedApp = () => {
       
       <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+      <Route path="/payfast-test" element={<PayfastTest />} />
 
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
