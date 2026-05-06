@@ -342,8 +342,29 @@ Deno.serve(async (req) => {
     }
   }
 
-  const clientId   = String(client.id);
-  const clientName = String(client.business_name || client.contact_person || emailLower || '');
+  // Defensive unwrap — some Base44 SDK paths return { data: <row> } rather
+  // than the row directly. Both shapes carry `.id` when unwrapped.
+  const clientRow = client?.id ? client : (client?.data?.id ? client.data : client);
+  const clientId   = String(clientRow?.id ?? '');
+  const clientName = String(
+    clientRow?.business_name || clientRow?.contact_person || emailLower || ''
+  );
+
+  if (!clientId) {
+    console.error('[payfast-checkout-init] resolved Client has no id', { flow, client });
+    return Response.json(
+      {
+        error: 'Could not resolve your client record. Please try again.',
+        _debug: {
+          stage: 'client_id_resolve',
+          flow,
+          client_shape_keys: client && typeof client === 'object' ? Object.keys(client) : null,
+          client_raw: client ?? null,
+        },
+      },
+      { status: 500 }
+    );
+  }
 
   // ---- Build the signed PayFast field set ---------------------------------
   const mPaymentId = generateMPaymentId();
@@ -384,24 +405,53 @@ Deno.serve(async (req) => {
   const signedPayloadHash = createHash('sha256').update(queryString).digest('hex');
 
   // ---- Persist the pending Payment row ------------------------------------
+  // Build payload separately so we can echo it in the debug response if the
+  // create fails. NOTE: this _debug payload is intentionally verbose during
+  // step 6 bring-up; remove once we're confident the fields line up.
+  const paymentPayload: Record<string, unknown> = {
+    client_id:           clientId,
+    client_name:         clientName,
+    amount:              Number(pkg.amount),
+    currency:            'ZAR',
+    type:                mapPackageToPaymentType(pkg),
+    status:              'pending',
+    gateway:             'payfast',
+    gateway_reference:   mPaymentId,
+    package_id:          pkg.id,
+    signed_payload_hash: signedPayloadHash,
+    commission_calculated: false,
+  };
+
+  let createdPayment: any = null;
   try {
-    await base44.asServiceRole.entities.Payment.create({
-      client_id:           clientId,
-      client_name:         clientName,
-      amount:              Number(pkg.amount),
-      currency:            'ZAR',
-      type:                mapPackageToPaymentType(pkg),
-      status:              'pending',
-      gateway:             'payfast',
-      gateway_reference:   mPaymentId,
-      package_id:          pkg.id,
-      signed_payload_hash: signedPayloadHash,
-      commission_calculated: false,
+    createdPayment = await base44.asServiceRole.entities.Payment.create(paymentPayload);
+  } catch (err: any) {
+    // Capture every part of the error we can — Base44's SDK has been seen to
+    // wrap server errors in any of: err.response.data, err.body, err.cause,
+    // err.errors. Surface them all so the failure cause is unambiguous.
+    const debug: Record<string, unknown> = {
+      message:    err?.message,
+      name:       err?.name,
+      status:     err?.status ?? err?.response?.status,
+      statusText: err?.statusText ?? err?.response?.statusText,
+      data:       err?.response?.data ?? err?.data ?? err?.body ?? null,
+      errors:     err?.errors ?? null,
+      cause:      err?.cause ? String(err.cause) : null,
+      stack:      typeof err?.stack === 'string' ? err.stack.split('\n').slice(0, 8).join('\n') : null,
+    };
+    console.error('[payfast-checkout-init] Payment.create failed', {
+      payload: paymentPayload,
+      error:   debug,
     });
-  } catch (err) {
-    console.error('[payfast-checkout-init] Payment.create failed:', err);
     return Response.json(
-      { error: 'Could not record the pending payment. Please try again.' },
+      {
+        error: 'Could not record the pending payment. Please try again.',
+        _debug: {
+          stage:   'Payment.create',
+          payload: paymentPayload,
+          error:   debug,
+        },
+      },
       { status: 500 }
     );
   }
