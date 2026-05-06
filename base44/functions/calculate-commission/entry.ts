@@ -3,8 +3,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // =============================================================================
 // Marketing iO Commission Engine — Working System v1.0 (locked).
 //
-// Triggered by payment-webhook-payfast on a successful PayFast payment. Walks
-// every line item on the related invoice, applies the rate per product type,
+// Triggered by the payment webhook on a successful payment. Walks every line
+// item on the related invoice, applies the rate per product type,
 // writes Commission rows for the closer + (optional) CPC sourcer + admin, and
 // kicks the milestone tracker for the closer.
 //

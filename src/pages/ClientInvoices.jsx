@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { getCurrentUser } from "@/lib/customAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, FileText, AlertCircle, CreditCard, Loader2, Banknote, XCircle } from "lucide-react";
+import { Download, FileText, AlertCircle, Banknote, XCircle } from "lucide-react";
 import EftModal from "@/components/clientportal/EftModal";
 import CancelInvoiceModal from "@/components/clientportal/CancelInvoiceModal";
 
@@ -17,8 +16,6 @@ const BANK_DETAILS = {
   branchCode: "632005"
 };
 
-// Mirrors the status gate inside base44/functions/payment-create-checkout/entry.ts
-// so we never invoke a call the function will reject.
 const PAYABLE_STATUSES = ['issued', 'pending_payment', 'sent', 'overdue'];
 
 export default function ClientInvoices() {
@@ -28,7 +25,6 @@ export default function ClientInvoices() {
   const [loading, setLoading] = useState(true);
   const [selectedInv, setSelectedInv] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [payingInvoiceId, setPayingInvoiceId] = useState(null);
   const [eftInvoice, setEftInvoice] = useState(null);
   const [cancelInvoice, setCancelInvoice] = useState(null);
 
@@ -59,33 +55,6 @@ export default function ClientInvoices() {
     }, 30000);
     return () => clearInterval(interval);
   }, [client]);
-
-  const handlePayInvoice = async (invoice) => {
-    if (!invoice?.id) return;
-    if (payingInvoiceId) return; // double-click guard
-    const total = Number(invoice.total ?? invoice.total_amount ?? invoice.amount ?? 0);
-    if (total <= 0) {
-      toast.error('This invoice has no amount due. Please contact support.');
-      return;
-    }
-    setPayingInvoiceId(invoice.id);
-    try {
-      const res = await base44.functions.invoke('payment-create-checkout', { invoice_id: invoice.id });
-      const url = res?.checkout_url ?? res?.data?.checkout_url;
-      if (!url) {
-        console.error('[ClientInvoices.handlePayInvoice] no checkout_url:', res);
-        toast.error('Payment system unavailable. Please try again or contact support.');
-        return;
-      }
-      window.location.href = url;
-    } catch (err) {
-      console.error('[ClientInvoices.handlePayInvoice]', err);
-      toast.error('Could not start checkout. Please try again or contact support.');
-    } finally {
-      // Redirect usually unloads the page first; this clears state on error paths.
-      setPayingInvoiceId(null);
-    }
-  };
 
   const getAgingStatus = (dueDate) => {
     const today = new Date();
@@ -214,44 +183,7 @@ export default function ClientInvoices() {
                 </div>
               </div>
 
-              {/* Actions — Pay Now wired to PayFast checkout (was disabled "Coming Soon" stub) */}
               <div className="space-y-2">
-                {(() => {
-                  const total = Number(selectedInv.total ?? selectedInv.total_amount ?? selectedInv.amount ?? 0);
-                  const payable = PAYABLE_STATUSES.includes(selectedInv.status);
-                  const isPaying = payingInvoiceId === selectedInv.id;
-                  if (payable) {
-                    return (
-                      <Button
-                        className="w-full gradient-bg text-white gap-2"
-                        onClick={() => handlePayInvoice(selectedInv)}
-                        disabled={isPaying}
-                      >
-                        {isPaying ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" /> Starting checkout…
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="w-4 h-4" /> Pay R{total.toLocaleString()}
-                          </>
-                        )}
-                      </Button>
-                    );
-                  }
-                  return (
-                    <Button
-                      className="w-full gradient-bg text-white gap-2"
-                      disabled
-                      title={`Online payment isn't available for ${selectedInv.status} invoices.`}
-                    >
-                      <CreditCard className="w-4 h-4" /> Pay Now ({selectedInv.status})
-                    </Button>
-                  );
-                })()}
-
-                {/* Pay via EFT — alternative to PayFast. Available for any invoice
-                    that hasn't been settled yet (matches the same status set as Pay Now). */}
                 {PAYABLE_STATUSES.includes(selectedInv.status) && (
                   <Button
                     variant="outline"
@@ -262,7 +194,7 @@ export default function ClientInvoices() {
                   </Button>
                 )}
 
-                {/* Cancel invoice — only for unpaid invoices (same status set as payable). */}
+                {/* Cancel invoice — only for unpaid invoices. */}
                 {PAYABLE_STATUSES.includes(selectedInv.status) && (
                   <Button
                     variant="outline"

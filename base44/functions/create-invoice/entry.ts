@@ -135,8 +135,7 @@ Deno.serve(async (req) => {
     deal_id: deal_id || null,
     closer_id: resolvedCloserId,
     lead_source_user_id: lead_source_user_id || null,
-    lead_source_type: lead_source_type || 'self_signup',
-    payment_method: 'payfast'
+    lead_source_type: lead_source_type || 'self_signup'
   });
 
   if (send_email) {
@@ -150,7 +149,7 @@ Deno.serve(async (req) => {
     user_id: client.client_user_id || client.app_user_id || '',
     client_name: client.business_name || '',
     title: `Invoice ${invoice_number} issued`,
-    body: `R${Number(total).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due${due_date ? ' by ' + due_date : ''}. Pay online via PayFast or EFT.`,
+    body: `R${Number(total).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} due${due_date ? ' by ' + due_date : ''}.`,
     icon: 'FileText',
     category: 'info',
     source: 'invoice',
