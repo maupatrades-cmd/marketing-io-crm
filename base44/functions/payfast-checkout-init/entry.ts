@@ -4,6 +4,11 @@ import { createHash } from 'node:crypto';
 // =============================================================================
 // PayFast checkout init — Step 6 of 10.
 //
+// BUILD MARKER (temporary, step 6 debug). Bump on every push so the live
+// deployed version is unmistakable from the response body. Strip once we
+// have a green Payment.create.
+const BUILD_MARKER = 'step6-debug-v3-unwrap';
+//
 // Single server-side entry point for both checkout flows:
 //   - Authenticated portal flow (/portal/checkout/:packageId)
 //       client_id is derived from the session token; any client_id sent in the
@@ -90,6 +95,27 @@ const OPTIONAL_FIELDS = new Set([
   'custom_str3',
 ]);
 
+// Base44 entity SDK has been observed to return entity rows in any of three
+// shapes:
+//   - the row itself ({ id, ...fields })
+//   - an array of rows ([{...}, {...}])
+//   - an envelope ({ data: <row> } or { data: [<row>, ...] })
+// Older `Array.isArray(x) ? x[0] : x` is wrong for the envelope shape: it
+// would pick the envelope itself, leaving x.id undefined and causing silent
+// downstream failures (which is exactly what we're hunting). These helpers
+// pick the row regardless of shape.
+function unwrapOne(result: any): any {
+  if (result == null) return null;
+  if (Array.isArray(result)) return result[0] ?? null;
+  if (typeof result === 'object') {
+    if (result.id) return result;
+    const inner = (result as any).data;
+    if (Array.isArray(inner)) return inner[0] ?? null;
+    if (inner && typeof inner === 'object' && inner.id) return inner;
+  }
+  return null;
+}
+
 // PHP-style urlencode equivalent (spaces → '+', uppercase hex).
 function payfastUrlEncode(value: string): string {
   return encodeURIComponent(value).replace(/%20/g, '+');
@@ -163,7 +189,7 @@ async function resolveSessionClient(base44: any, sessionToken: string) {
     const appUsers = await base44.asServiceRole.entities.AppUser.filter({
       session_token: sessionToken,
     });
-    user = Array.isArray(appUsers) ? appUsers[0] : appUsers;
+    user = unwrapOne(appUsers);
   } catch (err) {
     console.error('[payfast-checkout-init] AppUser session lookup failed:', err);
   }
@@ -172,7 +198,7 @@ async function resolveSessionClient(base44: any, sessionToken: string) {
       const legacy = await base44.asServiceRole.entities.User.filter({
         session_token: sessionToken,
       });
-      user = Array.isArray(legacy) ? legacy[0] : legacy;
+      user = unwrapOne(legacy);
     } catch (err) {
       console.error('[payfast-checkout-init] User session lookup failed:', err);
     }
@@ -191,7 +217,7 @@ async function resolveSessionClient(base44: any, sessionToken: string) {
   ].filter(Boolean) as Array<Record<string, string>>) {
     try {
       const found = await base44.asServiceRole.entities.Client.filter(filter);
-      const client = Array.isArray(found) ? found[0] : found;
+      const client = unwrapOne(found);
       if (client) return { client, user };
     } catch (err) {
       console.error('[payfast-checkout-init] Client lookup failed for', filter, err);
@@ -211,7 +237,7 @@ async function lookupOrCreateClientByEmail(
   let client: any = null;
   try {
     const found = await base44.asServiceRole.entities.Client.filter({ email: emailLower });
-    client = Array.isArray(found) ? found[0] : found;
+    client = unwrapOne(found);
   } catch (err) {
     console.error('[payfast-checkout-init] Client.filter by email failed:', err);
   }
@@ -228,7 +254,15 @@ async function lookupOrCreateClientByEmail(
       status:         'lead',
       source:         'checkout',
     });
-    return created;
+    const row = unwrapOne(created);
+    if (!row?.id) {
+      console.error(
+        '[payfast-checkout-init] Client.create returned malformed object:',
+        created
+      );
+      return null;
+    }
+    return row;
   } catch (err) {
     console.error('[payfast-checkout-init] Client.create failed:', err);
     return null;
@@ -342,8 +376,29 @@ Deno.serve(async (req) => {
     }
   }
 
-  const clientId   = String(client.id);
-  const clientName = String(client.business_name || client.contact_person || emailLower || '');
+  // Defensive: even after unwrap, sanity-check we have an id. If not, fail
+  // loud with the raw client shape so we can see what came back.
+  const clientId   = String(client?.id ?? '');
+  const clientName = String(
+    client?.business_name || client?.contact_person || emailLower || ''
+  );
+
+  if (!clientId) {
+    console.error('[payfast-checkout-init] resolved Client has no id', { flow, client });
+    return Response.json(
+      {
+        error: `Could not resolve your client record (${BUILD_MARKER}). Please try again.`,
+        _build: BUILD_MARKER,
+        _debug: {
+          stage: 'client_id_resolve',
+          flow,
+          client_shape_keys: client && typeof client === 'object' ? Object.keys(client) : null,
+          client_raw: client ?? null,
+        },
+      },
+      { status: 500 }
+    );
+  }
 
   // ---- Build the signed PayFast field set ---------------------------------
   const mPaymentId = generateMPaymentId();
@@ -384,24 +439,56 @@ Deno.serve(async (req) => {
   const signedPayloadHash = createHash('sha256').update(queryString).digest('hex');
 
   // ---- Persist the pending Payment row ------------------------------------
+  // Build payload separately so we can echo it in the debug response if the
+  // create fails. NOTE: this _debug payload is intentionally verbose during
+  // step 6 bring-up; remove once we're confident the fields line up.
+  const paymentPayload: Record<string, unknown> = {
+    client_id:           clientId,
+    client_name:         clientName,
+    amount:              Number(pkg.amount),
+    currency:            'ZAR',
+    type:                mapPackageToPaymentType(pkg),
+    status:              'pending',
+    gateway:             'payfast',
+    gateway_reference:   mPaymentId,
+    package_id:          pkg.id,
+    signed_payload_hash: signedPayloadHash,
+    commission_calculated: false,
+  };
+
   try {
-    await base44.asServiceRole.entities.Payment.create({
-      client_id:           clientId,
-      client_name:         clientName,
-      amount:              Number(pkg.amount),
-      currency:            'ZAR',
-      type:                mapPackageToPaymentType(pkg),
-      status:              'pending',
-      gateway:             'payfast',
-      gateway_reference:   mPaymentId,
-      package_id:          pkg.id,
-      signed_payload_hash: signedPayloadHash,
-      commission_calculated: false,
+    await base44.asServiceRole.entities.Payment.create(paymentPayload);
+  } catch (err: any) {
+    // Capture every part of the error we can — Base44's SDK has been seen
+    // to wrap server errors in any of: err.response.data, err.body,
+    // err.cause, err.errors. Surface them all so the failure cause is
+    // unambiguous.
+    const debug: Record<string, unknown> = {
+      message:    err?.message,
+      name:       err?.name,
+      status:     err?.status ?? err?.response?.status,
+      statusText: err?.statusText ?? err?.response?.statusText,
+      data:       err?.response?.data ?? err?.data ?? err?.body ?? null,
+      errors:     err?.errors ?? null,
+      cause:      err?.cause ? String(err.cause) : null,
+      stack:      typeof err?.stack === 'string'
+        ? err.stack.split('\n').slice(0, 8).join('\n')
+        : null,
+    };
+    console.error('[payfast-checkout-init] Payment.create failed', {
+      payload: paymentPayload,
+      error:   debug,
     });
-  } catch (err) {
-    console.error('[payfast-checkout-init] Payment.create failed:', err);
     return Response.json(
-      { error: 'Could not record the pending payment. Please try again.' },
+      {
+        error: `Could not record the pending payment (${BUILD_MARKER}). Please try again.`,
+        _build: BUILD_MARKER,
+        _debug: {
+          stage:   'Payment.create',
+          payload: paymentPayload,
+          error:   debug,
+        },
+      },
       { status: 500 }
     );
   }
@@ -412,5 +499,6 @@ Deno.serve(async (req) => {
     m_payment_id: mPaymentId,
     client_id: clientId,
     flow,
+    _build: BUILD_MARKER,
   });
 });
