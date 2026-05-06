@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { PAYFAST_PACKAGES, DEFAULT_PACKAGE_ID } from '@/config/payfastPackages';
+import {
+  PAYFAST_PACKAGES,
+  TEST_PAGE_PACKAGE_IDS,
+} from '@/config/payfastPackages';
+
+// /payfast-test is the developer debug page. Filtered to a small subset of
+// the real catalogue so the form stays scannable.
+const DEBUG_PACKAGES = TEST_PAGE_PACKAGE_IDS
+  .map((id) => PAYFAST_PACKAGES.find((p) => p.id === id))
+  .filter(Boolean);
+const DEBUG_DEFAULT_ID = DEBUG_PACKAGES[0]?.id;
 
 // Step 4 of 10 — PayFast test form with dynamic package + m_payment_id.
 //
@@ -46,14 +56,14 @@ function formatRand(amount) {
 }
 
 export default function PayfastTest() {
-  const [packageId, setPackageId] = useState(DEFAULT_PACKAGE_ID);
+  const [packageId, setPackageId] = useState(DEBUG_DEFAULT_ID);
   const [customer, setCustomer] = useState(DEFAULTS);
   const [submitting, setSubmitting] = useState(false);
   const [reference, setReference] = useState(null);
   const [error, setError] = useState(null);
 
-  const selectedPackage = PAYFAST_PACKAGES.find((p) => p.id === packageId)
-    || PAYFAST_PACKAGES[0];
+  const selectedPackage = DEBUG_PACKAGES.find((p) => p.id === packageId)
+    || DEBUG_PACKAGES[0];
 
   const handleChange = (key) => (e) =>
     setCustomer((prev) => ({ ...prev, [key]: e.target.value }));
@@ -103,7 +113,7 @@ export default function PayfastTest() {
           <legend className="text-xs text-slate-400 uppercase tracking-wider mb-1">
             Choose package
           </legend>
-          {PAYFAST_PACKAGES.map((pkg) => {
+          {DEBUG_PACKAGES.map((pkg) => {
             const checked = packageId === pkg.id;
             return (
               <label

@@ -1,25 +1,26 @@
 import { createHash } from 'node:crypto';
 
 // =============================================================================
-// PayFast signature generator — Step 4 of 10.
+// PayFast signature generator — Step 5 of 10.
 //
-// Step 3 added MD5 signing. Step 4 adds:
-//   - Server-side package lookup (amount + names + description come from a
-//     trusted server source, never from the browser).
-//   - Unique m_payment_id per transaction, generated server-side only.
-//   - custom_str1 / custom_str2 hooks for reconciliation metadata.
+// Layered on top of step 4:
+//   - PACKAGES catalogue is now the full Marketing iO product set (5 core + 7
+//     add-ons + sandbox test). Mirrored from src/config/payfastPackages.js;
+//     KEEP THE TWO COPIES IN SYNC.
+//   - Adds company_name input → custom_str3 on the signed form.
+//   - Field order extended to PayFast's full 16-field spec.
 //
-// PayFast's 6 signing rules still apply:
+// PayFast's 6 signing rules (unchanged):
 //   1. Take all form fields except `signature`.
 //   2. Use PayFast's documented field order — NOT alphabetical.
 //   3. URL-encode each value PHP-style (spaces → '+', uppercase hex).
-//   4. Build query `key1=value1&key2=value2&...`.
+//   4. Build `key1=value1&key2=value2&...`.
 //   5. Append `&passphrase=URL_ENCODED_PASSPHRASE`.
 //   6. MD5 → 32 lowercase hex chars.
 //
-// Skip-empty rule: any field that's empty string is excluded from BOTH the
-// signed string and the POSTed form. That keeps "what's signed" === "what's
-// POSTed", which is what PayFast cross-checks before accepting the request.
+// Skip-empty rule: any field whose trimmed value is "" is excluded from BOTH
+// the signed string AND the POSTed form, so PayFast's "what's signed must be
+// what's POSTed" check stays satisfied.
 // =============================================================================
 
 // Mirrored from src/config/payfastPackages.js — keep in sync until we move
@@ -29,29 +30,27 @@ const PACKAGES: Array<{
   name: string;
   description: string;
   amount: string;
+  active?: boolean;
 }> = [
-  {
-    id: 'ignite',
-    name: 'Ignite Setup',
-    description: 'Marketing iO Ignite package - one-time setup fee',
-    amount: '3980.00',
-  },
-  {
-    id: 'spark',
-    name: 'Spark Setup',
-    description: 'Marketing iO Spark package - one-time setup fee',
-    amount: '1980.00',
-  },
-  {
-    id: 'ignite-test',
-    name: 'Sandbox Test',
-    description: 'Sandbox test transaction',
-    amount: '10.00',
-  },
+  // Core
+  { id: 'ignite',         name: 'Ignite Setup',                   description: 'Marketing iO Ignite package - one-time setup fee. R490/month retainer billed separately on debit order for 12 months.',                              amount: '3980.00', active: true },
+  { id: 'accelerate',     name: 'Accelerate Setup',               description: 'Marketing iO Accelerate package - one-time setup fee. R890/month retainer billed separately on debit order for 12 months.',                          amount: '6500.00', active: true },
+  { id: 'dominate',       name: 'Dominate Setup',                 description: 'Marketing iO Dominate package - one-time setup fee. R1,490/month retainer billed separately on debit order for 12 months.',                          amount: '9800.00', active: true },
+  { id: 'street-pulse',   name: 'Street Pulse Setup',             description: 'Marketing iO Street Pulse - flyer deployment campaign setup. R4,000/month retainer billed separately for the 3-month locked term.',                  amount: '700.00',  active: true },
+  { id: 'township-pulse', name: 'Township Pulse',                 description: 'Marketing iO Township Pulse - once-off township activation campaign. No monthly retainer.',                                                          amount: '2200.00', active: true },
+  // Add-ons
+  { id: 'ai-chatbot',              name: 'AI Chatbot Setup',                description: 'AI-powered chatbot for your website. Setup fee includes configuration, training, and integration. R350/month maintenance billed separately.', amount: '6500.00', active: true },
+  { id: 'whatsapp-automation',     name: 'WhatsApp Business Automation',    description: 'Automated WhatsApp Business setup with response flows and lead capture. R200/month maintenance billed separately.',                          amount: '3500.00', active: true },
+  { id: 'google-business-profile', name: 'Google Business Profile Setup',   description: 'Google Business Profile creation, verification, photos, and category setup. Once-off, no monthly fees.',                                     amount: '800.00',  active: true },
+  { id: 'sms-marketing',           name: 'SMS Marketing Setup',             description: 'SMS marketing platform setup and integration. R500/month base + per-SMS rate billed separately.',                                            amount: '500.00',  active: true },
+  { id: 'marketing-audit',         name: 'Marketing Audit & Report',        description: 'Comprehensive marketing audit with detailed report and recommendations. Once-off deliverable.',                                              amount: '2000.00', active: true },
+  { id: 'competitor-analysis',     name: 'Competitor Analysis Report',      description: 'Detailed competitor analysis with market positioning insights. Once-off deliverable.',                                                       amount: '1500.00', active: true },
+  { id: 'crm-training',            name: 'CRM Training & Setup',            description: 'CRM platform training and initial setup for your team. Once-off deliverable.',                                                              amount: '3000.00', active: true },
+  // Test
+  { id: 'ignite-test',    name: 'Sandbox Test',                   description: 'R10 sandbox test transaction (DO NOT use in production).',                                                                                            amount: '10.00',   active: true },
 ];
 
-// PayFast's documented field order for the Standard / Redirect flow with
-// custom + tracking fields. DO NOT alphabetize.
+// PayFast's full 16-field documented order. DO NOT alphabetize.
 const FIELD_ORDER = [
   'merchant_id',
   'merchant_key',
@@ -68,6 +67,7 @@ const FIELD_ORDER = [
   'item_description',
   'custom_str1',
   'custom_str2',
+  'custom_str3',
 ] as const;
 
 // Optional fields — empty values get dropped from BOTH signature and form.
@@ -79,6 +79,7 @@ const OPTIONAL_FIELDS = new Set([
   'item_description',
   'custom_str1',
   'custom_str2',
+  'custom_str3',
 ]);
 
 // PHP-style urlencode equivalent.
@@ -89,7 +90,6 @@ const OPTIONAL_FIELDS = new Set([
 //   "Test & Co."         → "Test+%26+Co."
 //   "0823456789"         → "0823456789"
 //   "3980.00"            → "3980.00"
-//   "https://x.co/a b"   → "https%3A%2F%2Fx.co%2Fa+b"
 function payfastUrlEncode(value: string): string {
   return encodeURIComponent(value).replace(/%20/g, '+');
 }
@@ -107,9 +107,6 @@ function buildSignature(fields: Record<string, string>, passphrase: string): str
   return createHash('md5').update(stringToHash).digest('hex');
 }
 
-// `MIO-YYYYMMDDTHHmmss-XXXXXX` — server-time UTC + 6 random uppercase
-// alphanumeric chars. ~2.1B IDs per second-bucket; we expect <<1 per second
-// in practice, so collisions are vanishingly unlikely.
 const MID_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 function randomToken(len: number): string {
   const buf = new Uint8Array(len);
@@ -193,27 +190,27 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Required: package_id. Customer fields are optional.
+  // Required: package_id. Customer fields are optional at the function
+  // boundary — the page enforces them, but blank values won't break signing.
   const packageId    = String(body?.package_id ?? '').trim();
   const nameFirst    = String(body?.name_first ?? '').trim();
   const nameLast     = String(body?.name_last ?? '').trim();
   const emailAddress = String(body?.email_address ?? '').trim();
   const cellNumber   = String(body?.cell_number ?? '').trim();
+  const companyName  = String(body?.company_name ?? '').trim();
 
   if (!packageId) {
     return Response.json({ error: 'package_id is required' }, { status: 400 });
   }
 
   const pkg = PACKAGES.find((p) => p.id === packageId);
-  if (!pkg) {
+  if (!pkg || pkg.active === false) {
     return Response.json(
-      { error: `Unknown package_id: ${packageId}` },
+      { error: `Unknown or inactive package_id: ${packageId}` },
       { status: 400 }
     );
   }
 
-  // Sanity check the catalogue itself — guards against typos when this list
-  // is hand-edited.
   if (!/^\d+\.\d{2}$/.test(pkg.amount)) {
     console.error('[payfast-sign] invalid amount in PACKAGES catalogue:', pkg);
     return Response.json(
@@ -225,7 +222,8 @@ Deno.serve(async (req) => {
   const mPaymentId = generateMPaymentId();
 
   // Build the signed/POSTed field set in PayFast's documented order. Empty
-  // optionals (e.g. custom_str2 until step 6) are dropped below.
+  // optionals (custom_str2 until step 6, optional customer fields if blank)
+  // are dropped below.
   const candidate: Record<string, string> = {
     merchant_id:      merchantId!,
     merchant_key:     merchantKey!,
@@ -242,6 +240,7 @@ Deno.serve(async (req) => {
     item_description: pkg.description,
     custom_str1:      pkg.id,
     custom_str2:      '',          // reserved for client_id in Step 6.
+    custom_str3:      companyName,
   };
 
   const fields: Record<string, string> = {};
