@@ -4,6 +4,10 @@ import { createHash } from 'node:crypto';
 // =============================================================================
 // PayFast checkout init — Step 6 of 10.
 //
+// BUILD MARKER (temporary, step 6 debug). Bump on every push so the live
+// deployed version is unmistakable from the response body.
+const BUILD_MARKER = 'step6-debug-v2';
+//
 // Single server-side entry point for both checkout flows:
 //   - Authenticated portal flow (/portal/checkout/:packageId)
 //       client_id is derived from the session token; any client_id sent in the
@@ -354,7 +358,8 @@ Deno.serve(async (req) => {
     console.error('[payfast-checkout-init] resolved Client has no id', { flow, client });
     return Response.json(
       {
-        error: 'Could not resolve your client record. Please try again.',
+        error: `Could not resolve your client record (${BUILD_MARKER}). Please try again.`,
+        _build: BUILD_MARKER,
         _debug: {
           stage: 'client_id_resolve',
           flow,
@@ -445,7 +450,8 @@ Deno.serve(async (req) => {
     });
     return Response.json(
       {
-        error: 'Could not record the pending payment. Please try again.',
+        error: `Could not record the pending payment (${BUILD_MARKER}). Please try again.`,
+        _build: BUILD_MARKER,
         _debug: {
           stage:   'Payment.create',
           payload: paymentPayload,
