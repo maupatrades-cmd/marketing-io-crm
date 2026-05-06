@@ -39,6 +39,14 @@
       "type": "boolean",
       "default": false,
       "description": "Idempotency flag for calculate-commission"
+    },
+    "package_id": {
+      "type": "string",
+      "description": "Slug of the PayFast package the buyer selected at checkout (e.g. 'ignite', 'ai-chatbot'). Mirrors custom_str1 on the PayFast payload."
+    },
+    "signed_payload_hash": {
+      "type": "string",
+      "description": "Hash of the signed PayFast field set at checkout-init time, used by the ITN handler to detect tampering or mismatched payloads."
     }
   },
   "required": ["client_id", "invoice_id", "amount", "type", "status", "gateway_reference"]
