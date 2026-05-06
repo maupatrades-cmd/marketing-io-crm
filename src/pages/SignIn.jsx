@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
@@ -9,8 +9,18 @@ function makeCaptcha() {
   return { question: `${a} + ${b}`, answer: a + b };
 }
 
+// Strict whitelist for ?next= — only the portal checkout flow is allowed,
+// blocking open-redirect attacks via crafted login links.
+const SAFE_NEXT_RE = /^\/portal\/checkout\/[a-z0-9][a-z0-9-]{0,49}$/;
+function safeNext(raw) {
+  const v = String(raw || '').trim();
+  return SAFE_NEXT_RE.test(v) ? v : '';
+}
+
 export default function SignIn() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = safeNext(searchParams.get('next'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -40,20 +50,21 @@ export default function SignIn() {
       });
       const data = res.data;
 
+      const nextParam = next ? `&next=${encodeURIComponent(next)}` : '';
       if (data.needs_verification) {
-        navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=signup_verification`);
+        navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=signup_verification${nextParam}`);
         return;
       }
       if (data.needs_otp) {
         // Store temporary session for MFA verification
         localStorage.setItem('mio_pending_login', JSON.stringify({ email: data.email, user_id: data.user_id }));
-        navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=login_mfa`);
+        navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=login_mfa${nextParam}`);
         return;
       }
       if (data.token) {
         base44.auth.setToken(data.token);
         localStorage.setItem('mio_session_token', data.token);
-        window.location.href = '/client-portal';
+        window.location.href = next || '/client-portal';
         return;
       }
     } catch (err) {

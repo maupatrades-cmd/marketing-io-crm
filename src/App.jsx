@@ -90,6 +90,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancelled from './pages/PaymentCancelled';
 import PayfastTest from './pages/PayfastTest';
 import Checkout from './pages/Checkout';
+import PortalCheckout from './pages/PortalCheckout';
 
 
 
@@ -216,6 +217,7 @@ const AuthenticatedApp = () => {
       <Route path="/payment-cancelled" element={<PaymentCancelled />} />
       <Route path="/payfast-test" element={<PayfastTest />} />
       <Route path="/checkout/:packageId" element={<Checkout />} />
+      <Route path="/portal/checkout/:packageId" element={<PortalCheckout />} />
 
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />

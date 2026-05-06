@@ -4,7 +4,10 @@
   "properties": {
     "client_id": { "type": "string" },
     "client_name": { "type": "string" },
-    "invoice_id": { "type": "string" },
+    "invoice_id": {
+      "type": "string",
+      "description": "Linked invoice — populated after successful payment confirmation. NULL for pending payments still awaiting ITN."
+    },
     "amount": { "type": "number" },
     "currency": { "type": "string", "default": "ZAR" },
     "type": {
@@ -49,5 +52,5 @@
       "description": "Hash of the signed PayFast field set at checkout-init time, used by the ITN handler to detect tampering or mismatched payloads."
     }
   },
-  "required": ["client_id", "invoice_id", "amount", "type", "status", "gateway_reference"]
+  "required": ["client_id", "amount", "type", "status", "gateway_reference"]
 }

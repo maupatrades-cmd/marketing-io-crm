@@ -7,6 +7,11 @@ export default function VerifyOTP() {
   const params = new URLSearchParams(window.location.search);
   const email = decodeURIComponent(params.get('email') || '');
   const purpose = params.get('purpose') || 'login_mfa';
+  // Strict whitelist for ?next= — only the portal checkout flow.
+  const nextParam = (() => {
+    const v = params.get('next') || '';
+    return /^\/portal\/checkout\/[a-z0-9][a-z0-9-]{0,49}$/.test(v) ? v : '';
+  })();
 
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -37,6 +42,13 @@ export default function VerifyOTP() {
 
       if (purpose === 'password_reset') {
         navigate(`/reset-password?token=${code}&email=${encodeURIComponent(email)}`);
+        return;
+      }
+
+      // ?next= overrides role-based default — only honoured if it passed
+      // the whitelist check above (so it's safe to redirect to).
+      if (nextParam) {
+        window.location.href = nextParam;
         return;
       }
 
