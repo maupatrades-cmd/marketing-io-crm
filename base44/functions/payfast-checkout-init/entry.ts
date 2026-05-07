@@ -502,6 +502,36 @@ Deno.serve(async (req) => {
     );
   }
 
+  // Activity audit (Client Portal PR A): payment_initiated.
+  try {
+    const ip =
+      (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
+      req.headers.get('x-real-ip') || '';
+    await base44.asServiceRole.entities.ClientActivityLog.create({
+      client_id:      clientId,
+      client_name:    clientName,
+      actor_id:       '',
+      actor_role:     'client',
+      event_type:     'payment_initiated',
+      event_category: 'payment',
+      event_summary:  `Payment initiated for ${pkg.name || pkg.id} — R${Number(pkg.amount).toFixed(2)}`,
+      event_metadata: {
+        m_payment_id: mPaymentId,
+        package_id:   pkg.id,
+        amount:       Number(pkg.amount),
+        currency:     'ZAR',
+        flow,
+      },
+      event_label:    `Payment initiated for ${pkg.name || pkg.id} — R${Number(pkg.amount).toFixed(2)}`,
+      logged_by:      '',
+      logged_by_name: '',
+      ip_address:     ip.slice(0, 64),
+      user_agent:     (req.headers.get('user-agent') || '').slice(0, 500),
+    });
+  } catch (logErr: any) {
+    console.error('[payfast-checkout-init] activity log failed (non-fatal):', logErr?.message);
+  }
+
   return Response.json({
     fields,
     process_url: processUrl,

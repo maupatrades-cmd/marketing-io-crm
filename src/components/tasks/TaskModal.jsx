@@ -44,24 +44,26 @@ export default function TaskModal({ open, onClose, task, clients, users, current
     if (isEditing) {
       await base44.entities.Task.update(task.id, data);
       saved = { ...task, ...data };
-      // Log status change if changed
+      // Log status change if changed. Routed through log-client-activity
+      // (server function) because Client Portal PR A locks ClientActivityLog
+      // create RLS to service-role only.
       if (task.status !== data.status && data.client_id) {
-        base44.entities.ClientActivityLog.create({
+        base44.functions.invoke('log-client-activity', {
           client_id: data.client_id,
           client_name: data.client_name,
-          event_type: "task_completed",
-          event_label: `Task status changed to "${data.status}": ${data.title}`,
+          title: `Task status changed to "${data.status}": ${data.title}`,
+          source: 'system',
         }).catch(() => {});
       }
     } else {
       saved = await base44.entities.Task.create(data);
       // Log task creation
       if (data.client_id && saved?.id) {
-        base44.entities.ClientActivityLog.create({
+        base44.functions.invoke('log-client-activity', {
           client_id: data.client_id,
           client_name: data.client_name,
-          event_type: "note",
-          event_label: `Task created: ${data.title}`,
+          title: `Task created: ${data.title}`,
+          source: 'system',
         }).catch(() => {});
       }
     }

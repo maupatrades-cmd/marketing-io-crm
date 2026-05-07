@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Trash2, Download, Image, FileText, FolderOpen, CheckCircle2, AlertCircle, Loader2, File } from "lucide-react";
 import { notifyClient } from "@/lib/clientNotifier";
+import { logClientActivityFromBrowser } from "@/lib/activityLog";
 
 const FILE_TYPES = [
   { value: "logo",             label: "Logo",               icon: Image,    accept: "image/*" },
@@ -87,6 +88,24 @@ export default function ClientUploads() {
     if (results.length > 0) {
       setUploads(prev => [...results, ...prev]);
       showToast(`${results.length} file${results.length > 1 ? "s" : ""} uploaded successfully`);
+
+      // Activity audit (Client Portal PR A): document_uploaded.
+      // Fire-and-forget per file (helper swallows errors internally).
+      for (const r of results) {
+        logClientActivityFromBrowser({
+          clientId:      client.id,
+          eventType:     "document_uploaded",
+          eventCategory: "document",
+          eventSummary:  `Uploaded ${r.file_name}`,
+          eventMetadata: {
+            upload_id:  r.id,
+            file_name:  r.file_name,
+            file_type:  r.file_type,
+            file_size:  r.file_size_bytes,
+            mime_type:  r.mime_type,
+          },
+        });
+      }
 
       // Notify client (portal notification)
       notifyClient({

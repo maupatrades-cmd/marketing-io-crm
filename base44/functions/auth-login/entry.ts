@@ -114,6 +114,38 @@ Deno.serve(async (req) => {
       updateData.lockout_until = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     }
     await base44.asServiceRole.entities[userEntity].update(user.id, updateData);
+
+    // Activity audit (Client Portal PR A): login_failed. Only log if we can
+    // resolve the user's Client row — the activity feed is per-client, so
+    // failures against unknown emails go uncounted (those are tracked
+    // separately by SecurityEvent.multiple_failures).
+    try {
+      const clientList = await base44.asServiceRole.entities.Client.filter({ client_user_id: user.id });
+      const client = (Array.isArray(clientList) ? clientList : clientList?.data ?? [])[0];
+      if (client?.id) {
+        const ip =
+          (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
+          req.headers.get('x-real-ip') || '';
+        await base44.asServiceRole.entities.ClientActivityLog.create({
+          client_id:      client.id,
+          client_name:    String(client.business_name || client.contact_person || '').trim(),
+          actor_id:       user.id,
+          actor_role:     'client',
+          event_type:     'login_failed',
+          event_category: 'auth',
+          event_summary:  'Login attempt failed (wrong password)',
+          event_metadata: { failed_login_count: newCount, locked: newCount >= 5 },
+          event_label:    'Login attempt failed (wrong password)',
+          logged_by:      user.id,
+          logged_by_name: String(user.full_name || user.email || ''),
+          ip_address:     ip.slice(0, 64),
+          user_agent:     (req.headers.get('user-agent') || '').slice(0, 500),
+        });
+      }
+    } catch (logErr) {
+      console.error('[auth-login] activity log failed (non-fatal):', logErr?.message);
+    }
+
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 

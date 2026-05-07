@@ -6,9 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight, FileText, Phone, Clock, AlertCircle } from "lucide-react";
+import ActivityFeed from "@/components/activity/ActivityFeed";
+import { getCurrentUser } from "@/lib/customAuth";
 
 const TABS = [
-  "overview", "discovery", "contacts", "deals", "invoices", "deliverables", "communications", "files", "audit"
+  "overview", "discovery", "contacts", "deals", "invoices", "deliverables",
+  "communications", "files", "activity", "audit"
 ];
 
 const LEAD_SCORE_BADGES = {
@@ -84,6 +87,17 @@ export default function OwnerClientDetail() {
   const [files, setFiles] = useState([]);
   const [notes, setNotes] = useState("");
   const [editing, setEditing] = useState(false);
+  // viewerRole drives ActivityFeed's actor-info column. The page is route-
+  // guarded to admin|owner only, so we just need to know which one.
+  const [viewerRole, setViewerRole] = useState("admin");
+
+  useEffect(() => {
+    (async () => {
+      const me = await getCurrentUser().catch(() => null);
+      const role = String(me?.role || "admin").toLowerCase();
+      setViewerRole(role === "owner" ? "owner" : "admin");
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -405,10 +419,35 @@ export default function OwnerClientDetail() {
           </div>
         )}
 
-        {/* TAB: Audit */}
+        {/* TAB: Activity (Client Portal PR A — full feed with filters + PDF) */}
+        {activeTab === "activity" && (
+          <div className="glass rounded-xl p-6">
+            <ActivityFeed
+              clientId={id}
+              clientName={client.business_name || client.contact_person || ""}
+              viewerRole={viewerRole}
+            />
+          </div>
+        )}
+
+        {/* TAB: Audit (legacy summary kept for back-compat) */}
         {activeTab === "audit" && (
           <div className="glass rounded-xl p-6">
-            <p className="text-sm text-muted-foreground">Audit log: all system actions affecting this client will be tracked here for compliance.</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Audit log: all system actions affecting this client are tracked
+              under the Activity tab. This summary view shows the most recent
+              10 entries.
+            </p>
+            <div className="space-y-2">
+              {activity.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No audit entries.</p>
+              ) : activity.map(a => (
+                <div key={a.id} className="text-sm pb-2 border-b border-border/20 last:border-0">
+                  <p className="text-muted-foreground text-xs">{new Date(a.created_date).toLocaleString("en-ZA")}</p>
+                  <p className="text-foreground">{a.event_summary || a.event_label || a.title}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

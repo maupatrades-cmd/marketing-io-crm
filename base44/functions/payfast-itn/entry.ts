@@ -502,6 +502,42 @@ async function processITN(
     `client_id=${payment.client_id}, amount=${expectedAmount}`
   );
 
+  // Activity audit (Client Portal PR A): payment_succeeded / payment_failed.
+  // Note: payment_cancelled is logged from payfast-mark-cancelled (the buyer
+  // pressed PayFast's cancel button) — NOT here, because PayFast doesn't
+  // ITN cancellations.
+  try {
+    if (newStatus === 'successful' || newStatus === 'failed') {
+      const summaryText = newStatus === 'successful'
+        ? `Payment received — R${Number(expectedAmount).toFixed(2)}`
+        : `Payment failed — R${Number(expectedAmount).toFixed(2)}`;
+      await base44.asServiceRole.entities.ClientActivityLog.create({
+        client_id:      payment.client_id,
+        client_name:    String(payment.client_name || '').trim(),
+        actor_id:       '',
+        actor_role:     'system',
+        event_type:     newStatus === 'successful' ? 'payment_succeeded' : 'payment_failed',
+        event_category: 'payment',
+        event_summary:  summaryText,
+        event_metadata: {
+          m_payment_id:    mPaymentId,
+          pf_payment_id:   pfPaymentId,
+          package_id:      payment.package_id,
+          amount:          Number(expectedAmount),
+          payment_status:  paymentStatus,
+          failed_reason:   newStatus === 'failed'
+            ? (String(params.get('failed_reason') ?? '').trim() || `PayFast: ${paymentStatus}`)
+            : undefined,
+        },
+        event_label:    summaryText,
+        logged_by:      '',
+        logged_by_name: 'PayFast ITN',
+      });
+    }
+  } catch (logErr) {
+    console.error('[payfast-itn] activity log failed (non-fatal):', logErr);
+  }
+
   // ---- Downstream: only on successful path -------------------------------
   if (newStatus === 'successful') {
     // Promote the Client out of lead/prospect status; mark setup fee paid.

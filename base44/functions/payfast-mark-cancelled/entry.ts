@@ -110,6 +110,30 @@ Deno.serve(async (req) => {
     `payment_id=${payment.id}`
   );
 
+  // Activity audit (Client Portal PR A): payment_cancelled.
+  try {
+    await base44.asServiceRole.entities.ClientActivityLog.create({
+      client_id:      payment.client_id,
+      client_name:    String(payment.client_name || '').trim(),
+      actor_id:       '',
+      actor_role:     'client',
+      event_type:     'payment_cancelled',
+      event_category: 'payment',
+      event_summary:  'Payment cancelled by buyer',
+      event_metadata: {
+        m_payment_id: mPaymentId,
+        package_id:   payment.package_id || '',
+        amount:       Number(payment.amount || 0),
+        source:       'payfast_cancel_url',
+      },
+      event_label:    'Payment cancelled by buyer',
+      logged_by:      '',
+      logged_by_name: '',
+    });
+  } catch (logErr) {
+    console.error('[payfast-mark-cancelled] activity log failed (non-fatal):', logErr);
+  }
+
   // Trigger abandoned-cart recovery sequence (PR E implements). Wrapped in
   // try/catch — a failure here MUST NOT poison the user's "cancelled"
   // confirmation. The abandoned-cart-trigger function may not exist yet

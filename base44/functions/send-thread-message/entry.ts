@@ -104,6 +104,41 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'message_create_failed' }, { status: 500 });
   }
 
+  // Activity audit (Client Portal PR A): message_sent_by_client when the
+  // client is the sender, message_received_by_client otherwise (admin/staff
+  // sent → from the client's POV, they received it).
+  try {
+    const isClientSender = senderRole === 'client';
+    const eventType    = isClientSender ? 'message_sent_by_client' : 'message_received_by_client';
+    const eventSummary = isClientSender
+      ? 'Sent a message to the team'
+      : `Received a message from ${senderName}`;
+    const actorRole    = isClientSender ? 'client'
+                       : senderRole === 'owner'      ? 'owner'
+                       : senderRole === 'consultant' ? 'admin'
+                       : 'system';
+    await base44.asServiceRole.entities.ClientActivityLog.create({
+      client_id:      thread.client_id,
+      client_name:    String(client?.business_name || client?.contact_person || '').trim(),
+      actor_id:       String(sender_id || ''),
+      actor_role:     actorRole,
+      event_type:     eventType,
+      event_category: 'communication',
+      event_summary:  eventSummary,
+      event_metadata: {
+        thread_id:    thread.id,
+        message_id:   newMessage?.id,
+        sender_role:  senderRole,
+        preview:      trimmedMessage.slice(0, 140),
+      },
+      event_label:    eventSummary,
+      logged_by:      String(sender_id || ''),
+      logged_by_name: senderName,
+    });
+  } catch (logErr) {
+    console.error('[send-thread-message] activity log failed (non-fatal):', logErr);
+  }
+
   // Compute new unread counters: every role EXCEPT the sender's gets +1.
   const update: any = {
     last_message_at: new Date().toISOString(),

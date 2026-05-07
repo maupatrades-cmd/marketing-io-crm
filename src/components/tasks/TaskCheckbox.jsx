@@ -17,13 +17,15 @@ export default function TaskCheckbox({ task, onUpdate, disabled }) {
 
     await base44.entities.Task.update(task.id, updates);
 
-    // Log to activity log if task has a client
+    // Log to activity log if task has a client. Routed via the legacy
+    // log-client-activity server function — Client Portal PR A locks
+    // ClientActivityLog create RLS to service-role only.
     if (task.client_id && checked) {
-      base44.entities.ClientActivityLog.create({
+      base44.functions.invoke('log-client-activity', {
         client_id: task.client_id,
         client_name: task.client_name,
-        event_type: "task_completed",
-        event_label: `Task completed: ${task.title}`,
+        title: `Task completed: ${task.title}`,
+        source: 'system',
       }).catch(() => {});
     }
 
