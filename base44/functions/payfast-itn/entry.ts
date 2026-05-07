@@ -148,17 +148,25 @@ function clientIpFromRequest(req: Request): string {
 }
 
 // POST the same form-encoded body back to PayFast for server-side
-// confirmation. Expected response: literal "VALID".
+// confirmation. Expected response: literal "VALID". 10s timeout via
+// AbortController so a hung connection can't keep the whole handler waiting.
 async function postbackToPayFast(
   validateUrl: string,
   formBody: string
 ): Promise<string> {
-  const res = await fetch(validateUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: formBody,
-  });
-  return (await res.text()).trim();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const res = await fetch(validateUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formBody,
+      signal: controller.signal,
+    });
+    return (await res.text()).trim();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function chooseValidateUrl(processUrl: string | undefined): string {
@@ -507,11 +515,26 @@ async function processITN(
 }
 
 // =============================================================================
-// HTTP entry point — keep the response cycle tight.
+// HTTP entry point.
+//
+// Awaits processITN to completion before returning 200. Earlier "fire and
+// forget" pattern was dropped by Base44's serverless runtime — the response
+// returned, the function instance was killed, and the validation+DB-write
+// promise never ran. processITN typically completes in 2-5s (signature →
+// IP check → 10s-bounded postback to PayFast → DB writes), well under
+// PayFast's ~30s retry threshold.
 // =============================================================================
+const HANDLER_VERSION = 'step7-await-v1';
+
 Deno.serve(async (req) => {
+  // First line of every invocation. Confirms the function is reachable and
+  // tells us in Base44 logs which build is live.
+  console.log(
+    `[payfast-itn] hit: method=${req.method}, url=${req.url}, ` +
+    `version=${HANDLER_VERSION}`
+  );
+
   if (req.method !== 'POST') {
-    // PayFast only ever POSTs. Anything else is bot/curl noise.
     return new Response('Method Not Allowed', { status: 405 });
   }
 
@@ -520,7 +543,6 @@ Deno.serve(async (req) => {
     rawBody = await req.text();
   } catch (err) {
     console.error('[payfast-itn] failed to read body:', err);
-    // Still 200 — we don't want PayFast to retry a body we can't parse.
     return new Response('OK', { status: 200 });
   }
 
@@ -528,14 +550,14 @@ Deno.serve(async (req) => {
   const userAgent = req.headers.get('user-agent') ?? '';
   const base44    = createClientFromRequest(req);
 
-  // Fire-and-forget — PayFast retries up to ~10 times if it doesn't see a
-  // 200 within ~30s. Returning before validation completes keeps us under
-  // that budget regardless of how slow the postback or DB writes are.
-  // Errors inside processITN are logged inside the function; a top-level
-  // .catch ensures one bad ITN can't crash the runtime.
-  processITN(base44, rawBody, sourceIp, userAgent).catch((err) => {
+  try {
+    await processITN(base44, rawBody, sourceIp, userAgent);
+  } catch (err) {
+    // Any uncaught failure inside processITN is swallowed here. PayFast
+    // still gets 200 — failures are logged + recorded as SecurityEvent
+    // rows inside processITN where possible.
     console.error('[payfast-itn] processITN crashed:', err);
-  });
+  }
 
   return new Response('OK', { status: 200 });
 });
