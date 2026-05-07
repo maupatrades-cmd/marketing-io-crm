@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 // BUILD MARKER (temporary, step 6 debug). Bump on every push so the live
 // deployed version is unmistakable from the response body. Strip once we
 // have a green Payment.create.
-const BUILD_MARKER = 'step6-debug-v3-unwrap';
+const BUILD_MARKER = 'step6-debug-v4-phpencode';
 //
 // Single server-side entry point for both checkout flows:
 //   - Authenticated portal flow (/portal/checkout/:packageId)
@@ -116,9 +116,30 @@ function unwrapOne(result: any): any {
   return null;
 }
 
-// PHP-style urlencode equivalent (spaces → '+', uppercase hex).
+// PHP-style urlencode equivalent.
+//
+// PayFast's reference signing implementation uses PHP's urlencode(). JS's
+// encodeURIComponent() matches it for most characters but DOES NOT encode
+// any of:  ! ' ( ) * ~  — PHP urlencode does. If any of those characters
+// appear in any field value (e.g. parens in an item_description), our
+// hash and PayFast's hash diverge and PayFast returns "signature mismatch".
+// The replacements below close that gap.
+//
+// Test cases:
+//   "Ignite Setup"                     → "Ignite+Setup"
+//   "john@doe.com"                     → "john%40doe.com"
+//   "Test & Co."                       → "Test+%26+Co."
+//   "(DO NOT use in production)."      → "%28DO+NOT+use+in+production%29."
+//   "It's *fast*!"                     → "It%27s+%2Afast%2A%21"
 function payfastUrlEncode(value: string): string {
-  return encodeURIComponent(value).replace(/%20/g, '+');
+  return encodeURIComponent(value)
+    .replace(/%20/g, '+')
+    .replace(/!/g,  '%21')
+    .replace(/'/g,  '%27')
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29')
+    .replace(/\*/g, '%2A')
+    .replace(/~/g,  '%7E');
 }
 
 // Returns BOTH the canonical query string (for hashing) and the MD5 signature
