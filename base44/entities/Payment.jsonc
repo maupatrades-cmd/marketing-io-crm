@@ -1,5 +1,6 @@
 {
   "name": "Payment",
+  "type": "object",
   "properties": {
     "amount": {
       "type": "number"
@@ -98,5 +99,5 @@
     "status",
     "gateway_reference"
   ],
-  "type": "object"
+  "rls": {}
 }
