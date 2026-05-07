@@ -108,6 +108,26 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'thread_create_failed' }, { status: 500 });
     }
 
+    // Activity audit (Client Portal PR A): support_request_opened — only on
+    // brand-new thread creation, not when an existing thread is fetched.
+    try {
+      await base44.asServiceRole.entities.ClientActivityLog.create({
+        client_id,
+        client_name:    String(client.business_name || client.contact_person || '').trim(),
+        actor_id:       String(current_user_id || ''),
+        actor_role:     String(current_user_role || 'client').toLowerCase() === 'client' ? 'client' : 'system',
+        event_type:     'support_request_opened',
+        event_category: 'support',
+        event_summary:  'Support thread opened',
+        event_metadata: { thread_id: thread?.id, consultant_id: consultantId, owner_id: ownerId },
+        event_label:    'Support thread opened',
+        logged_by:      String(current_user_id || ''),
+        logged_by_name: '',
+      });
+    } catch (logErr) {
+      console.error('[get-or-create-client-thread] activity log failed (non-fatal):', logErr);
+    }
+
     // Auto-post welcome system message.
     let consultantName = 'your consultant';
     if (consultantId) {

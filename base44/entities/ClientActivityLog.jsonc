@@ -2,67 +2,126 @@
   "name": "ClientActivityLog",
   "type": "object",
   "properties": {
-    "client_id": { "type": "string" },
-    "client_name": { "type": "string" },
-    "user_id": {
+    "client_id": {
       "type": "string",
-      "description": "AppUser.id of recipient — same as client.client_user_id usually"
+      "description": "FK Client. The client this activity is about."
     },
+    "client_name": {
+      "type": "string",
+      "description": "Snapshot of Client.business_name or contact_person at write time."
+    },
+
+    "actor_id": {
+      "type": "string",
+      "description": "FK User/AppUser of whoever performed the action. Nullable for system-initiated or pre-auth events."
+    },
+    "actor_role": {
+      "type": "string",
+      "enum": [
+        "client", "admin", "owner", "cpc",
+        "field_agent", "head_of_tech", "driver", "system"
+      ],
+      "description": "Role the actor was acting in at event time."
+    },
+    "event_type": {
+      "type": "string",
+      "description": "Free-form event identifier from the catalog (login_success, payment_succeeded, etc). Legacy values (status_change, milestone, note, task_completed) still validate."
+    },
+    "event_category": {
+      "type": "string",
+      "enum": [
+        "auth", "profile", "payment", "invoice",
+        "document", "communication", "support", "account"
+      ],
+      "description": "Functional grouping for the activity feed UI filter dropdown."
+    },
+    "event_summary": {
+      "type": "string",
+      "description": "Short human-readable line. Legacy log-client-activity callers send 'title' which is mirrored to event_summary by that function."
+    },
+    "event_metadata": {
+      "type": "object",
+      "description": "Event-specific JSON payload."
+    },
+    "event_label": {
+      "type": "string",
+      "description": "Legacy field preserved for back-compat. Kept required because the live schema was already requiring it before this PR."
+    },
+    "from_value": {
+      "type": "string",
+      "description": "Legacy field for status_change events: previous value."
+    },
+    "to_value": {
+      "type": "string",
+      "description": "Legacy field for status_change events: new value."
+    },
+    "logged_by": {
+      "type": "string",
+      "description": "Legacy field. Mirrored from actor_id on new writes."
+    },
+    "logged_by_name": {
+      "type": "string",
+      "description": "Legacy field. Mirrored from actor's full_name on new writes."
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "Caller IP captured from the public bridge function."
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Caller user agent (truncated to 500 chars)."
+    },
+
     "title": {
       "type": "string",
-      "description": "Short heading e.g. 'Invoice issued' or 'Welcome to Marketing iO'"
+      "description": "Legacy field — older portal-feed entries used this instead of event_summary. log-client-activity mirrors title into event_summary on write so this stays in sync."
     },
     "body": {
       "type": "string",
-      "description": "1-2 sentence detail"
+      "description": "Legacy field — long-form detail for old portal-feed entries. New code uses event_metadata."
     },
     "icon": {
       "type": "string",
-      "description": "Lucide icon name e.g. 'FileText', 'CheckCircle', 'AlertCircle'"
+      "description": "Legacy field — Lucide icon name. New activity feed icons are derived from event_category."
     },
     "category": {
       "type": "string",
-      "enum": ["info", "success", "warning", "error"],
-      "default": "info"
+      "description": "Legacy SEVERITY field — info/success/warning/error. NOT to be confused with event_category which is functional grouping."
     },
     "source": {
       "type": "string",
-      "enum": [
-        "signup",
-        "enquiry",
-        "invoice",
-        "payment",
-        "deliverable",
-        "contract",
-        "onboarding",
-        "cancellation",
-        "system"
-      ],
-      "description": "Which subsystem wrote this entry"
+      "description": "Legacy field — which subsystem wrote this (invoice/payment/signup/etc). New code uses event_category instead."
     },
     "link": {
       "type": "string",
-      "description": "Optional /client/* route to deep-link from the activity item"
+      "description": "Legacy field — deep-link URL to the related portal page."
     },
     "read_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Null until client opens activity feed"
+      "description": "Legacy field — when the client opened the activity feed and saw this row."
     },
-    "event_type": {
+    "user_id": {
       "type": "string",
-      "enum": ["status_change", "milestone", "note", "task_completed"],
-      "default": "note",
-      "description": "Legacy field — new portal-feed entries default to 'note'."
-    },
-    "event_label": {
-      "type": "string",
-      "description": "Legacy short description. Mirrored from `title` for new portal entries."
-    },
-    "from_value": { "type": "string" },
-    "to_value": { "type": "string" },
-    "logged_by": { "type": "string" },
-    "logged_by_name": { "type": "string" }
+      "description": "Legacy field — AppUser.id of recipient. New code uses actor_id."
+    }
   },
-  "required": ["client_id", "title"]
+  "required": [
+    "client_id",
+    "event_type",
+    "event_label",
+    "event_category",
+    "event_summary",
+    "actor_role"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        { "data.client_id": "{{user.data.client_id}}" },
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
 }

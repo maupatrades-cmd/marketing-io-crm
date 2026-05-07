@@ -172,6 +172,25 @@ Deno.serve(async (req) => {
     });
     createdClientId = newClient.id;
     console.log('[auth-register] Client created, id:', createdClientId);
+
+    // Activity audit (Client Portal PR A). Best-effort — never break signup.
+    try {
+      await base44.asServiceRole.entities.ClientActivityLog.create({
+        client_id:      createdClientId,
+        client_name:    String(newClient.business_name || newClient.contact_person || '').trim(),
+        actor_id:       newUser.id,
+        actor_role:     'client',
+        event_type:     'account_created',
+        event_category: 'account',
+        event_summary:  'Account created',
+        event_metadata: { email: normalizedEmail, source: 'self_signup' },
+        event_label:    'Account created',
+        logged_by:      newUser.id,
+        logged_by_name: fullName.trim(),
+      });
+    } catch (logErr) {
+      console.error('[auth-register] activity log failed (non-fatal):', logErr?.message);
+    }
   } catch (err) {
     console.error('[auth-register] client_create_failed — rolling back app user:', err.message);
     try { await base44.asServiceRole.entities.AppUser.delete(createdUserId); } catch (_) {}
