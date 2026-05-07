@@ -84,14 +84,30 @@ const OPTIONAL_FIELDS = new Set([
 
 // PHP-style urlencode equivalent.
 //
+// PayFast's reference signing implementation uses PHP's urlencode(). JS's
+// encodeURIComponent() matches it for most characters but DOES NOT encode
+// any of:  ! ' ( ) * ~  — PHP urlencode does. If any of those characters
+// appear in any field value (e.g. parens in an item_description), our
+// hash and PayFast's hash diverge and PayFast returns "signature mismatch".
+// The replacements below close that gap.
+//
 // Test cases (verified by `__debug_tests: true`):
-//   "Ignite Setup"       → "Ignite+Setup"
-//   "john@doe.com"       → "john%40doe.com"
-//   "Test & Co."         → "Test+%26+Co."
-//   "0823456789"         → "0823456789"
-//   "3980.00"            → "3980.00"
+//   "Ignite Setup"                     → "Ignite+Setup"
+//   "john@doe.com"                     → "john%40doe.com"
+//   "Test & Co."                       → "Test+%26+Co."
+//   "0823456789"                       → "0823456789"
+//   "3980.00"                          → "3980.00"
+//   "(DO NOT use in production)."      → "%28DO+NOT+use+in+production%29."
+//   "It's *fast*!"                     → "It%27s+%2Afast%2A%21"
 function payfastUrlEncode(value: string): string {
-  return encodeURIComponent(value).replace(/%20/g, '+');
+  return encodeURIComponent(value)
+    .replace(/%20/g, '+')
+    .replace(/!/g,  '%21')
+    .replace(/'/g,  '%27')
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29')
+    .replace(/\*/g, '%2A')
+    .replace(/~/g,  '%7E');
 }
 
 function buildSignature(fields: Record<string, string>, passphrase: string): string {
