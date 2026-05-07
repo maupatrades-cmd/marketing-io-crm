@@ -478,8 +478,6 @@ const EMAIL_3_DELAY_MS        = 72 * 60 * 60 * 1000;  // 72h after email_2_sent_
 const PER_PHASE_CAP           = 50;
 const RESEND_RATE_LIMIT_MS    = 700;                  // ~85/min, under Resend's 100/min cap
 
-const RECOVERABLE_PACKAGE_IDS = new Set(ABANDONED_CART_PACKAGE_IDS);
-
 // ---- helpers ----------------------------------------------------------------
 
 function unwrapList(result) {
@@ -511,6 +509,17 @@ function escapeHtml(s) {
 
 function fillFirstName(template, firstName) {
   return String(template).replace(/\{first_name\}/g, firstName || 'there');
+}
+
+// 32-byte URL-safe random token for the email unsubscribe link. Mirrors
+// generateUnsubscribeToken() in abandoned-cart-trigger so sequences created
+// by either path get an equivalent token.
+function generateUnsubscribeToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  let s = '';
+  for (const b of bytes) s += b.toString(16).padStart(2, '0');
+  return s;
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -761,15 +770,16 @@ async function sweepTabClosed(base44) {
 
     try {
       await base44.asServiceRole.entities.AbandonedCartSequence.create({
-        email:            buyerEmail,
-        name_first:       buyerFirst,
-        package_id:       payment.package_id,
-        abandonment_type: 'tab_closed',
-        abandoned_at:     new Date().toISOString(),
-        unsubscribed:     false,
-        client_id:        payment.client_id || '',
-        m_payment_id:     payment.gateway_reference || '',
-        payment_id:       payment.id,
+        email:             buyerEmail,
+        name_first:        buyerFirst,
+        package_id:        payment.package_id,
+        abandonment_type:  'tab_closed',
+        abandoned_at:      new Date().toISOString(),
+        unsubscribed:      false,
+        unsubscribe_token: generateUnsubscribeToken(),
+        client_id:         payment.client_id || '',
+        m_payment_id:      payment.gateway_reference || '',
+        payment_id:        payment.id,
       });
       promoted++;
       console.log(
@@ -833,11 +843,12 @@ async function sweepFormAbandoned(base44) {
     try {
       await base44.asServiceRole.entities.AbandonedCartSequence.create({
         email,
-        name_first:       String(eng.name_first || '').trim(),
-        package_id:       eng.package_id,
-        abandonment_type: 'form_abandoned',
-        abandoned_at:     new Date().toISOString(),
-        unsubscribed:     false,
+        name_first:        String(eng.name_first || '').trim(),
+        package_id:        eng.package_id,
+        abandonment_type:  'form_abandoned',
+        abandoned_at:      new Date().toISOString(),
+        unsubscribed:      false,
+        unsubscribe_token: generateUnsubscribeToken(),
       });
       promoted++;
       console.log(
@@ -915,13 +926,30 @@ async function sendEmailN(base44, resend, fromAddress, stage) {
       continue;
     }
 
+    // Back-fill unsubscribe_token for sequences that pre-date the field
+    // landing in the schema. New rows always have one (set at create time).
+    let unsubToken = String(seq.unsubscribe_token || '').trim();
+    if (!unsubToken) {
+      unsubToken = generateUnsubscribeToken();
+      try {
+        await base44.asServiceRole.entities.AbandonedCartSequence.update(seq.id, {
+          unsubscribe_token: unsubToken,
+        });
+      } catch (err) {
+        console.error('[abandoned-cart-runner] back-fill unsubscribe_token failed:', err);
+        // Non-fatal — we still send with the generated token; if the
+        // buyer clicks unsubscribe and the token isn't persisted, the
+        // function returns a friendly fallback.
+      }
+    }
+
     // Lazy image fetch (cached after first hit).
     const imageUrl = await getOrGenerateImage(base44, seq.package_id, stage);
 
     // Render email.
     const copy   = ABANDONED_CART_COPY[seq.package_id][stage];
     const ctaUrl = `${appBase()}/checkout/${seq.package_id}?email=${encodeURIComponent(seq.email)}`;
-    const unsubUrl = `${appBase()}/unsubscribe?token=${encodeURIComponent(seq.id)}`;
+    const unsubUrl = `${appBase()}/unsubscribe?token=${encodeURIComponent(unsubToken)}`;
     const { subject, html, text } = renderEmail(stage, copy, {
       imageUrl,
       ctaUrl,

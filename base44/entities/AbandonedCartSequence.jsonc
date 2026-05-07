@@ -52,6 +52,15 @@
       "default": false,
       "description": "POPIA unsubscribe; if true the runner skips remaining emails."
     },
+    "unsubscribe_token": {
+      "type": "string",
+      "description": "Random opaque token used in the email's Unsubscribe link. Distinct from the row id so the link can't be guessed by enumerating ids."
+    },
+    "unsubscribed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of unsubscribe action — POPIA section 69 audit trail."
+    },
     "m_payment_id": {
       "type": "string",
       "description": "Originating m_payment_id when the abandonment came from an existing Payment row (cancel_button / tab_closed)."
