@@ -539,6 +539,35 @@ async function processITN(
       amount:        expectedAmount,
       package_id:    customStr1 || payment.package_id || '',
     });
+
+    // Trigger commission calculation. Wrapped in try/catch — a failure here
+    // (calculate-commission unreachable, schema error, etc.) MUST NOT break
+    // the ITN flow. The Payment row is already in its terminal state and the
+    // SecurityEvent audit row is already written; the worst case is that
+    // commission_calculated stays false and we re-trigger via a manual
+    // recalc or scheduled job.
+    //
+    // We await the invoke even though the brief described it as
+    // "fire-and-forget" — Base44's serverless runtime drops un-awaited
+    // promises (the same lesson that broke step 7's processITN until PR #38
+    // awaited it). A pure fire-and-forget here would silently never run.
+    // Idempotency comes from calculate-commission's existing
+    // `commission_calculated` flag on Payment, so re-triggers are safe and
+    // we don't add a second guard.
+    try {
+      await base44.functions.invoke('calculate-commission', {
+        payment_id: payment.id,
+      });
+      console.log(
+        `[payfast-itn] commission triggered for payment_id=${payment.id}`
+      );
+    } catch (err) {
+      console.error(
+        `[payfast-itn] commission trigger failed for payment_id=${payment.id}:`,
+        err
+      );
+      // Non-fatal — do not return.
+    }
   }
 }
 
