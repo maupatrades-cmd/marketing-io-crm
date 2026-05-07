@@ -1,0 +1,69 @@
+{
+  "name": "AbandonedCartSequence",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Linked Client id when one exists — may be empty for pure form-abandoned engagements."
+    },
+    "email": {
+      "type": "string",
+      "description": "Buyer email (lowercase, trimmed). Required — the recovery channel."
+    },
+    "name_first": {
+      "type": "string"
+    },
+    "package_id": {
+      "type": "string",
+      "description": "PayFast package id the buyer abandoned."
+    },
+    "abandonment_type": {
+      "type": "string",
+      "enum": [
+        "cancel_button",
+        "tab_closed",
+        "form_abandoned"
+      ],
+      "description": "How we detected the abandonment."
+    },
+    "abandoned_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "email_1_sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "email_2_sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "email_3_sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "recovered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Set when a successful Payment is detected for this email + package after abandonment."
+    },
+    "unsubscribed": {
+      "type": "boolean",
+      "default": false,
+      "description": "POPIA unsubscribe; if true the runner skips remaining emails."
+    },
+    "m_payment_id": {
+      "type": "string",
+      "description": "Originating m_payment_id when the abandonment came from an existing Payment row (cancel_button / tab_closed)."
+    },
+    "payment_id": {
+      "type": "string",
+      "description": "Originating Payment.id when applicable."
+    }
+  },
+  "required": [
+    "email",
+    "package_id",
+    "abandonment_type"
+  ]
+}
