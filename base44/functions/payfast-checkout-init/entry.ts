@@ -410,11 +410,26 @@ Deno.serve(async (req) => {
   // ---- Build the signed PayFast field set ---------------------------------
   const mPaymentId = generateMPaymentId();
 
+  // PayFast doesn't append our m_payment_id to the return_url / cancel_url
+  // it redirects to — it sends the buyer to whatever URL we configured,
+  // verbatim. So we append `?ref=<m_payment_id>` ourselves here. That way
+  // /payment-success and /payment-cancelled can identify which transaction
+  // the buyer just left without a separate session round-trip.
+  // Honours an existing `?` in the configured base URL (e.g. if the secret
+  // already carries a query string).
+  const appendRef = (baseUrl: string | undefined, ref: string) => {
+    if (!baseUrl) return baseUrl ?? '';
+    const sep = baseUrl.includes('?') ? '&' : '?';
+    return `${baseUrl}${sep}ref=${encodeURIComponent(ref)}`;
+  };
+  const returnUrlWithRef = appendRef(returnUrl, mPaymentId);
+  const cancelUrlWithRef = appendRef(cancelUrl, mPaymentId);
+
   const candidate: Record<string, string> = {
     merchant_id:      merchantId!,
     merchant_key:     merchantKey!,
-    return_url:       returnUrl!,
-    cancel_url:       cancelUrl!,
+    return_url:       returnUrlWithRef,
+    cancel_url:       cancelUrlWithRef,
     notify_url:       notifyUrl!,
     name_first:       nameFirst,
     name_last:        nameLast,

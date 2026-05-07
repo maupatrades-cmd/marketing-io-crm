@@ -569,6 +569,40 @@ async function processITN(
       // Non-fatal — do not return.
     }
   }
+
+  // ---- Failed / cancelled paths: trigger abandoned-cart recovery ---------
+  // Mirrors the success path's commission trigger. abandoned-cart-trigger
+  // is implemented in PR E; until then this invoke will fail and the
+  // try/catch absorbs it without disturbing the ITN flow.
+  if (newStatus === 'failed' || newStatus === 'cancelled') {
+    try {
+      await base44.functions.invoke('abandoned-cart-trigger', {
+        m_payment_id:     mPaymentId,
+        payment_id:       payment.id,
+        // PR E's abandonment_type enum is { cancel_button, tab_closed,
+        // form_abandoned }. ITN-driven FAILED/CANCELLED both map to
+        // cancel_button — the buyer reached PayFast and the transaction
+        // ended without a successful charge, regardless of who pulled
+        // the plug. PR E may want to add a 'gateway_failed' value if
+        // it cares to distinguish.
+        abandonment_type: 'cancel_button',
+        client_id:        payment.client_id,
+        package_id:       customStr1 || payment.package_id || '',
+        email_address:    emailAddress,
+        name_first:       String(params.get('name_first') ?? '').trim(),
+        source:           'itn_handler',
+        itn_status:       newStatus,
+      });
+      console.log(
+        `[payfast-itn] abandoned-cart trigger for payment_id=${payment.id}, status=${newStatus}`
+      );
+    } catch (err) {
+      console.error(
+        `[payfast-itn] abandoned-cart trigger failed for payment_id=${payment.id}:`,
+        err
+      );
+    }
+  }
 }
 
 // =============================================================================
