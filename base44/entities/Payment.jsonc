@@ -1,60 +1,154 @@
 {
   "name": "Payment",
-  "type": "object",
   "properties": {
+    "amount": {
+      "type": "number"
+    },
     "client_id": {
       "type": "string"
     },
     "client_name": {
       "type": "string"
     },
-    "invoice_id": {
-      "type": "string",
-      "description": "Linked invoice — populated after successful payment confirmation. NULL for pending payments still awaiting ITN."
-    },
-    "amount": { "type": "number" },
-    "currency": { "type": "string", "default": "ZAR" },
-    "type": {
-      "type": "string",
-      "enum": ["setup_fee", "addon_setup", "once_off_product", "combined", "monthly_subscription", "recurring_addon"]
-    },
-    "status": {
-      "type": "string",
-      "enum": ["pending", "successful", "failed", "cancelled", "refunded"],
-      "default": "pending"
-    },
-    "gateway": {
-      "type": "string",
-      "enum": ["payfast", "ozow", "manual"],
-      "default": "payfast"
-    },
-    "gateway_reference": { "type": "string", "description": "Our internal m_payment_id (UUID)" },
-    "gateway_pf_payment_id": { "type": "string" },
-    "gateway_payment_status": { "type": "string" },
-    "ipn_payload": { "type": "object" },
-    "failed_reason": { "type": "string" },
-    "completed_at": { "type": "string", "format": "date-time" },
     "closer_id": {
-      "type": "string",
-      "description": "Snapshot from invoice — frozen at payment-create time for commission attribution"
-    },
-    "lead_source_user_id": {
-      "type": "string",
-      "description": "Snapshot from invoice — lead sourcer for CPC closure bonus attribution"
+      "description": "Snapshot from invoice \u2014 frozen at payment-create time for commission attribution",
+      "type": "string"
     },
     "commission_calculated": {
-      "type": "boolean",
       "default": false,
-      "description": "Idempotency flag for calculate-commission"
+      "description": "Idempotency flag for calculate-commission",
+      "type": "boolean"
+    },
+    "completed_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "currency": {
+      "default": "ZAR",
+      "type": "string"
+    },
+    "failed_reason": {
+      "type": "string"
+    },
+    "gateway": {
+      "default": "payfast",
+      "enum": [
+        "payfast",
+        "ozow",
+        "manual"
+      ],
+      "type": "string"
+    },
+    "gateway_payment_status": {
+      "type": "string"
+    },
+    "gateway_pf_payment_id": {
+      "type": "string"
+    },
+    "gateway_reference": {
+      "description": "Our internal m_payment_id (UUID)",
+      "type": "string"
+    },
+    "invoice_id": {
+      "description": "Linked invoice \u2014 populated after successful payment confirmation. NULL for pending payments still awaiting ITN.",
+      "type": "string"
+    },
+    "ipn_payload": {
+      "type": "object"
+    },
+    "lead_source_user_id": {
+      "description": "Snapshot from invoice \u2014 lead sourcer for CPC closure bonus attribution",
+      "type": "string"
     },
     "package_id": {
-      "type": "string",
-      "description": "Slug of the PayFast package the buyer selected at checkout (e.g. 'ignite', 'ai-chatbot'). Mirrors custom_str1 on the PayFast payload."
+      "description": "Slug of the PayFast package the buyer selected at checkout (e.g. 'ignite', 'ai-chatbot'). Mirrors custom_str1 on the PayFast payload.",
+      "type": "string"
     },
     "signed_payload_hash": {
-      "type": "string",
-      "description": "Hash of the signed PayFast field set at checkout-init time, used by the ITN handler to detect tampering or mismatched payloads. "
+      "description": "Hash of the signed PayFast field set at checkout-init time, used by the ITN handler to detect tampering or mismatched payloads.",
+      "type": "string"
+    },
+    "status": {
+      "default": "pending",
+      "enum": [
+        "pending",
+        "successful",
+        "failed",
+        "cancelled",
+        "refunded"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "setup_fee",
+        "addon_setup",
+        "once_off_product",
+        "combined",
+        "monthly_subscription",
+        "recurring_addon"
+      ],
+      "type": "string"
     }
   },
-  "required": ["client_id", "amount", "type", "status", "gateway_reference"]
+  "required": [
+    "client_id",
+    "amount",
+    "type",
+    "status",
+    "gateway_reference"
+  ],
+  "type": "object",
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.client_id": "{{user.data.client_id}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.client_id": "{{user.data.client_id}}"
+        },
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "admin",
+                "owner",
+                "field_agent"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "owner"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
 }
