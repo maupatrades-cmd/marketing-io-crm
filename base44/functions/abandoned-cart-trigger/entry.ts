@@ -63,6 +63,17 @@ function lowerTrim(value: any): string {
   return String(value ?? '').trim().toLowerCase();
 }
 
+// 32-byte URL-safe random token used as the unsubscribe link's `token` query
+// param. Distinct from the row id so a buyer can't unsubscribe someone else's
+// sequence by guessing/incrementing ids.
+function generateUnsubscribeToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  let s = '';
+  for (const b of bytes) s += b.toString(16).padStart(2, '0');
+  return s;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'use POST' }, { status: 405 });
@@ -204,6 +215,7 @@ Deno.serve(async (req) => {
     abandonment_type:  abandonmentType,
     abandoned_at:      now,
     unsubscribed:      false,
+    unsubscribe_token: generateUnsubscribeToken(),
   };
   if (clientId)   payload.client_id    = clientId;
   if (mPaymentId) payload.m_payment_id = mPaymentId;

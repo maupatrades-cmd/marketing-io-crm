@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import {
@@ -137,6 +137,55 @@ function CheckoutForm({ pkg, initialEmail = '' }) {
 
   const formValid = Object.values(errors).every((e) => !e);
   const canSubmit = formValid && agreed && phase === 'idle';
+
+  // Form-abandonment producer: 2-second debounce after the buyer types a
+  // valid-looking email, fire-and-forget a CheckoutEngagement upsert. The
+  // abandoned-cart-runner sweeps these every 15 minutes — anything older
+  // than an hour with no Payment becomes an AbandonedCartSequence.
+  //
+  // Fire-and-forget by intent: the SDK invoke promise is started and not
+  // awaited from the render path. We swallow rejections so transient
+  // network failures never poison the user's checkout.
+  const lastSentRef = useRef('');
+  useEffect(() => {
+    const email = String(form.email_address || '').trim().toLowerCase();
+    if (!email || !EMAIL_REGEX.test(email)) return;
+
+    const handle = setTimeout(() => {
+      // Avoid resending an identical payload back-to-back.
+      const fingerprint = JSON.stringify({
+        e: email,
+        f: form.name_first,
+        l: form.name_last,
+        c: form.cell_number,
+        co: form.company_name,
+        p: pkg.id,
+      });
+      if (fingerprint === lastSentRef.current) return;
+      lastSentRef.current = fingerprint;
+
+      base44.functions.invoke('record-checkout-engagement', {
+        email,
+        name_first:   form.name_first,
+        name_last:    form.name_last,
+        cell_number:  form.cell_number,
+        company_name: form.company_name,
+        package_id:   pkg.id,
+      }).catch((err) => {
+        // Non-blocking. Log to console for diagnostic purposes only.
+        console.warn('[Checkout] record-checkout-engagement failed:', err);
+      });
+    }, 2000);
+
+    return () => clearTimeout(handle);
+  }, [
+    form.email_address,
+    form.name_first,
+    form.name_last,
+    form.cell_number,
+    form.company_name,
+    pkg.id,
+  ]);
 
   const showRetainer =
     pkg.contract_months > 0 && Number(pkg.monthly_retainer) > 0;

@@ -22,7 +22,8 @@
         "payment_postback_invalid",
         "payment_amount_mismatch",
         "payment_hash_mismatch",
-        "payment_summary_rate_limit"
+        "payment_summary_rate_limit",
+        "email_unsubscribed"
       ],
       "description": "Type of security event"
     },
