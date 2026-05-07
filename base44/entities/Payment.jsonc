@@ -98,57 +98,5 @@
     "status",
     "gateway_reference"
   ],
-  "type": "object",
-  "rls": {
-    "create": {
-      "$or": [
-        {
-          "data.client_id": "{{user.data.client_id}}"
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    "read": {
-      "$or": [
-        {
-          "data.client_id": "{{user.data.client_id}}"
-        },
-        {
-          "user_condition": {
-            "role": {
-              "$in": [
-                "admin",
-                "owner",
-                "field_agent"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    "update": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "owner"
-          ]
-        }
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "owner"
-      }
-    }
-  }
+  "type": "object"
 }
