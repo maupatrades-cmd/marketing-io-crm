@@ -53,6 +53,10 @@ export default function TaskModal({ open, onClose, task, clients, users, current
           client_name: data.client_name,
           title: `Task status changed to "${data.status}": ${data.title}`,
           source: 'system',
+          // Preserve the original event_type so ClientActivityFeed and
+          // TeamActivityFeed (which key visuals on task_completed) keep
+          // rendering tasks correctly.
+          event_type: 'task_completed',
         }).catch(() => {});
       }
     } else {
@@ -64,6 +68,7 @@ export default function TaskModal({ open, onClose, task, clients, users, current
           client_name: data.client_name,
           title: `Task created: ${data.title}`,
           source: 'system',
+          event_type: 'note',
         }).catch(() => {});
       }
     }
