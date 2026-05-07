@@ -53,7 +53,7 @@
     },
     "signed_payload_hash": {
       "type": "string",
-      "description": "Hash of the signed PayFast field set at checkout-init time, used by the ITN handler to detect tampering or mismatched payloads."
+      "description": "Hash of the signed PayFast field set at checkout-init time, used by the ITN handler to detect tampering or mismatched payloads. "
     }
   },
   "required": ["client_id", "amount", "type", "status", "gateway_reference"]
