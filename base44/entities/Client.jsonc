@@ -129,9 +129,10 @@
         "fnc_referral",
         "inbound",
         "referral",
+        "checkout",
         "other"
       ],
-      "description": "Lead source path"
+      "description": "Lead source path. 'checkout' = self-service prospect created by payfast-checkout-init when an anonymous buyer hits /checkout/:packageId."
     },
     "client_user_id": {
       "type": "string",
