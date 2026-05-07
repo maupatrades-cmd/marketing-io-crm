@@ -15,7 +15,13 @@
         "suspicious_location",
         "multiple_failures",
         "account_disabled_by_owner",
-        "password_force_reset_by_owner"
+        "password_force_reset_by_owner",
+        "payment_completed",
+        "payment_signature_mismatch",
+        "payment_ip_rejected",
+        "payment_postback_invalid",
+        "payment_amount_mismatch",
+        "payment_hash_mismatch"
       ],
       "description": "Type of security event"
     },
