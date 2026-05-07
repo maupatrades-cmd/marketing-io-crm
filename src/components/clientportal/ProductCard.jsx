@@ -1,7 +1,18 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
+import { isActivePackage } from "@/config/payfastPackages";
+
+// ProductCatalog ids use underscores (`street_pulse`, `ai_chatbot`, …) but
+// the PayFast package catalogue uses hyphens (`street-pulse`, `ai-chatbot`).
+// Convert one to the other; returns null if the product doesn't map to a
+// live PayFast package (e.g. `reputation_management` is sold via enquiry).
+function toPayfastPackageId(productId) {
+  const id = String(productId || '').replace(/_/g, '-');
+  return isActivePackage(id) ? id : null;
+}
 
 function buyButtonLabel(product) {
   const setup = Number(product.setup_price || 0);
@@ -135,8 +146,28 @@ function renderCTA({ product, isActive, client, onEnquire, onContact }) {
     );
   }
 
-  // No client passed → legacy Enquire flow (preserves ClientPortal behaviour).
+  // Resolve the matching PayFast package id, if any. Used by both the
+  // logged-out and logged-in branches below so that a click goes straight
+  // to checkout for products we can self-sell.
+  const payfastId = toPayfastPackageId(product.id);
+
+  // No client passed → ClientPortal's upgrade / add-on grid. If the product
+  // is one we can self-sell (mapped to an active PayFast package), the CTA
+  // routes to /portal/checkout/<id>. Otherwise we fall back to the legacy
+  // enquire-modal flow so unmapped products (e.g. reputation_management)
+  // still have a way for the visitor to engage.
   if (!client) {
+    if (payfastId) {
+      return (
+        <Button asChild
+          className="w-full mt-4 gradient-bg text-white hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200 scale-100 hover:scale-[1.02]"
+        >
+          <Link to={`/portal/checkout/${payfastId}`}>
+            {product.cta_text || buyButtonLabel(product) || 'Get Started'}
+          </Link>
+        </Button>
+      );
+    }
     return (
       <Button
         onClick={() => onEnquire?.(product)}
@@ -163,9 +194,21 @@ function renderCTA({ product, isActive, client, onEnquire, onContact }) {
     );
   }
 
-  // Any priced product (setup + monthly, setup-only, or pure recurring) routes
-  // to Contact. Self-checkout is intentionally absent until the new payment
-  // integration is wired up.
+  // Priced product. If it's a PayFast-self-sellable package, take the buyer
+  // straight to /portal/checkout/<id> (authenticated checkout, pre-fills
+  // their saved details). If not, fall back to the contact modal so the
+  // sales team can take it from there.
+  if (payfastId) {
+    return (
+      <Link
+        to={`/portal/checkout/${payfastId}`}
+        className="w-full mt-4 inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-white gradient-bg hover:shadow-lg hover:shadow-purple-500/30 transition"
+      >
+        {buyButtonLabel(product)}
+      </Link>
+    );
+  }
+
   return (
     <button
       type="button"
