@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import {
   DEFAULT_PACKAGE_ID,
@@ -87,6 +87,7 @@ const REFERENCE_VISIBLE_MS = 1100;
 
 export default function Checkout() {
   const { packageId } = useParams();
+  const [searchParams] = useSearchParams();
 
   // Unknown / inactive → bounce to default. `replace` so the bad URL doesn't
   // sit in browser history.
@@ -96,14 +97,24 @@ export default function Checkout() {
 
   const pkg = findPackage(packageId);
 
-  return <CheckoutForm pkg={pkg} />;
+  // Pre-fill email when arriving from /payment-cancelled's "Try again" CTA.
+  // Only valid-looking emails are accepted; anything else is ignored so a
+  // crafted URL can't seed the field with garbage.
+  const emailFromQuery = (() => {
+    const raw = searchParams.get('email');
+    if (!raw) return '';
+    const trimmed = raw.trim();
+    return EMAIL_REGEX.test(trimmed) ? trimmed : '';
+  })();
+
+  return <CheckoutForm pkg={pkg} initialEmail={emailFromQuery} />;
 }
 
-function CheckoutForm({ pkg }) {
+function CheckoutForm({ pkg, initialEmail = '' }) {
   const [form, setForm] = useState({
     name_first:    '',
     name_last:     '',
-    email_address: '',
+    email_address: initialEmail,
     cell_number:   '',
     company_name:  '',
   });
