@@ -4,11 +4,6 @@ import { createHash } from 'node:crypto';
 // =============================================================================
 // PayFast checkout init — Step 6 of 10.
 //
-// BUILD MARKER (temporary, step 6 debug). Bump on every push so the live
-// deployed version is unmistakable from the response body. Strip once we
-// have a green Payment.create.
-const BUILD_MARKER = 'step6-debug-v4-phpencode';
-//
 // Single server-side entry point for both checkout flows:
 //   - Authenticated portal flow (/portal/checkout/:packageId)
 //       client_id is derived from the session token; any client_id sent in the
@@ -397,8 +392,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Defensive: even after unwrap, sanity-check we have an id. If not, fail
-  // loud with the raw client shape so we can see what came back.
+  // Sanity-check we resolved a real Client.id. If not, log the raw shape for
+  // ops triage and return a clean user-facing error.
   const clientId   = String(client?.id ?? '');
   const clientName = String(
     client?.business_name || client?.contact_person || emailLower || ''
@@ -407,16 +402,7 @@ Deno.serve(async (req) => {
   if (!clientId) {
     console.error('[payfast-checkout-init] resolved Client has no id', { flow, client });
     return Response.json(
-      {
-        error: `Could not resolve your client record (${BUILD_MARKER}). Please try again.`,
-        _build: BUILD_MARKER,
-        _debug: {
-          stage: 'client_id_resolve',
-          flow,
-          client_shape_keys: client && typeof client === 'object' ? Object.keys(client) : null,
-          client_raw: client ?? null,
-        },
-      },
+      { error: 'Could not resolve your client record. Please try again.' },
       { status: 500 }
     );
   }
@@ -460,9 +446,9 @@ Deno.serve(async (req) => {
   const signedPayloadHash = createHash('sha256').update(queryString).digest('hex');
 
   // ---- Persist the pending Payment row ------------------------------------
-  // Build payload separately so we can echo it in the debug response if the
-  // create fails. NOTE: this _debug payload is intentionally verbose during
-  // step 6 bring-up; remove once we're confident the fields line up.
+  // Built as a separate object so the catch block has the exact payload to
+  // log if Base44 rejects the create. The user-facing error stays generic;
+  // operators can see the full failure details in server logs.
   const paymentPayload: Record<string, unknown> = {
     client_id:           clientId,
     client_name:         clientName,
@@ -480,36 +466,23 @@ Deno.serve(async (req) => {
   try {
     await base44.asServiceRole.entities.Payment.create(paymentPayload);
   } catch (err: any) {
-    // Capture every part of the error we can — Base44's SDK has been seen
-    // to wrap server errors in any of: err.response.data, err.body,
-    // err.cause, err.errors. Surface them all so the failure cause is
-    // unambiguous.
-    const debug: Record<string, unknown> = {
-      message:    err?.message,
-      name:       err?.name,
-      status:     err?.status ?? err?.response?.status,
-      statusText: err?.statusText ?? err?.response?.statusText,
-      data:       err?.response?.data ?? err?.data ?? err?.body ?? null,
-      errors:     err?.errors ?? null,
-      cause:      err?.cause ? String(err.cause) : null,
-      stack:      typeof err?.stack === 'string'
-        ? err.stack.split('\n').slice(0, 8).join('\n')
-        : null,
-    };
+    // Log every part of the error Base44's SDK exposes (response.data, body,
+    // cause, errors) so operators can diagnose from logs. Don't leak any of
+    // it to the buyer's browser.
     console.error('[payfast-checkout-init] Payment.create failed', {
       payload: paymentPayload,
-      error:   debug,
+      error: {
+        message:    err?.message,
+        name:       err?.name,
+        status:     err?.status ?? err?.response?.status,
+        statusText: err?.statusText ?? err?.response?.statusText,
+        data:       err?.response?.data ?? err?.data ?? err?.body ?? null,
+        errors:     err?.errors ?? null,
+        cause:      err?.cause ? String(err.cause) : null,
+      },
     });
     return Response.json(
-      {
-        error: `Could not record the pending payment (${BUILD_MARKER}). Please try again.`,
-        _build: BUILD_MARKER,
-        _debug: {
-          stage:   'Payment.create',
-          payload: paymentPayload,
-          error:   debug,
-        },
-      },
+      { error: 'Could not record the pending payment. Please try again.' },
       { status: 500 }
     );
   }
@@ -520,6 +493,5 @@ Deno.serve(async (req) => {
     m_payment_id: mPaymentId,
     client_id: clientId,
     flow,
-    _build: BUILD_MARKER,
   });
 });
