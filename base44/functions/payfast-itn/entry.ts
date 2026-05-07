@@ -568,6 +568,26 @@ async function processITN(
       );
       // Non-fatal — do not return.
     }
+
+    // Buyer receipt email (PR D). Wrapped in try/catch — same rationale as
+    // the commission trigger above. If Resend is misconfigured or the
+    // function errors, the Payment row is already final and the buyer
+    // already saw "Payment Successful" on the success page; the worst
+    // outcome is they don't get an email and we can resend manually.
+    try {
+      await base44.functions.invoke('payfast-send-receipt', {
+        payment_id: payment.id,
+      });
+      console.log(
+        `[payfast-itn] receipt sent for payment_id=${payment.id}`
+      );
+    } catch (err) {
+      console.error(
+        `[payfast-itn] receipt send failed for payment_id=${payment.id}:`,
+        err
+      );
+      // Non-fatal — do not return.
+    }
   }
 
   // ---- Failed / cancelled paths: trigger abandoned-cart recovery ---------
