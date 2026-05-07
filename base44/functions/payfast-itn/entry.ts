@@ -65,9 +65,18 @@ function payfastUrlEncode(value: string): string {
 }
 
 // Build the canonical query string from the *received* ITN field set, in the
-// exact POST order PayFast sent them. PayFast's docs require the verifier to
-// preserve the POST order rather than re-sort, so we walk the URLSearchParams
-// in iteration order rather than ITN_FIELD_ORDER.
+// exact POST order PayFast sent them.
+//
+// IMPORTANT: this is INTENTIONALLY different from the outbound signing in
+// payfast-checkout-init. Two rules differ:
+//   1. Empty values are NOT skipped. PayFast's PHP reference iterates
+//      $_POST and signs every key except `signature`, regardless of
+//      whether the value is empty. If we skip empties our hash diverges.
+//   2. Values are NOT trimmed. PayFast computed its hash over the raw
+//      bytes it sent us; we must reproduce those exact bytes.
+// Outbound signing trims + skips empties (correct, because we control the
+// payload and PayFast verifies what they receive). Inbound verification
+// must preserve every byte PayFast posted to us.
 function buildSignatureString(
   params: URLSearchParams,
   passphrase: string
@@ -75,8 +84,7 @@ function buildSignatureString(
   const pairs: string[] = [];
   for (const [key, value] of params.entries()) {
     if (key === 'signature') continue;
-    if (value === undefined || value === null || value === '') continue;
-    pairs.push(`${key}=${payfastUrlEncode(String(value).trim())}`);
+    pairs.push(`${key}=${payfastUrlEncode(value)}`);
   }
   return `${pairs.join('&')}&passphrase=${payfastUrlEncode(passphrase)}`;
 }
@@ -273,15 +281,35 @@ async function processITN(
   }
 
   // ---- Check 1: signature ------------------------------------------------
-  const expectedSig = md5Hex(buildSignatureString(params, passphrase));
+  const sigString    = buildSignatureString(params, passphrase);
+  const expectedSig  = md5Hex(sigString);
   if (expectedSig !== receivedSig) {
+    // Diagnostic: capture the field names + lengths that went into the
+    // hash, plus the canonical sigString WITHOUT the passphrase tail.
+    // Lengths only — we never log raw values that might leak PII or the
+    // passphrase. This lets us spot trim/empty/encoding divergences on
+    // the next mismatch without re-deploying.
+    const fieldShape: Record<string, number> = {};
+    for (const [k, v] of params.entries()) {
+      if (k === 'signature') continue;
+      fieldShape[k] = v.length;
+    }
+    const sigStringNoPassphrase = sigString.replace(
+      /&passphrase=[^&]*$/,
+      '&passphrase=…'
+    );
     console.error(
       `[payfast-itn] SECURITY: signature mismatch — m_payment_id=${mPaymentId}`
     );
     await recordSecurityEvent(base44, 'payment_signature_mismatch', emailAddress, sourceIp, {
-      m_payment_id: mPaymentId,
-      received_sig: receivedSig.slice(0, 16) + '…',
-      expected_sig: expectedSig.slice(0, 16) + '…',
+      m_payment_id:    mPaymentId,
+      received_sig:    receivedSig.slice(0, 16) + '…',
+      expected_sig:    expectedSig.slice(0, 16) + '…',
+      field_shape:     fieldShape,
+      sig_string_len:  sigString.length,
+      sig_string_head: sigStringNoPassphrase.slice(0, 800),
+      passphrase_set:  Boolean(passphrase),
+      passphrase_len:  passphrase.length,
     });
     return;
   }
