@@ -1,0 +1,41 @@
+{
+  "name": "PackageEmailImage",
+  "type": "object",
+  "properties": {
+    "package_id": {
+      "type": "string",
+      "description": "PayFast package id this image belongs to."
+    },
+    "email_stage": {
+      "type": "string",
+      "enum": [
+        "email_1",
+        "email_2",
+        "email_3"
+      ],
+      "description": "Which abandoned-cart email this image illustrates."
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Generated image URL (from generate-marketing-image)."
+    },
+    "prompt_used": {
+      "type": "string",
+      "description": "Imagen prompt that produced the image — stored for audit and re-generation if needed."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_fallback": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if generate-marketing-image returned its fallback placeholder rather than a fresh Imagen render."
+    }
+  },
+  "required": [
+    "package_id",
+    "email_stage",
+    "image_url"
+  ]
+}
