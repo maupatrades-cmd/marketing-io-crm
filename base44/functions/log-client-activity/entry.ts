@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
     category,
     source,
     link,
+    event_type: eventTypeOverride,
   } = body || {};
 
   if (!client_id) {
@@ -125,7 +126,11 @@ Deno.serve(async (req) => {
       // ---- New (PR A) required fields -----------------------------------
       actor_id:       user_id || '',
       actor_role:     actorRole,
-      event_type:     'note',                      // legacy default
+      // Honour caller-supplied event_type (e.g. 'task_completed' from
+      // TaskCheckbox) so existing CRM views that filter on event_type
+      // keep finding their rows. Default 'note' for callers that don't
+      // care about the type.
+      event_type:     String(eventTypeOverride || 'note'),
       event_category: eventCategory,
       event_summary:  title,
       event_metadata: detailBody ? { body: String(detailBody) } : {},

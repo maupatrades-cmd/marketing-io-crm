@@ -26,6 +26,10 @@ export default function TaskCheckbox({ task, onUpdate, disabled }) {
         client_name: task.client_name,
         title: `Task completed: ${task.title}`,
         source: 'system',
+        // Preserve the original event_type so ClientActivityFeed and
+        // TeamActivityFeed (which key visuals on task_completed) keep
+        // rendering tasks correctly.
+        event_type: 'task_completed',
       }).catch(() => {});
     }
 
