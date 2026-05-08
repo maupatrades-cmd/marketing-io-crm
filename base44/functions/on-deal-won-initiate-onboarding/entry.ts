@@ -27,6 +27,20 @@ Deno.serve(async (req) => {
 
     console.log('[on-deal-won] Deal won:', dealId);
 
+    // Auto-create Contract (Round 3 of recovery plan). Independent of
+    // onboarding — the function is idempotent on Contract.deal_id, so a
+    // re-fired Deal.update event won't double-create. Wrapped in
+    // try/catch — failure to create the Contract MUST NOT block onboarding
+    // initiation; admin will be alerted via the existing channels and can
+    // create the Contract manually as a fallback.
+    try {
+      await base44.functions.invoke('on-deal-closed-won-create-contract', {
+        deal_id: dealId,
+      });
+    } catch (contractErr) {
+      console.error('[on-deal-won] Contract auto-creation failed (non-fatal):', contractErr.message);
+    }
+
     // Initiate onboarding
     const result = await base44.functions.invoke('initiate-onboarding', {
       deal_id: dealId

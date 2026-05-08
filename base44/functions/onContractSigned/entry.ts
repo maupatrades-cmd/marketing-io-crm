@@ -62,14 +62,63 @@ Deno.serve(async (req) => {
         signed_date: new Date().toISOString().split('T')[0]
       });
 
-      // Create task for admin to follow up with invoice & debit mandate
+      // Auto-create the setup-fee Invoice (Round 3 of recovery plan).
+      // The legacy "Issue Setup Invoice" Task remains as a manual fallback
+      // and gets auto-completed below if the create-invoice call succeeds.
+      // Idempotency: skip create if a setup_fee Invoice already exists for
+      // this contract. Re-firing the signature webhook is therefore safe.
+      let invoiceAutoCreated = false;
+      try {
+        const existingInvoices = await base44.asServiceRole.entities.Invoice.filter({
+          contract_id: contractId,
+          invoice_type: 'setup_fee',
+        });
+        const existingList = Array.isArray(existingInvoices)
+          ? existingInvoices
+          : (existingInvoices ? [existingInvoices] : []);
+        if (existingList.length > 0) {
+          console.log(
+            `[onContractSigned] setup_fee Invoice already exists for contract_id=${contractId} ` +
+            `(invoice_id=${existingList[0].id}) — skipping auto-create`
+          );
+          invoiceAutoCreated = true;
+        } else if (Number(contract.setup_fee) > 0) {
+          await base44.functions.invoke('create-invoice', {
+            client_id:    contract.client_id,
+            type:         'setup_fee',
+            contract_id:  contractId,
+            deal_id:      contract.deal_id,
+            line_items: [{
+              product_id:   contract.package || '',
+              product_name: contract.package
+                ? String(contract.package).split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')
+                : 'Setup',
+              description:  `Setup fee — ${contract.package || 'package'}`,
+              amount:       Number(contract.setup_fee),
+              quantity:     1,
+            }],
+            due_date:     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            send_email:   true,
+          });
+          invoiceAutoCreated = true;
+          console.log(`[onContractSigned] setup_fee Invoice auto-created for contract_id=${contractId}`);
+        }
+      } catch (invErr) {
+        console.error('[onContractSigned] setup_fee Invoice auto-create failed (non-fatal):', invErr.message);
+      }
+
+      // Create task for admin to follow up with invoice & debit mandate.
+      // If the auto-create above succeeded, this Task is already informational —
+      // we mark it 'done' on creation so it doesn't clutter admin's queue.
       await base44.asServiceRole.entities.Task.create({
         title: `Issue Setup Invoice - ${contract.client_name}`,
-        description: `Issue setup fee invoice of R${contract.setup_fee} for ${contract.package} package`,
+        description: invoiceAutoCreated
+          ? `Setup fee invoice of R${contract.setup_fee} auto-created on signature. Verify it sent.`
+          : `Issue setup fee invoice of R${contract.setup_fee} for ${contract.package} package`,
         client_id: contract.client_id,
         client_name: contract.client_name,
         deal_id: contract.deal_id,
-        status: 'open',
+        status: invoiceAutoCreated ? 'done' : 'open',
         priority: 'high',
         auto_generated: true,
         due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
