@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Search, CheckCircle2, Clock, AlertCircle, ArrowRight } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { getCurrentUser } from "@/lib/customAuth";
 
 const STATUS_COLORS = {
   not_started: "bg-muted/40 text-muted-foreground",
@@ -14,6 +15,16 @@ const STATUS_COLORS = {
   submitted: "bg-success/15 text-success",
   reviewed: "bg-secondary/40 text-secondary-foreground",
 };
+
+// Round 4: SLA red flag if a submission has been waiting > N days for review.
+const SLA_DAYS = 3;
+
+function daysSince(iso) {
+  if (!iso) return 0;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return 0;
+  return Math.max(0, Math.floor((Date.now() - t) / (24 * 60 * 60 * 1000)));
+}
 
 export default function ClientOnboardingReview() {
   const [submissions, setSubmissions] = useState([]);
@@ -38,10 +49,23 @@ export default function ClientOnboardingReview() {
     }
   };
 
-  const filtered = submissions.filter(s => {
-    const client = s.client_name || "";
-    return !search || client.toLowerCase().includes(search.toLowerCase());
-  });
+  // Sort oldest unreviewed first (Round 4 SLA discipline).
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = submissions.filter(s => {
+      const client = s.client_name || "";
+      return !q || client.toLowerCase().includes(q);
+    });
+    return list.sort((a, b) => {
+      // Submitted-and-not-reviewed first, oldest submitted_at first.
+      const aPending = a.submission_status === "submitted";
+      const bPending = b.submission_status === "submitted";
+      if (aPending !== bPending) return aPending ? -1 : 1;
+      const at = a.submitted_at ? new Date(a.submitted_at).getTime() : Infinity;
+      const bt = b.submitted_at ? new Date(b.submitted_at).getTime() : Infinity;
+      return at - bt;
+    });
+  }, [submissions, search]);
 
   const markAsReviewed = async (submission) => {
     setMarking(true);
@@ -55,6 +79,75 @@ export default function ClientOnboardingReview() {
       toast({ title: "Marked as reviewed", description: `${submission.client_name}'s form has been marked as reviewed` });
     } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setMarking(false);
+  };
+
+  // Round 4: review and hand off to head_of_tech in one action. The Task
+  // is created with status='open' so head_of_tech sees it; an InternalMessage
+  // is also written with recipient_role='head_of_tech' so the assignment is
+  // visible in /mail. Auto-creating Deliverables from FulfilmentTemplate is
+  // deferred to a later round (needs the autoCreateDeliverables logic from
+  // src/lib/fulfilmentAutomation.js ported into a server function).
+  const reviewAndHandOff = async (submission) => {
+    setMarking(true);
+    try {
+      const me = await getCurrentUser().catch(() => null);
+      const myId = me?.id || "";
+      const myEmail = me?.email || "";
+
+      // 1. Update submission state
+      await base44.entities.ClientOnboardingSubmission.update(submission.id, {
+        submission_status: "reviewed",
+        reviewed_at: new Date().toISOString(),
+      });
+
+      // 2. Create a Task for head_of_tech
+      const dueDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      try {
+        await base44.entities.Task.create({
+          title: `Begin fulfilment — ${submission.client_name}`,
+          description: `Onboarding form reviewed. Start fulfilment for ${submission.client_name}. Open the client to see brand assets, business info, and deliverable expectations.`,
+          client_id: submission.client_id,
+          client_name: submission.client_name,
+          deal_id: submission.deal_id || "",
+          status: "open",
+          priority: "high",
+          auto_generated: true,
+          due_date: dueDate,
+        });
+      } catch (taskErr) {
+        console.error("[ClientOnboardingReview] Task.create failed (non-fatal):", taskErr);
+      }
+
+      // 3. Notify head_of_tech via InternalMessage (recipient_role enum
+      //    includes head_of_tech — see InternalMessage.jsonc).
+      try {
+        await base44.entities.InternalMessage.create({
+          from_id:        myId,
+          from_email:     myEmail,
+          recipient_role: "head_of_tech",
+          subject:        `Fulfilment kickoff: ${submission.client_name}`,
+          message:        `Onboarding form for ${submission.client_name} has been reviewed and handed off. A Task has been created. Open /clients/${submission.client_id} to review the form details.`,
+          message_type:   "general",
+          client_id:      submission.client_id,
+          client_name:    submission.client_name,
+          priority:       "normal",
+          status:         "new",
+          read:           false,
+        });
+      } catch (msgErr) {
+        console.error("[ClientOnboardingReview] InternalMessage.create failed (non-fatal):", msgErr);
+      }
+
+      loadSubmissions();
+      setSelected(null);
+      toast({
+        title: "Reviewed & handed off",
+        description: `${submission.client_name} routed to head_of_tech. Task created and team notified.`,
+      });
+    } catch (err) {
+      toast({ title: "Hand-off failed", description: err.message, variant: "destructive" });
     }
     setMarking(false);
   };
@@ -77,16 +170,27 @@ export default function ClientOnboardingReview() {
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(s => (
-            <div key={s.id} onClick={() => setSelected(s)} className="glass rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-card-hover transition-all">
-              <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground">{s.client_name}</p>
-                <p className="text-xs text-muted-foreground">{s.submitted_at ? new Date(s.submitted_at).toLocaleDateString() : "Not submitted yet"}</p>
+          {filtered.map(s => {
+            const days = daysSince(s.submitted_at);
+            const overdue = s.submission_status === "submitted" && days > SLA_DAYS;
+            return (
+              <div key={s.id} onClick={() => setSelected(s)} className={`glass rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-card-hover transition-all ${overdue ? "border border-destructive/40" : ""}`}>
+                <div className={`w-2 h-2 rounded-full shrink-0 ${overdue ? "bg-destructive" : "bg-primary"}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground">{s.client_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {s.submitted_at ? `Submitted ${new Date(s.submitted_at).toLocaleDateString()} · ${days}d ago` : "Not submitted yet"}
+                  </p>
+                </div>
+                {overdue && (
+                  <Badge className="text-xs bg-destructive/15 text-destructive border-destructive/40">
+                    SLA: {days}d
+                  </Badge>
+                )}
+                <Badge className={`text-xs border ${STATUS_COLORS[s.submission_status]} capitalize`}>{s.submission_status.replace(/_/g, " ")}</Badge>
               </div>
-              <Badge className={`text-xs border ${STATUS_COLORS[s.submission_status]} capitalize`}>{s.submission_status.replace(/_/g, " ")}</Badge>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -154,10 +258,13 @@ export default function ClientOnboardingReview() {
 
             {/* Actions */}
             {selected.submission_status === "submitted" && (
-              <div className="flex gap-2 mt-6">
+              <div className="flex gap-2 mt-6 flex-wrap">
                 <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
-                <Button onClick={() => markAsReviewed(selected)} disabled={marking} className="gradient-bg text-white hover:opacity-90">
-                  {marking ? "Marking..." : "Mark as Reviewed"}
+                <Button variant="outline" onClick={() => markAsReviewed(selected)} disabled={marking}>
+                  {marking ? "Working…" : "Mark as Reviewed"}
+                </Button>
+                <Button onClick={() => reviewAndHandOff(selected)} disabled={marking} className="gradient-bg text-white hover:opacity-90">
+                  {marking ? "Working…" : (<>Review &amp; hand off to head_of_tech <ArrowRight className="w-4 h-4 ml-1" /></>)}
                 </Button>
               </div>
             )}

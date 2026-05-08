@@ -81,6 +81,7 @@ import ClientOrders from './pages/ClientOrders';
 import ClientSubscription from './pages/ClientSubscription';
 import ClientBillingUpdate from './pages/ClientBillingUpdate';
 import AdminServiceOrders from './pages/AdminServiceOrders';
+import AdminInvoices from './pages/AdminInvoices';
 import StaffProductivity from './pages/StaffProductivity';
 import DeliverableQuality from './pages/DeliverableQuality';
 import LeadScoring from './pages/LeadScoring';
@@ -168,6 +169,7 @@ const AuthenticatedApp = () => {
       <Route path="/owner/financials" element={<OwnerFinancials />} />
       <Route path="/owner/reports" element={<OwnerReports />} />
       <Route path="/admin/service-orders" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/"><AdminServiceOrders /></RouteGuard>} />
+      <Route path="/admin/invoices" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/"><AdminInvoices /></RouteGuard>} />
       <Route path="/staff-productivity" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><StaffProductivity /></RouteGuard>} />
       <Route path="/deliverable-quality" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><DeliverableQuality /></RouteGuard>} />
       <Route path="/lead-scoring" element={<RouteGuard allowedRoles={["owner", "admin", "field_agent", "cpc"]} fallbackPath="/"><LeadScoring /></RouteGuard>} />
