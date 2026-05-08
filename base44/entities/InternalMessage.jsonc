@@ -110,5 +110,25 @@
     "from_id",
     "subject",
     "message"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        { "data.from_id": "{{user.id}}" },
+        { "data.to_id":   "{{user.id}}" },
+        { "user_condition": { "role": "owner" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.to_id":   "{{user.id}}" },
+        { "data.from_id": "{{user.id}}" },
+        { "user_condition": { "role": "owner" } }
+      ]
+    },
+    "delete": {
+      "user_condition": { "role": "owner" }
+    }
+  }
 }

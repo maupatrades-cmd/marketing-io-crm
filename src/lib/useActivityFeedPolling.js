@@ -32,9 +32,58 @@ import { base44 } from '@/api/base44Client';
 
 const PAGE_SIZE = 30;
 
+// =============================================================================
+// Read path:
+//   - Client viewers (viewerRole='client' or undefined) read via the front-end
+//     SDK directly. The ClientActivityLog read RLS rule's first OR branch
+//     (data.client_id == user.data.client_id) matches and returns rows.
+//   - Owner/admin viewers go through list-client-activity (Round 2 of the
+//     recovery plan). The RLS rule's role-based OR branches don't match for
+//     staff sessions in the SDK's RLS evaluator, so the direct SDK call
+//     returns empty. The server function uses asServiceRole after explicit
+//     role-checking the caller via session token, returning the rows owner/
+//     admin should see.
+// =============================================================================
+const SESSION_KEY = 'mio_session_token';
+
+function getSessionToken() {
+  try { return localStorage.getItem(SESSION_KEY) || ''; } catch { return ''; }
+}
+
+async function fetchActivityRows({ viewerRole, clientId, limit }) {
+  const isStaff = viewerRole === 'owner' || viewerRole === 'admin';
+  if (isStaff) {
+    try {
+      const res = await base44.functions.invoke('list-client-activity', {
+        client_id: clientId,
+        token:     getSessionToken(),
+        limit,
+      });
+      // base44.functions.invoke returns { data, error } in some SDK versions
+      // and the bare response body in others. Normalise both.
+      const payload = res?.data ?? res;
+      const rows    = payload?.rows;
+      if (Array.isArray(rows)) return rows;
+      // Fall through to SDK call on unexpected shape.
+    } catch (err) {
+      console.error('[useActivityFeedPolling] list-client-activity failed, falling back to SDK:', err);
+      // Fall through.
+    }
+  }
+  try {
+    const rows = await base44.entities.ClientActivityLog
+      .filter({ client_id: clientId }, '-created_date', limit);
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    return [];
+  }
+}
+
 /**
  * @param {object} [opts]
  * @param {string} [opts.clientId]
+ * @param {string} [opts.viewerRole] One of 'client'|'owner'|'admin'. Determines
+ *   whether to read via the front-end SDK or via list-client-activity.
  * @param {string|null} [opts.dateRangeStart]
  * @param {string|null} [opts.dateRangeEnd]
  * @param {string|null} [opts.eventCategory]
@@ -44,6 +93,7 @@ const PAGE_SIZE = 30;
 export function useActivityFeedPolling(opts = {}) {
   const {
     clientId,
+    viewerRole,
     dateRangeStart,
     dateRangeEnd,
     eventCategory,
@@ -86,9 +136,11 @@ export function useActivityFeedPolling(opts = {}) {
       // (years of typical use under a few thousand). Pull a wider window per
       // call and do the date-range / category narrowing client-side.
       const overFetch = reset ? PAGE_SIZE * 2 : PAGE_SIZE * 2;
-      const rows = await base44.entities.ClientActivityLog
-        .filter({ client_id: clientId }, '-created_date', overFetch)
-        .catch(() => []);
+      const rows = await fetchActivityRows({
+        viewerRole,
+        clientId,
+        limit: overFetch,
+      });
       const list = (Array.isArray(rows) ? rows : []).filter(matchesFilter);
 
       if (cancelledRef.current) return;
@@ -119,7 +171,7 @@ export function useActivityFeedPolling(opts = {}) {
       console.error('[useActivityFeedPolling] fetch failed:', err);
       if (!cancelledRef.current) setError(err);
     }
-  }, [clientId, matchesFilter]);
+  }, [clientId, viewerRole, matchesFilter]);
 
   // Initial fetch + filter-change refetch.
   useEffect(() => {
@@ -187,9 +239,11 @@ export function useActivityFeedPolling(opts = {}) {
     if (!clientId || !hasMore) return;
     try {
       const target = entries.length + PAGE_SIZE;
-      const rows = await base44.entities.ClientActivityLog
-        .filter({ client_id: clientId }, '-created_date', target * 2)
-        .catch(() => []);
+      const rows = await fetchActivityRows({
+        viewerRole,
+        clientId,
+        limit: target * 2,
+      });
       const list = (Array.isArray(rows) ? rows : []).filter(matchesFilter);
       const next = list.slice(0, target);
       setEntries(next);
@@ -198,7 +252,7 @@ export function useActivityFeedPolling(opts = {}) {
     } catch (err) {
       console.error('[useActivityFeedPolling] fetchMore failed:', err);
     }
-  }, [clientId, hasMore, entries.length, matchesFilter]);
+  }, [clientId, viewerRole, hasMore, entries.length, matchesFilter]);
 
   return { entries, loading, error, lastUpdated, refresh, fetchMore, hasMore };
 }

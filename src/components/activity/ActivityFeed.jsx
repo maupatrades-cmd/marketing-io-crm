@@ -257,6 +257,7 @@ export default function ActivityFeed({
     entries, loading, error, lastUpdated, refresh, fetchMore, hasMore,
   } = useActivityFeedPolling({
     clientId,
+    viewerRole,
     dateRangeStart,
     dateRangeEnd,
     eventCategory: category === 'all' ? null : category,
