@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { getCurrentUser } from '@/lib/customAuth';
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,14 +15,56 @@ import TaskWidget from "@/components/tasks/TaskWidget";
 import TeamKPIsWidget from "@/components/kpi/TeamKPIsWidget";
 import QuickScriptsWidget from "@/components/playbook/QuickScriptsWidget";
 
-const revenueData = [
-  { month: "Nov", revenue: 68000, target: 75000 },
-  { month: "Dec", revenue: 74000, target: 75000 },
-  { month: "Jan", revenue: 81000, target: 85000 },
-  { month: "Feb", revenue: 79000, target: 85000 },
-  { month: "Mar", revenue: 88000, target: 90000 },
-  { month: "Apr", revenue: 94200, target: 90000 },
-];
+// Round 5 — replace this with real data computed from paid invoices.
+// Used as a fallback if the computation produces an empty series (e.g.
+// the database has no paid invoices yet — first month of operation).
+const FALLBACK_WEEK_SERIES = Array.from({ length: 12 }, (_, i) => ({
+  weekLabel: `W-${11 - i}`,
+  paid:      0,
+}));
+
+// Compute the start (Monday 00:00 SAST) of the week N weeks ago.
+function weekStart(weeksAgo) {
+  const now = new Date();
+  // SAST = UTC+2 with no DST. Pin to UTC+2 by using the local date math
+  // and trusting the host runs in or near SAST. For accuracy on hosts in
+  // other time zones we'd need a proper TZ library — acceptable trade-off
+  // for a dashboard chart.
+  const d = new Date(now);
+  // Roll back to Monday: getDay returns 0 (Sun) – 6 (Sat). Convert so Mon=0.
+  const day = (d.getDay() + 6) % 7;
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - day - (weeksAgo * 7));
+  return d;
+}
+
+function buildWeeklyPaidSeries(invoices) {
+  // Build 12 buckets, oldest first (W-11) → most recent (W0).
+  const buckets = [];
+  for (let i = 11; i >= 0; i--) {
+    const start = weekStart(i);
+    const end   = weekStart(i - 1);  // exclusive
+    buckets.push({
+      start,
+      end,
+      paid:      0,
+      weekLabel: start.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' }),
+    });
+  }
+  for (const inv of invoices) {
+    if (inv.status !== 'paid') continue;
+    const paidAtRaw = inv.paid_at || inv.completed_at || inv.updated_date;
+    const t = paidAtRaw ? new Date(paidAtRaw).getTime() : NaN;
+    if (Number.isNaN(t)) continue;
+    for (const b of buckets) {
+      if (t >= b.start.getTime() && t < b.end.getTime()) {
+        b.paid += Number(inv.total_amount || inv.total || inv.amount || 0);
+        break;
+      }
+    }
+  }
+  return buckets.map(b => ({ weekLabel: b.weekLabel, paid: b.paid }));
+}
 
 const pipelineData = [
   { stage: "New Lead", count: 12 },
@@ -47,7 +89,9 @@ export default function OwnerDashboard() {
       base44.entities.Client.list("-created_date", 100),
       base44.entities.Deal.list("-created_date", 100),
       base44.entities.Commission.list("-created_date", 100),
-      base44.entities.Invoice.list("-created_date", 100),
+      // Round 5: bumped to 500 + sort by issue_date so the 12-week paid
+      // chart has enough rows to compute over a full quarter.
+      base44.entities.Invoice.list("-issue_date", 500),
       base44.entities.Lead.list("-created_date", 100),
       base44.entities.MonthlyReport.list("-created_date", 100),
       getCurrentUser(),
@@ -63,6 +107,16 @@ export default function OwnerDashboard() {
       setLoading(false);
     });
   }, []);
+
+  // Round 5: real 12-week paid-invoice series (replaces hardcoded data).
+  const weeklyPaidSeries = useMemo(() => {
+    if (loading || invoices.length === 0) return FALLBACK_WEEK_SERIES;
+    const series = buildWeeklyPaidSeries(invoices);
+    // If every week is zero (e.g. fresh deployment), keep the structure
+    // but show the labels so the chart isn't blank.
+    return series.some(b => b.paid > 0) ? series : series.map(b => ({ ...b, paid: 0 }));
+  }, [invoices, loading]);
+  const totalPaid12Weeks = weeklyPaidSeries.reduce((s, w) => s + (w.paid || 0), 0);
 
   const activeClients = clients.filter(c => c.status === "active").length;
   const onboardingClients = clients.filter(c => c.status === "onboarding").length;
@@ -151,27 +205,26 @@ export default function OwnerDashboard() {
           {/* Revenue Chart */}
           <div className="lg:col-span-2 glass rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-foreground">Revenue vs Target</h2>
-              <Badge className="bg-success/15 text-success border border-success/30 text-xs">
-                ↑ 8% MoM
+              <h2 className="text-sm font-semibold text-foreground">Paid invoices · last 12 weeks</h2>
+              <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs">
+                Total: R{totalPaid12Weeks.toLocaleString("en-ZA", { maximumFractionDigits: 0 })}
               </Badge>
             </div>
             <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={revenueData}>
+              <AreaChart data={weeklyPaidSeries}>
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#a764e6" stopOpacity={0.35} />
                     <stop offset="95%" stopColor="#a764e6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="month" tick={{ fill: "#a8a8c0", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#6b6b85", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `R${(v/1000).toFixed(0)}k`} />
+                <XAxis dataKey="weekLabel" tick={{ fill: "#a8a8c0", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#6b6b85", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `R${(v/1000).toFixed(0)}k` : `R${v}`} />
                 <Tooltip
                   contentStyle={{ background: "#1c1c30", border: "1px solid rgba(167,100,230,0.3)", borderRadius: 10, fontSize: 12, color: "#f4f4fa" }}
-                  formatter={v => [`R${v.toLocaleString()}`, ""]}
+                  formatter={v => [`R${Number(v).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`, "Paid"]}
                 />
-                <Area type="monotone" dataKey="target" stroke="#ec4899" strokeWidth={1.5} strokeDasharray="5 4" fill="none" />
-                <Area type="monotone" dataKey="revenue" stroke="#a764e6" strokeWidth={2.5} fill="url(#revGrad)" />
+                <Area type="monotone" dataKey="paid" stroke="#a764e6" strokeWidth={2.5} fill="url(#revGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
