@@ -18,6 +18,58 @@ const BANK_DETAILS = {
 
 const PAYABLE_STATUSES = ['issued', 'pending_payment', 'sent', 'overdue'];
 
+// PR #56 — invoice tab filter fix.
+//
+// The Invoice.status enum (base44/entities/Invoice.jsonc) is:
+//   draft | sent | paid | overdue | failed | cancelled | partial
+//
+// The previous tab row hard-coded ['all', 'paid', 'issued', 'overdue']
+// where 'issued' isn't in the enum at all — so that tab was always empty.
+// The Outstanding total had the same bug. Tabs are now config-driven so
+// one client-facing label can fan out to multiple data statuses (e.g.
+// 'Unpaid' covers draft + sent + partial — the three states where the
+// buyer still owes money).
+//
+// 'failed' rows aren't given their own tab — rare and clutters the row;
+// they still show under 'All'.
+const OUTSTANDING_STATUSES = ['draft', 'sent', 'overdue', 'partial'];
+
+const TAB_CONFIG = [
+  {
+    id: 'all',
+    label: 'All',
+    match: () => true,
+    emptyText: 'No invoices yet.',
+  },
+  {
+    id: 'unpaid',
+    label: 'Unpaid',
+    match: (i) => ['draft', 'sent', 'partial'].includes(i.status),
+    emptyText: "No unpaid invoices — you're all caught up.",
+  },
+  {
+    id: 'overdue',
+    label: 'Overdue',
+    match: (i) => i.status === 'overdue',
+    emptyText: 'Nothing overdue — well done.',
+  },
+  {
+    id: 'paid',
+    label: 'Paid',
+    match: (i) => i.status === 'paid',
+    // Note for reviewer: this tab will look empty until PR #57 wires
+    // payfast-itn → Invoice.status. That's intentional sequencing — fix
+    // the UI logic first (this PR), the data flow next (PR #57).
+    emptyText: 'No paid invoices yet.',
+  },
+  {
+    id: 'cancelled',
+    label: 'Cancelled',
+    match: (i) => i.status === 'cancelled',
+    emptyText: 'No cancelled invoices.',
+  },
+];
+
 export default function ClientInvoices() {
   const [invoices, setInvoices] = useState([]);
   const [client, setClient] = useState(null);
@@ -66,8 +118,22 @@ export default function ClientInvoices() {
     return `Overdue by ${daysOverdue} days`;
   };
 
-  const filtered = invoices.filter(i => filter === "all" || i.status === filter);
-  const outstanding = invoices.filter(i => ["issued", "overdue"].includes(i.status)).reduce((s, i) => s + (i.total || 0), 0);
+  // Resolve the active tab; fall back to 'all' if the URL/state is stale.
+  const activeTab = TAB_CONFIG.find((t) => t.id === filter) || TAB_CONFIG[0];
+  const filtered  = invoices.filter(activeTab.match);
+
+  // Outstanding banner uses a single source of truth — same statuses for
+  // total amount and count.
+  const outstandingInvoices = invoices.filter((i) => OUTSTANDING_STATUSES.includes(i.status));
+  const outstanding         = outstandingInvoices.reduce((s, i) => s + (i.total || 0), 0);
+  const outstandingCount    = outstandingInvoices.length;
+
+  // Per-tab counts for the small badges next to each label. Computed once
+  // per render — invoice list is small and the predicates are O(1).
+  const tabCounts = TAB_CONFIG.reduce((acc, t) => {
+    acc[t.id] = invoices.filter(t.match).length;
+    return acc;
+  }, {});
 
   if (loading) return <LoadingSpinner />;
 
@@ -82,7 +148,7 @@ export default function ClientInvoices() {
             <AlertCircle className="w-5 h-5 text-destructive" />
             <div>
               <p className="font-semibold text-foreground">R{outstanding.toLocaleString()} outstanding</p>
-              <p className="text-xs text-muted-foreground">{invoices.filter(i => ["issued", "overdue"].includes(i.status)).length} unpaid invoices</p>
+              <p className="text-xs text-muted-foreground">{outstandingCount} unpaid invoice{outstandingCount === 1 ? '' : 's'}</p>
             </div>
           </div>
         )}
@@ -101,18 +167,35 @@ export default function ClientInvoices() {
         </div>
 
         <div className="flex gap-2 mb-6 overflow-x-auto">
-          {["all", "paid", "issued", "overdue"].map(f => (
-            <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap ${filter === f ? "gradient-bg text-white" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
+          {TAB_CONFIG.map((t) => {
+            const isActive = filter === t.id;
+            const count    = tabCounts[t.id] || 0;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setFilter(t.id)}
+                className={`px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'gradient-bg text-white'
+                    : 'bg-secondary text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t.label}
+                {count > 0 && (
+                  <span className={`ml-1.5 ${isActive ? 'opacity-80' : 'opacity-60'}`}>
+                    ({count})
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="space-y-3">
           {filtered.length === 0 ? (
             <div className="glass rounded-xl p-8 text-center">
               <FileText className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-muted-foreground">No invoices found</p>
+              <p className="text-muted-foreground">{activeTab.emptyText}</p>
             </div>
           ) : (
             filtered.map(inv => (
