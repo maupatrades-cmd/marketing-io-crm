@@ -34,10 +34,10 @@ const STAFF_NAV = {
   ],
   admin: [
     { path: "/staff", label: "My Day", icon: Clock },
+    { path: "/admin/invoices", label: "Invoice Chase", icon: FileText },
+    { path: "/onboarding-submissions", label: "Onboarding Queue", icon: ListChecks },
     { path: "/staff/verify-leads", label: "Verify Leads", icon: CheckCircle2 },
-    { path: "/onboarding", label: "Onboarding Queue", icon: ListChecks },
     { path: "/contracts", label: "Contracts", icon: File },
-    { path: "/invoices", label: "Invoices", icon: FileText },
     { path: "/receipts", label: "Receipts", icon: Receipt },
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
     { path: "/clients", label: "All Clients", icon: Users },
