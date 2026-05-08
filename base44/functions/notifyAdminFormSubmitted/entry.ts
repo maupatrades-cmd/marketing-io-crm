@@ -62,6 +62,27 @@ Deno.serve(async (req) => {
           html: wrapEmail(bodyHtml)
         });
         if (!result.error) notified++;
+
+        // Also write an in-app ClientNotification for this admin
+        try {
+          // Look up AppUser for this admin by email to get their ID
+          const appUsers = await base44.asServiceRole.entities.AppUser.filter({ email: admin.email });
+          const appUser = Array.isArray(appUsers) ? appUsers[0] : appUsers;
+          if (appUser?.id) {
+            await base44.asServiceRole.entities.ClientNotification.create({
+              recipient_user_id: appUser.id,
+              client_id: clientId,
+              notification_type: "onboarding_submission",
+              title: `New onboarding form: ${clientName}`,
+              body: `${clientName} has submitted their onboarding form and is awaiting review.`,
+              related_entity_type: "ClientOnboardingSubmission",
+              action_url: "/onboarding-submissions",
+              is_read: false,
+            });
+          }
+        } catch (notifErr) {
+          console.error(`[notifyAdminFormSubmitted] In-app notify failed for ${admin.email}:`, notifErr);
+        }
       } catch (err) {
         console.error(`Failed to notify ${admin.email}:`, err);
       }

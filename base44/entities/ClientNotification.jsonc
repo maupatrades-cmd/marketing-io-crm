@@ -4,18 +4,27 @@
   "properties": {
     "client_id": {
       "type": "string",
-      "description": "Reference to Client"
+      "description": "Reference to Client \u2014 optional if recipient_user_id is set"
+    },
+    "recipient_user_id": {
+      "type": "string",
+      "description": "If set, this notification is for a specific staff/admin user. If client_id is also set, it is about that client to that user."
     },
     "notification_type": {
       "type": "string",
       "enum": [
         "deliverable_ready",
         "invoice_issued",
+        "invoice_overdue",
         "payment_received",
+        "payment_failed",
         "message_received",
         "contract_to_sign",
         "report_ready",
         "onboarding_step_complete",
+        "onboarding_submission",
+        "lead_pending_verification",
+        "client_cancelled",
         "system_update"
       ]
     },
@@ -34,7 +43,7 @@
     },
     "action_url": {
       "type": "string",
-      "description": "Link in portal to view detail"
+      "description": "Link to view detail"
     },
     "is_read": {
       "type": "boolean",
@@ -46,29 +55,8 @@
     }
   },
   "required": [
-    "client_id",
     "notification_type",
     "title",
     "body"
-  ],
-  "rls": {
-    "create": {},
-    "read": {
-      "$or": [
-        { "data.client_id": "{{user.data.client_id}}" },
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } }
-      ]
-    },
-    "update": {
-      "$or": [
-        { "data.client_id": "{{user.data.client_id}}" },
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } }
-      ]
-    },
-    "delete": {
-      "user_condition": { "role": "owner" }
-    }
-  }
+  ]
 }

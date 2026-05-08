@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import ClientSidebar from "@/components/ClientSidebar";
 import PortalFooter from "@/components/PortalFooter";
+import AdminNotificationBell from "@/components/AdminNotificationBell";
 
 const STAFF_NAV = {
   field_agent: [
@@ -419,10 +420,11 @@ export default function AppLayout({ children, title, subtitle }) {
           <button className="lg:hidden hover:text-white transition-colors" style={{ color: "#6b6b85" }} onClick={() => setMobileOpen(o => !o)}>
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-base font-bold" style={{ color: "#f4f4fa" }}>{title}</h1>
             {subtitle && <p className="text-xs" style={{ color: "#6b6b85" }}>{subtitle}</p>}
           </div>
+          <AdminNotificationBell />
         </header>
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           {children}

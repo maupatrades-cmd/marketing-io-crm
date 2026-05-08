@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, FileText, Mail, CheckCircle2, ExternalLink, Repeat, Loader2, AlertTriangle } from "lucide-react";
+import { Search, FileText, Mail, CheckCircle2, ExternalLink, Repeat, Loader2, AlertTriangle, RefreshCw, Clock } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -106,6 +106,8 @@ export default function AdminInvoices() {
   const [eftSubmitting, setEftSubmitting] = useState(false);
   const [batchPreview, setBatchPreview] = useState(null);
   const [batchSubmitting, setBatchSubmitting] = useState(false);
+  const [sweepSubmitting, setSweepSubmitting] = useState(false);
+  const [renewalSubmitting, setRenewalSubmitting] = useState(false);
 
   useEffect(() => {
     loadAll();
@@ -326,6 +328,39 @@ export default function AdminInvoices() {
 
   const paymentsForInvoice = (invId) => payments.filter((p) => p.invoice_id === invId);
 
+  const runOverdueSweep = async () => {
+    setSweepSubmitting(true);
+    try {
+      const res = await base44.functions.invoke("sweep-overdue-invoices", { token: getSessionToken() });
+      const payload = res?.data ?? res;
+      toast({
+        title: `Overdue sweep complete`,
+        description: `${payload.updated_count ?? 0} invoice(s) flipped to overdue. ${payload.admin_notifications_sent ?? 0} admin notification(s) sent.`,
+      });
+      await loadAll();
+    } catch (err) {
+      toast({ title: "Sweep failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSweepSubmitting(false);
+    }
+  };
+
+  const runRenewalSweep = async () => {
+    setRenewalSubmitting(true);
+    try {
+      const res = await base44.functions.invoke("sweep-contract-renewals", { token: getSessionToken() });
+      const payload = res?.data ?? res;
+      toast({
+        title: `Renewal reminders sent`,
+        description: `${payload.sent_count ?? 0} sent, ${payload.skipped_count ?? 0} skipped.`,
+      });
+    } catch (err) {
+      toast({ title: "Renewal sweep failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRenewalSubmitting(false);
+    }
+  };
+
   return (
     <AppLayout
       title="Invoice chase queue"
@@ -351,6 +386,14 @@ export default function AdminInvoices() {
                 <Mail className="w-4 h-4 mr-2" /> Send chase to {selectedIds.size}
               </Button>
             )}
+            <Button variant="outline" onClick={runOverdueSweep} disabled={sweepSubmitting}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${sweepSubmitting ? "animate-spin" : ""}`} />
+              {sweepSubmitting ? "Sweeping…" : "Sweep overdue"}
+            </Button>
+            <Button variant="outline" onClick={runRenewalSweep} disabled={renewalSubmitting}>
+              <Clock className={`w-4 h-4 mr-2 ${renewalSubmitting ? "animate-spin" : ""}`} />
+              {renewalSubmitting ? "Sending…" : "Send renewal reminders"}
+            </Button>
             <Button onClick={previewBatch} disabled={batchSubmitting}>
               <Repeat className="w-4 h-4 mr-2" />
               {batchSubmitting ? "Loading…" : "Generate this month's batch"}

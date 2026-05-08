@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight, FileText, Phone, Clock, AlertCircle } from "lucide-react";
 import ActivityFeed from "@/components/activity/ActivityFeed";
+import CancelReactivatePanel from "@/components/client/CancelReactivatePanel";
 import { getCurrentUser } from "@/lib/customAuth";
 
 const TABS = [
@@ -152,7 +153,7 @@ export default function OwnerClientDetail() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold gradient-text">{client.business_name}</h1>
             <div className="flex items-center gap-3 mt-2">
@@ -170,6 +171,18 @@ export default function OwnerClientDetail() {
           </div>
           <Button variant="outline">Edit Client</Button>
         </div>
+
+        <CancelReactivatePanel
+          client={client}
+          viewerRole={viewerRole}
+          onRefresh={() => {
+            setLoading(true);
+            base44.entities.Client.list()
+              .then(res => Array.isArray(res) ? res.find(x => x.id === id) : res)
+              .then(c => { if (c) { setClient(c); setNotes(c.notes || ""); } })
+              .finally(() => setLoading(false));
+          }}
+        />
 
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-muted/30 rounded-xl mb-6 overflow-x-auto">

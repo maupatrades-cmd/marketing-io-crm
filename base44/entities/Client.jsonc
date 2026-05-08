@@ -18,10 +18,6 @@
       "type": "string",
       "description": "WhatsApp / mobile number"
     },
-    "id_reg_number": {
-      "type": "string",
-      "description": "ID number or CIPC registration number"
-    },
     "address": {
       "type": "string",
       "description": "Physical business address"
@@ -29,6 +25,10 @@
     "industry": {
       "type": "string",
       "description": "Business industry / sector"
+    },
+    "id_reg_number": {
+      "type": "string",
+      "description": "ID number or CIPC registration number"
     },
     "status": {
       "type": "string",
@@ -43,84 +43,6 @@
       ],
       "default": "lead"
     },
-    "package": {
-      "type": "string",
-      "enum": [
-        "ignite",
-        "accelerate",
-        "dominate",
-        "street_pulse",
-        "township_pulse",
-        "none"
-      ],
-      "default": "none"
-    },
-    "setup_fee_paid": {
-      "type": "boolean",
-      "default": false
-    },
-    "setup_fee_amount": {
-      "type": "number",
-      "description": "Setup fee amount in ZAR"
-    },
-    "monthly_retainer": {
-      "type": "number",
-      "description": "Monthly retainer amount in ZAR"
-    },
-    "debit_order_date": {
-      "type": "string",
-      "enum": [
-        "1st",
-        "15th"
-      ],
-      "description": "Debit order date"
-    },
-    "go_live_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "contract_start_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "contract_end_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "failed_debits_count": {
-      "type": "number",
-      "default": 0,
-      "description": "Number of failed debits in rolling 12 months"
-    },
-    "acceleration_triggered": {
-      "type": "boolean",
-      "default": false,
-      "description": "True if 3 failed debits triggered acceleration clause"
-    },
-    "onboarding_form_returned": {
-      "type": "boolean",
-      "default": false
-    },
-    "debit_mandate_signed": {
-      "type": "boolean",
-      "default": false
-    },
-    "brand_assets_received": {
-      "type": "boolean",
-      "default": false
-    },
-    "go_live_acknowledged": {
-      "type": "boolean",
-      "default": false
-    },
-    "assigned_field_agent": {
-      "type": "string",
-      "description": "User ID of assigned Field Agent"
-    },
-    "notes": {
-      "type": "string",
-      "description": "Internal notes"
-    },
     "source": {
       "type": "string",
       "enum": [
@@ -134,6 +56,70 @@
       ],
       "description": "Lead source path. 'checkout' = self-service prospect created by payfast-checkout-init when an anonymous buyer hits /checkout/:packageId."
     },
+    "package": {
+      "type": "string",
+      "enum": [
+        "ignite",
+        "accelerate",
+        "dominate",
+        "street_pulse",
+        "township_pulse",
+        "none"
+      ],
+      "default": "none"
+    },
+    "monthly_retainer": {
+      "type": "number",
+      "description": "Monthly retainer amount in ZAR"
+    },
+    "setup_fee_amount": {
+      "type": "number",
+      "description": "Setup fee amount in ZAR"
+    },
+    "setup_fee_paid": {
+      "type": "boolean",
+      "default": false
+    },
+    "debit_order_date": {
+      "type": "string",
+      "enum": [
+        "1st",
+        "15th"
+      ],
+      "description": "Debit order date"
+    },
+    "debit_mandate_signed": {
+      "type": "boolean",
+      "default": false
+    },
+    "contract_start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "contract_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "go_live_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "go_live_acknowledged": {
+      "type": "boolean",
+      "default": false
+    },
+    "brand_assets_received": {
+      "type": "boolean",
+      "default": false
+    },
+    "onboarding_form_returned": {
+      "type": "boolean",
+      "default": false
+    },
+    "assigned_field_agent": {
+      "type": "string",
+      "description": "User ID of assigned Field Agent"
+    },
     "client_user_id": {
       "type": "string",
       "description": "Reference to User \u2014 links to their portal login"
@@ -143,15 +129,15 @@
       "format": "date-time",
       "description": "When portal access was invited"
     },
-    "first_portal_login_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp of first portal login"
-    },
     "portal_last_active_at": {
       "type": "string",
       "format": "date-time",
       "description": "Last portal activity timestamp"
+    },
+    "first_portal_login_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of first portal login"
     },
     "preferred_communication_channel": {
       "type": "string",
@@ -164,63 +150,42 @@
       "default": "email",
       "description": "Preferred way to contact this client"
     },
+    "failed_debits_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of failed debits in rolling 12 months"
+    },
+    "acceleration_triggered": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if 3 failed debits triggered acceleration clause"
+    },
     "notification_preferences": {
       "type": "string",
       "description": "JSON object with notification settings (email_deliverable_ready, email_invoice_issued, etc.)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes"
+    },
+    "deactivated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Set when client is cancelled"
+    },
+    "archived_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Set when client moves to churned after grace period"
+    },
+    "cancellation_reason": {
+      "type": "string",
+      "description": "Free-form admin note explaining why client was cancelled"
     }
   },
   "required": [
     "business_name",
     "contact_person",
     "email"
-  ],
-  "rls": {
-    "create": {
-      "user_condition": {
-        "role": "owner"
-      }
-    },
-    "read": {
-      "$or": [
-        {
-          "data.client_user_id": "{{user.id}}"
-        },
-        {
-          "data.assigned_field_agent": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "owner"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "data.client_user_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "owner"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "delete": {
-      "user_condition": {
-        "role": "owner"
-      }
-    }
-  }
+  ]
 }
