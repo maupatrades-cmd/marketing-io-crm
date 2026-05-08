@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { getNextStepsCopy } from '@/config/packageCategories';
+import { getCurrentUser } from '@/lib/customAuth';
+import { logClientActivityFromBrowser } from '@/lib/activityLog';
 
 // Step 8 PR F — buyer-facing payment success page.
 //
@@ -263,10 +265,116 @@ function SummaryTable({ summary }) {
   );
 }
 
+// PR #54 Part A — auto-redirect from successful receipt to dashboard.
+//
+// Behaviour:
+//   - On mount, resolve the current user via getCurrentUser() (fast path
+//     reads localStorage cache; falls back to auth-me network call).
+//   - Authenticated  → /client/portal
+//     Guest          → /login?next=/client/portal
+//   - Visible 10-second countdown. Clicking anywhere on the receipt body
+//     (other than the CTA button) cancels the auto-redirect and leaves
+//     the user on the page; the CTA button itself still works.
+//   - Best-effort ClientActivityLog write on every redirect (auto OR
+//     manual) — never blocks navigation, never throws.
+//   - Activity-log details (PR #52 schema):
+//       event_category: 'payment'    (closest valid enum; brief said
+//                                     'navigation' but the schema doesn't
+//                                     include it — see PR #54 description)
+//       event_type:     'payment_to_dashboard'
+//       event_summary:  'Returned to dashboard after payment <ref>'
+//       event_metadata: { source: 'auto'|'manual', ref }
+const SUCCESS_COUNTDOWN_SEC = 10;
+
 function SuccessfulView({ summary }) {
+  const navigate = useNavigate();
+
+  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState(null);
+  const [countdownSec, setCountdownSec] = useState(SUCCESS_COUNTDOWN_SEC);
+  const [autoRedirectCancelled, setAutoRedirectCancelled] = useState(false);
+  const navigatedRef = useRef(false);
+
+  // Resolve auth status once. getCurrentUser() returns null for guests
+  // and a cached user object for authenticated buyers — fast path first,
+  // network fallback only if no cache.
+  useEffect(() => {
+    let alive = true;
+    getCurrentUser()
+      .then((u) => {
+        if (!alive) return;
+        setUser(u || null);
+        setAuthChecked(true);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setUser(null);
+        setAuthChecked(true);
+      });
+    return () => { alive = false; };
+  }, []);
+
+  const destination = user ? '/client/portal' : '/login?next=/client/portal';
+
+  // Single navigation entry point — guarded against double-fire (auto and
+  // manual paths both feed through here).
+  const goToDashboard = useCallback(async (source) => {
+    if (navigatedRef.current) return;
+    navigatedRef.current = true;
+
+    // Best-effort activity-log write. Only meaningful for authenticated
+    // users (guests have no Client row to log against).
+    if (user && summary?.ref) {
+      try {
+        const list = await base44.entities.Client.filter({ client_user_id: user.id }).catch(() => []);
+        const arr = Array.isArray(list) ? list : (list?.data ?? []);
+        const client = arr[0];
+        if (client?.id) {
+          logClientActivityFromBrowser({
+            clientId:      client.id,
+            eventType:     'payment_to_dashboard',
+            eventCategory: 'payment',
+            eventSummary:  `Returned to dashboard after payment ${summary.ref}`,
+            eventMetadata: { source, ref: summary.ref },
+          });
+        }
+      } catch (err) {
+        // Never block navigation on log errors.
+        console.warn('[PaymentSuccess] activity log skipped:', err);
+      }
+    }
+
+    navigate(destination);
+  }, [user, summary?.ref, navigate, destination]);
+
+  // Countdown effect. Runs once auth is checked. Stops if the user
+  // cancelled (clicked the receipt body) or already navigated.
+  useEffect(() => {
+    if (!authChecked) return;
+    if (autoRedirectCancelled) return;
+    if (navigatedRef.current) return;
+
+    if (countdownSec <= 0) {
+      goToDashboard('auto');
+      return;
+    }
+    const t = setTimeout(() => setCountdownSec((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [authChecked, autoRedirectCancelled, countdownSec, goToDashboard]);
+
   if (!summary) return <LoadingView />;
+
+  // Click-anywhere-on-the-body cancels the auto-redirect. The CTA button
+  // stops propagation so it bypasses this and navigates immediately.
+  const handleBodyClick = () => {
+    if (!autoRedirectCancelled) setAutoRedirectCancelled(true);
+  };
+
+  const showCountdown = authChecked && !autoRedirectCancelled && countdownSec > 0;
+  const ctaLabel = user ? 'Continue to Dashboard' : 'Continue to Sign In';
+
   return (
-    <div className="text-center">
+    <div className="text-center" onClick={handleBodyClick}>
       <BrandHeader label="Receipt" />
       <CheckCircle className="w-14 h-14 text-emerald-400 mx-auto mb-4" />
       <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
@@ -288,10 +396,29 @@ function SuccessfulView({ summary }) {
         </p>
       </div>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-500 mb-5">
         A copy of this receipt has been emailed to you. Need anything? Reply to
         that email and we'll come back within one business day.
       </p>
+
+      <button
+        type="button"
+        onClick={(e) => {
+          // Stop the body's cancel-auto-redirect handler from firing —
+          // we want the manual click to navigate, not just stop the timer.
+          e.stopPropagation();
+          goToDashboard('manual');
+        }}
+        className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#a764e6] to-[#ec4899] text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition"
+      >
+        {ctaLabel} <ArrowRight className="w-4 h-4" />
+      </button>
+
+      {showCountdown && (
+        <p className="text-xs text-slate-500 mt-3">
+          Redirecting in {countdownSec}s — click anywhere to stay on this page
+        </p>
+      )}
     </div>
   );
 }

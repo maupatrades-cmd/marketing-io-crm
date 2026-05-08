@@ -69,6 +69,66 @@ function formatTimestamp(iso) {
   return `${date} at ${time}`;
 }
 
+// PR #54 Part B — metadata visibility per viewer role.
+//
+// Clients should NEVER see event_metadata. The raw JSON exposes internal
+// terminology (m_payment_id, pf_payment_id, user_entity, etc.) and looks
+// unfinished in a paid-SaaS portal. Admin/owner viewers keep access to the
+// expanded view for debugging/support — but rendered as a labelled table
+// rather than raw JSON.stringify, with internal-only keys hidden.
+//
+// PDF export (generate-activity-pdf) renders metadata server-side and is
+// untouched by this change — admin/owner exports still include the full
+// payload, which is the correct behaviour for an audit-grade artefact.
+
+// Internal-only metadata keys we hide from BOTH the on-screen admin view
+// and (implicitly) the client view. These are noise, not signal.
+const INTERNAL_METADATA_KEYS = new Set(['user_entity', 'flow', 'source']);
+
+// Pretty labels for known metadata keys. Anything unknown falls back to
+// a humanised version of the key.
+const METADATA_LABELS = {
+  m_payment_id:    'Reference',
+  pf_payment_id:   'PayFast ID',
+  package_id:      'Package',
+  amount:          'Amount',
+  currency:        'Currency',
+  payment_status:  'Status',
+  failed_reason:   'Reason',
+  invoice_id:      'Invoice',
+  upload_id:       'Upload',
+  file_name:       'File',
+  file_type:       'File type',
+  file_size:       'File size (bytes)',
+  mime_type:       'MIME type',
+  thread_id:       'Thread',
+  message_id:      'Message',
+  sender_role:     'Sender role',
+  preview:         'Preview',
+  consultant_id:   'Consultant',
+  owner_id:        'Owner',
+  changed_fields:  'Fields changed',
+  failed_login_count: 'Failed attempts',
+  locked:          'Locked',
+  token_expires_at:'Token expires',
+  ref:             'Reference',
+};
+
+function humaniseKey(k) {
+  return String(k)
+    .replace(/_/g, ' ')
+    .replace(/\b([a-z])/g, (m) => m.toUpperCase());
+}
+
+function formatMetadataValue(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'number')  return Number.isInteger(v) ? String(v) : v.toString();
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  if (Array.isArray(v))       return v.join(', ');
+  if (typeof v === 'object')  return JSON.stringify(v);
+  return String(v);
+}
+
 function ActivityCard({ entry, viewerRole }) {
   const [expanded, setExpanded] = useState(false);
   const cat = CATEGORY_META[entry.event_category] || CATEGORY_META.account;
@@ -77,13 +137,29 @@ function ActivityCard({ entry, viewerRole }) {
   // Prefer new fields; fall back to legacy field names so old rows render too.
   const summary = entry.event_summary || entry.title || entry.event_label || '(no summary)';
   const eventType = entry.event_type || 'note';
-  const metadata = entry.event_metadata && typeof entry.event_metadata === 'object'
+  const rawMetadata = entry.event_metadata && typeof entry.event_metadata === 'object'
     ? entry.event_metadata
     : null;
 
-  const showActor = viewerRole === 'admin' || viewerRole === 'owner';
+  const isStaff = viewerRole === 'admin' || viewerRole === 'owner';
+
+  // Filter metadata to drop internal-only keys before deciding whether to
+  // show the expansion at all (staff view) or whether the metadata block
+  // exists (it's always hidden from clients).
+  const cleanedMetadata = rawMetadata
+    ? Object.fromEntries(
+        Object.entries(rawMetadata).filter(([k, v]) =>
+          !INTERNAL_METADATA_KEYS.has(k) && v !== '' && v !== null && v !== undefined
+        )
+      )
+    : null;
+
   const showSecurityFields =
-    showActor && SEC_RELEVANT_EVENTS.has(eventType) && (entry.ip_address || entry.user_agent);
+    isStaff && SEC_RELEVANT_EVENTS.has(eventType) && (entry.ip_address || entry.user_agent);
+
+  // Clients NEVER see metadata or security fields. Staff see both.
+  const showMetadata = isStaff && cleanedMetadata && Object.keys(cleanedMetadata).length > 0;
+  const hasDetails = showMetadata || showSecurityFields;
 
   const actorLabel = (() => {
     const role = String(entry.actor_role || '').trim();
@@ -94,8 +170,6 @@ function ActivityCard({ entry, viewerRole }) {
     if (name) return `${role.charAt(0).toUpperCase()}${role.slice(1)} ${name}`;
     return role.charAt(0).toUpperCase() + role.slice(1);
   })();
-
-  const hasDetails = (metadata && Object.keys(metadata).length > 0) || showSecurityFields;
 
   return (
     <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
@@ -114,7 +188,7 @@ function ActivityCard({ entry, viewerRole }) {
             <p className="font-semibold text-white">{summary}</p>
             <span className="text-[11px] text-slate-500 shrink-0">{formatTimestamp(entry.created_date)}</span>
           </div>
-          {(showActor && actorLabel) && (
+          {(isStaff && actorLabel) && (
             <p className="text-xs text-slate-400 mt-0.5">{actorLabel}</p>
           )}
         </div>
@@ -125,9 +199,9 @@ function ActivityCard({ entry, viewerRole }) {
         )}
       </button>
       {expanded && hasDetails && (
-        <div className="border-t border-slate-700/40 bg-slate-950/60 px-4 py-3">
+        <div className="border-t border-slate-700/40 bg-slate-950/60 px-4 py-3 space-y-3">
           {showSecurityFields && (
-            <div className="text-xs text-slate-300 space-y-1 mb-2">
+            <div className="text-xs text-slate-300 space-y-1">
               {entry.ip_address && (
                 <div><span className="text-slate-500">IP:</span> <span className="font-mono">{entry.ip_address}</span></div>
               )}
@@ -136,10 +210,15 @@ function ActivityCard({ entry, viewerRole }) {
               )}
             </div>
           )}
-          {metadata && Object.keys(metadata).length > 0 && (
-            <pre className="text-[11px] text-slate-300 whitespace-pre-wrap break-words font-mono">
-{JSON.stringify(metadata, null, 2)}
-            </pre>
+          {showMetadata && (
+            <dl className="text-xs grid grid-cols-[max-content,1fr] gap-x-3 gap-y-1">
+              {Object.entries(cleanedMetadata).map(([k, v]) => (
+                <div key={k} className="contents">
+                  <dt className="text-slate-500">{METADATA_LABELS[k] || humaniseKey(k)}</dt>
+                  <dd className="text-slate-200 font-mono break-words">{formatMetadataValue(v)}</dd>
+                </div>
+              ))}
+            </dl>
           )}
         </div>
       )}
