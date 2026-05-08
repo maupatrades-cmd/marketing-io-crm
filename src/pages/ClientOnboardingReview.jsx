@@ -86,9 +86,8 @@ export default function ClientOnboardingReview() {
   // Round 4: review and hand off to head_of_tech in one action. The Task
   // is created with status='open' so head_of_tech sees it; an InternalMessage
   // is also written with recipient_role='head_of_tech' so the assignment is
-  // visible in /mail. Auto-creating Deliverables from FulfilmentTemplate is
-  // deferred to a later round (needs the autoCreateDeliverables logic from
-  // src/lib/fulfilmentAutomation.js ported into a server function).
+  // visible in /mail. Round 6 (Task 6A) extends this with auto-creating
+  // Deliverables from the deal's FulfilmentTemplate.
   const reviewAndHandOff = async (submission) => {
     setMarking(true);
     try {
@@ -138,6 +137,38 @@ export default function ClientOnboardingReview() {
         });
       } catch (msgErr) {
         console.error("[ClientOnboardingReview] InternalMessage.create failed (non-fatal):", msgErr);
+      }
+
+      // 4. Round 6 Task 6A: auto-provision Deliverables from the deal's
+      //    FulfilmentTemplate. Look up the Deal to get the package code,
+      //    then invoke the server function which is idempotent on
+      //    (client_id, deal_id). Wrapped in try/catch — non-fatal if there's
+      //    no template for the package or the lookup fails. Admin still
+      //    has the Task as a manual fallback.
+      try {
+        let packageCode = "";
+        if (submission.deal_id) {
+          try {
+            const deals = await base44.entities.Deal.filter({ id: submission.deal_id });
+            const deal = Array.isArray(deals) ? deals[0] : deals;
+            packageCode = String(deal?.package || "").trim();
+          } catch (dealErr) {
+            console.error("[ClientOnboardingReview] Deal lookup failed (non-fatal):", dealErr);
+          }
+        }
+
+        if (packageCode) {
+          let token = "";
+          try { token = localStorage.getItem("mio_session_token") || ""; } catch { /* ignore */ }
+          await base44.functions.invoke("auto-create-deliverables-from-template", {
+            token,
+            client_id:    submission.client_id,
+            deal_id:      submission.deal_id || "",
+            package_code: packageCode,
+          });
+        }
+      } catch (delivErr) {
+        console.error("[ClientOnboardingReview] auto-Deliverables failed (non-fatal):", delivErr);
       }
 
       loadSubmissions();

@@ -145,5 +145,33 @@
     "business_name",
     "contact_person",
     "phone"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "role": "field_agent" } },
+        { "user_condition": { "role": "cpc" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.assigned_field_agent": "{{user.id}}" },
+        { "data.cpc_id": "{{user.id}}" },
+        { "data.created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "user_condition": { "role": "owner" }
+    }
+  }
 }

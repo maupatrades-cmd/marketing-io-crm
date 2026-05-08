@@ -95,5 +95,34 @@
     "client_id",
     "title",
     "status"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "role": "head_of_tech" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.client_id": "{{user.data.client_id}}" },
+        { "data.assigned_to": "{{user.id}}" },
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "role": "head_of_tech" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.assigned_to": "{{user.id}}" },
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "role": "head_of_tech" } }
+      ]
+    },
+    "delete": {
+      "user_condition": { "role": "owner" }
+    }
+  }
 }

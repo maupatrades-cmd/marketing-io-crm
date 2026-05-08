@@ -70,5 +70,26 @@
   "required": [
     "title",
     "status"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        { "data.assigned_to": "{{user.id}}" },
+        { "data.created_by_id": "{{user.id}}" },
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.assigned_to": "{{user.id}}" },
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "user_condition": { "role": "owner" }
+    }
+  }
 }
