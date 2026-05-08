@@ -130,7 +130,11 @@ Deno.serve(async (req) => {
     issue_date: nowIso.slice(0, 10),
     issued_at: nowIso,
     due_date: due_date || null,
-    status: 'issued',
+    // Invoice.jsonc enum is [draft, sent, paid, overdue, failed, cancelled, partial].
+    // 'issued' was historical and not in the enum — every row written before
+    // this fix has an out-of-enum status. A backfill (status='issued' →
+    // status='sent') must run alongside this change.
+    status: 'sent',
     contract_id: contract_id || null,
     deal_id: deal_id || null,
     closer_id: resolvedCloserId,

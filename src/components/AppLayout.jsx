@@ -84,7 +84,7 @@ const OWNER_NAV = [
   { path: "/activity", label: "Activity Log", icon: MessageSquare },
   { path: "/calendar", label: "Calendar", icon: Calendar },
   { path: "/payroll", label: "Payroll Report", icon: ClipboardList },
-  { path: "/staff", label: "Staff & HR", icon: UserCog },
+  { path: "/owner/staff-hr", label: "Staff & HR", icon: UserCog },
   { path: "/products", label: "Products", icon: Package },
   { path: "/mail", label: "Internal Mail", icon: Mail },
   { path: "/profile", label: "My Profile", icon: UserCircle },

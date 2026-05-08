@@ -502,6 +502,34 @@ async function processITN(
     `client_id=${payment.client_id}, amount=${expectedAmount}`
   );
 
+  // Propagate to the linked Invoice. Without this, Invoice.status stays at
+  // 'sent' forever even after a successful payment — the bug that left the
+  // Paid tab on /client/invoices permanently empty.
+  // Non-fatal on failure: Payment is already in its terminal state, so the
+  // worst case is a manual reconciliation from the chase queue.
+  if (payment.invoice_id && (newStatus === 'successful' || newStatus === 'failed')) {
+    try {
+      const invoiceUpdates: Record<string, unknown> =
+        newStatus === 'successful'
+          ? { status: 'paid', paid_at: new Date().toISOString() }
+          : { status: 'failed' };
+      await base44.asServiceRole.entities.Invoice.update(
+        payment.invoice_id,
+        invoiceUpdates,
+      );
+      console.log(
+        `[payfast-itn] Invoice.status → ${invoiceUpdates.status} — ` +
+        `invoice_id=${payment.invoice_id}, payment_id=${payment.id}`
+      );
+    } catch (invErr) {
+      console.error(
+        `[payfast-itn] Invoice.update failed (non-fatal) — ` +
+        `invoice_id=${payment.invoice_id}, payment_id=${payment.id}:`,
+        invErr
+      );
+    }
+  }
+
   // Activity audit (Client Portal PR A): payment_succeeded / payment_failed.
   // Note: payment_cancelled is logged from payfast-mark-cancelled (the buyer
   // pressed PayFast's cancel button) — NOT here, because PayFast doesn't

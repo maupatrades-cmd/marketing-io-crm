@@ -69,7 +69,7 @@ export default function AlertsPanel({ data }) {
       id: "inactive_staff",
       severity: "low",
       message: `${inactiveStaff.map(u => u.full_name || u.email).join(", ")} ${inactiveStaff.length === 1 ? "hasn't" : "haven't"} logged in for 3+ days`,
-      link: "/staff",
+      link: "/owner/staff-hr",
       linkLabel: "View staff",
     });
   }

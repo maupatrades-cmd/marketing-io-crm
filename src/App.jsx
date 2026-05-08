@@ -145,7 +145,7 @@ const AuthenticatedApp = () => {
       <Route path="/payroll" element={<PayrollReport />} />
       <Route path="/profile" element={<StaffProfile />} />
       <Route path="/mail" element={<InternalMail />} />
-      <Route path="/staff" element={<StaffHR />} />
+      <Route path="/owner/staff-hr" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><StaffHR /></RouteGuard>} />
       <Route path="/products" element={<Products />} />
       <Route path="/log-sale" element={<LogSale />} />
       <Route path="/onboarding" element={<ClientOnboarding />} />
@@ -178,7 +178,7 @@ const AuthenticatedApp = () => {
       <Route path="/unsubscribe" element={<Unsubscribe />} />
 
       {/* Staff Portal Routes */}
-      <Route path="/staff" element={<StaffMyDay />} />
+      <Route path="/staff" element={<RouteGuard allowedRoles={["admin", "owner", "field_agent", "cpc", "head_of_tech", "driver"]} fallbackPath="/"><StaffMyDay /></RouteGuard>} />
       <Route path="/staff/pipeline" element={<RouteGuard allowedRoles={["field_agent", "cpc"]} fallbackPath="/staff"><StaffMyPipeline /></RouteGuard>} />
       <Route path="/staff/clients" element={<RouteGuard allowedRoles={["field_agent", "cpc", "head_of_tech"]} fallbackPath="/staff"><StaffMyClients /></RouteGuard>} />
       <Route path="/staff/verify-leads" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/staff"><StaffVerifyLeads /></RouteGuard>} />
