@@ -56,5 +56,11 @@
   "required": [
     "event_type",
     "email"
-  ]
+  ],
+  "rls": {
+    "create": { "user_condition": { "role": "owner" } },
+    "read":   { "user_condition": { "role": "owner" } },
+    "update": { "user_condition": { "role": "owner" } },
+    "delete": { "user_condition": { "role": "owner" } }
+  }
 }

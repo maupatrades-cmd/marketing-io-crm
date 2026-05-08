@@ -145,5 +145,29 @@
     "client_id",
     "package",
     "status"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.client_id": "{{user.data.client_id}}" },
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "user_condition": { "role": "owner" }
+    }
+  }
 }
