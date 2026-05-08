@@ -101,12 +101,33 @@ export default function OwnerClientDetail() {
 
   useEffect(() => {
     (async () => {
+      // Activity reads go through list-client-activity (Round 2) — the front-end
+      // SDK's RLS-gated path returns empty for staff sessions due to a Base44
+      // user_condition role-match quirk, see blueprint § STOP-EVERYTHING #5.
+      const fetchActivityForStaff = async () => {
+        try {
+          let token = '';
+          try { token = localStorage.getItem('mio_session_token') || ''; } catch { /* ignore */ }
+          const res = await base44.functions.invoke('list-client-activity', {
+            client_id: id,
+            token,
+            limit: 10,
+          });
+          const payload = res?.data ?? res;
+          const rows    = payload?.rows;
+          return Array.isArray(rows) ? rows : [];
+        } catch (err) {
+          console.error('[OwnerClientDetail] list-client-activity failed:', err);
+          return [];
+        }
+      };
+
       const [c, d, inv, del, act, f] = await Promise.all([
         base44.entities.Client.list().then(res => Array.isArray(res) ? res.find(x => x.id === id) : res),
         base44.entities.Deal.filter({ client_id: id }),
         base44.entities.Invoice.filter({ client_id: id }),
         base44.entities.Deliverable.filter({ client_id: id }),
-        base44.entities.ClientActivityLog.filter({ client_id: id }, "-created_date", 10),
+        fetchActivityForStaff(),
         base44.entities.ClientUpload.filter({ client_id: id }),
       ]);
       

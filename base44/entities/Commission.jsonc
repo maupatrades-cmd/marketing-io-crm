@@ -206,5 +206,26 @@
     "commission_type",
     "commission_amount",
     "status"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "role": "owner" } },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.user_id": "{{user.id}}" },
+        { "data.staff_id": "{{user.id}}" },
+        { "user_condition": { "role": "owner" } }
+      ]
+    },
+    "update": {
+      "user_condition": { "role": "owner" }
+    },
+    "delete": {
+      "user_condition": { "role": "owner" }
+    }
+  }
 }
