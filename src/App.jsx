@@ -86,6 +86,7 @@ import StaffProductivity from './pages/StaffProductivity';
 import DeliverableQuality from './pages/DeliverableQuality';
 import LeadScoring from './pages/LeadScoring';
 import OwnerCampaigns from './pages/OwnerCampaigns';
+import OwnerUsers from './pages/OwnerUsers';
 import Unsubscribe from './pages/Unsubscribe';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancelled from './pages/PaymentCancelled';
@@ -174,6 +175,7 @@ const AuthenticatedApp = () => {
       <Route path="/deliverable-quality" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><DeliverableQuality /></RouteGuard>} />
       <Route path="/lead-scoring" element={<RouteGuard allowedRoles={["owner", "admin", "field_agent", "cpc"]} fallbackPath="/"><LeadScoring /></RouteGuard>} />
       <Route path="/owner/campaigns" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><OwnerCampaigns /></RouteGuard>} />
+      <Route path="/owner/users" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><OwnerUsers /></RouteGuard>} />
       <Route path="/owner/commissions" element={<CommissionDashboard />} />
       <Route path="/owner/leads" element={<LeadInbox />} />
       <Route path="/owner/leads/:leadId" element={<LeadInbox />} />
