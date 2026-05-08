@@ -270,8 +270,8 @@ function SummaryTable({ summary }) {
 // Behaviour:
 //   - On mount, resolve the current user via getCurrentUser() (fast path
 //     reads localStorage cache; falls back to auth-me network call).
-//   - Authenticated  → /client/portal
-//     Guest          → /login?next=/client/portal
+//   - Authenticated  → /client-portal
+//     Guest          → /login?next=/client-portal
 //   - Visible 10-second countdown. Clicking anywhere on the receipt body
 //     (other than the CTA button) cancels the auto-redirect and leaves
 //     the user on the page; the CTA button itself still works.
@@ -314,7 +314,7 @@ function SuccessfulView({ summary }) {
     return () => { alive = false; };
   }, []);
 
-  const destination = user ? '/client/portal' : '/login?next=/client/portal';
+  const destination = user ? '/client-portal' : '/login?next=/client-portal';
 
   // Single navigation entry point — guarded against double-fire (auto and
   // manual paths both feed through here).
