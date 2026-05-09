@@ -68,6 +68,8 @@ import OwnerReports from './pages/OwnerReports';
 import OwnerSettings from './pages/OwnerSettings';
 import CommissionDashboard from './pages/owner/CommissionDashboard';
 import LeadInbox from './pages/owner/LeadInbox';
+import AdminActivityLog from './pages/owner/AdminActivityLog';
+import StaffActivityLog from './pages/owner/StaffActivityLog';
 import ClientLayout from './components/ClientLayout';
 import ClientProducts from './pages/ClientProducts';
 import ClientSettings from './pages/ClientSettings';
@@ -175,6 +177,8 @@ const AuthenticatedApp = () => {
       <Route path="/owner/commissions" element={<CommissionDashboard />} />
       <Route path="/owner/leads" element={<LeadInbox />} />
       <Route path="/owner/leads/:leadId" element={<LeadInbox />} />
+      <Route path="/owner/admin-activity" element={<AdminActivityLog />} />
+      <Route path="/owner/staff-activity" element={<StaffActivityLog />} />
       <Route path="/unsubscribe" element={<Unsubscribe />} />
 
       {/* Staff Portal Routes */}

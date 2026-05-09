@@ -315,6 +315,32 @@ export default function AppLayout({ children, title, subtitle }) {
                 Staff Productivity
               </Link>
               <Link
+                to="/owner/admin-activity"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/owner/admin-activity"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/owner/admin-activity" ? {} : { color: "#a8a8c0" }}
+              >
+                <BarChart2 className="w-4 h-4 shrink-0" />
+                Admin Activity
+              </Link>
+              <Link
+                to="/owner/staff-activity"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/owner/staff-activity"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/owner/staff-activity" ? {} : { color: "#a8a8c0" }}
+              >
+                <Users className="w-4 h-4 shrink-0" />
+                Staff Activity
+              </Link>
+              <Link
                 to="/owner/campaigns"
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${

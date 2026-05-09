@@ -21,6 +21,9 @@ export default function StaffVerifyLeads() {
   const [clarificationMsg, setClarificationMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loadLeadOpen, setLoadLeadOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [filteredLeads, setFilteredLeads] = useState([]);
   const [newLead, setNewLead] = useState({
     business_name: "",
     contact_person: "",
@@ -57,7 +60,7 @@ export default function StaffVerifyLeads() {
       try {
         setLoading(true);
         const allLeads = await base44.entities.Lead.list("-created_date", 200);
-        const pending = allLeads.filter((l) => l.status === "pending_verification");
+        const pending = allLeads.filter((l) => l.status === "pending_verification" || l.status === "verified");
         setLeads(pending);
       } catch (error) {
         console.error("Error fetching leads:", error);
@@ -69,19 +72,48 @@ export default function StaffVerifyLeads() {
     fetchLeads();
   }, []);
 
+  // Apply date filters
+  useEffect(() => {
+    let filtered = leads;
+    if (dateFrom) {
+      filtered = filtered.filter(l => new Date(l.created_date) >= new Date(dateFrom));
+    }
+    if (dateTo) {
+      filtered = filtered.filter(l => new Date(l.created_date) <= new Date(dateTo));
+    }
+    setFilteredLeads(filtered);
+  }, [leads, dateFrom, dateTo]);
+
   const handleApprove = async (lead) => {
     try {
       setSubmitting(true);
+      const verifiedDate = new Date().toISOString().split('T')[0];
+      
+      // Update lead status
       await base44.entities.Lead.update(lead.id, {
         status: "verified",
-        verified_date: new Date().toISOString().split('T')[0],
+        verified_date: verifiedDate,
       });
-      // Keep the lead in the list instead of removing it
+
+      // Auto-create a Client record from the verified lead
+      await base44.entities.Client.create({
+        business_name: lead.business_name,
+        contact_person: lead.contact_person,
+        email: lead.email,
+        phone: lead.phone,
+        address: lead.address || "",
+        industry: lead.industry || "",
+        status: "prospect",
+        source: lead.source,
+        package: lead.interested_products?.[0] || "none",
+      });
+
+      // Keep the lead in the list
       const updatedLeads = leads.map((l) =>
-        l.id === lead.id ? { ...l, status: "verified", verified_date: new Date().toISOString().split('T')[0] } : l
+        l.id === lead.id ? { ...l, status: "verified", verified_date: verifiedDate } : l
       );
       setLeads(updatedLeads);
-      setVerifiedLead({ ...lead, status: "verified", verified_date: new Date().toISOString().split('T')[0] });
+      setVerifiedLead({ ...lead, status: "verified", verified_date: verifiedDate });
       setDetailOpen(true);
     } catch (error) {
       console.error("Error approving lead:", error);
@@ -193,9 +225,9 @@ export default function StaffVerifyLeads() {
   };
 
   return (
-    <AppLayout title="Verify Leads" subtitle={`${leads.length} pending`}>
-      {/* Load Lead Button */}
-      <div className="mb-6">
+    <AppLayout title="Verify Leads" subtitle={`${filteredLeads.length} leads (${leads.filter(l => l.status === "pending_verification").length} pending, ${leads.filter(l => l.status === "verified").length} verified)`}>
+      {/* Load Lead Button + Filters */}
+      <div className="mb-6 space-y-4">
         <Button
           onClick={() => setLoadLeadOpen(true)}
           className="gap-2"
@@ -203,20 +235,54 @@ export default function StaffVerifyLeads() {
           <Plus className="w-4 h-4" />
           Load Lead
         </Button>
+
+        {/* Date Filters */}
+        <div className="flex gap-3 items-end">
+          <div>
+            <label className="text-sm font-medium text-foreground block mb-1">From Date</label>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="bg-secondary/50 border-border/50"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-foreground block mb-1">To Date</label>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="bg-secondary/50 border-border/50"
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setDateFrom("");
+                setDateTo("");
+              }}
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading leads...</p>
-          </div>
-        ) : leads.length === 0 ? (
-           <div className="glass rounded-xl p-12 text-center">
-             <CheckCircle2 className="w-12 h-12 text-success/30 mx-auto mb-3" />
-             <p className="text-muted-foreground">No leads to verify</p>
+           <div className="text-center py-12">
+             <p className="text-muted-foreground">Loading leads...</p>
            </div>
-         ) : (
-           leads.map((lead) => (
+         ) : filteredLeads.length === 0 ? (
+            <div className="glass rounded-xl p-12 text-center">
+              <CheckCircle2 className="w-12 h-12 text-success/30 mx-auto mb-3" />
+              <p className="text-muted-foreground">{dateFrom || dateTo ? "No leads match these dates" : "No leads to verify"}</p>
+            </div>
+          ) : (
+            filteredLeads.map((lead) => (
              <div key={lead.id} className={`glass rounded-xl p-6 space-y-4 border-l-4 ${lead.status === "verified" ? "border-success" : "border-warning"}`}>
               {/* Header */}
               <div className="flex items-start justify-between">
