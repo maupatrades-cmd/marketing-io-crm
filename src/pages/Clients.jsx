@@ -74,7 +74,22 @@ export default function Clients() {
      setClients(d);
      setLoading(false);
    };
-   useEffect(() => { load(); }, []);
+   useEffect(() => { 
+     load(); 
+
+     // Subscribe to real-time client updates
+     const unsubscribe = base44.entities.Client.subscribe((event) => {
+       if (event.type === 'create') {
+         setClients(prev => [event.data, ...prev]);
+       } else if (event.type === 'update') {
+         setClients(prev => prev.map(c => c.id === event.id ? event.data : c));
+       } else if (event.type === 'delete') {
+         setClients(prev => prev.filter(c => c.id !== event.id));
+       }
+     });
+
+     return () => unsubscribe();
+   }, []);
 
   const filtered = clients.filter(c => {
     const matchSearch = !search || c.business_name?.toLowerCase().includes(search.toLowerCase()) || c.contact_person?.toLowerCase().includes(search.toLowerCase()) || c.email?.toLowerCase().includes(search.toLowerCase());
