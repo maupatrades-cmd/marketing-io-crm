@@ -28,6 +28,7 @@ function daysSince(iso) {
 
 export default function ClientOnboardingReview() {
   const [submissions, setSubmissions] = useState([]);
+  const [clients, setClients] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
@@ -36,12 +37,49 @@ export default function ClientOnboardingReview() {
 
   useEffect(() => {
     loadSubmissions();
+    
+    // Subscribe to real-time updates
+    const unsubSubs = base44.entities.ClientOnboardingSubmission.subscribe((event) => {
+      if (event.type === 'create' || event.type === 'update') {
+        loadSubmissions();
+      } else if (event.type === 'delete') {
+        setSubmissions(prev => prev.filter(s => s.id !== event.id));
+      }
+    });
+
+    const unsubClients = base44.entities.Client.subscribe((event) => {
+      if (event.type === 'update' && event.id) {
+        setClients(prev => ({ ...prev, [event.id]: event.data }));
+      }
+    });
+
+    return () => {
+      unsubSubs();
+      unsubClients();
+    };
   }, []);
 
   const loadSubmissions = async () => {
     try {
       const subs = await base44.entities.ClientOnboardingSubmission.list("-submitted_at", 100);
       setSubmissions(subs);
+      
+      // Load associated clients
+      const clientIds = [...new Set(subs.map(s => s.client_id).filter(Boolean))];
+      if (clientIds.length > 0) {
+        try {
+          const clientData = {};
+          for (const id of clientIds) {
+            const result = await base44.entities.Client.filter({ id }, "", 1);
+            if (result) {
+              clientData[id] = Array.isArray(result) ? result[0] : result;
+            }
+          }
+          setClients(clientData);
+        } catch (clientErr) {
+          console.error("Failed to load client data:", clientErr);
+        }
+      }
       setLoading(false);
     } catch (err) {
       toast({ title: "Error loading submissions", description: err.message, variant: "destructive" });
@@ -201,28 +239,32 @@ export default function ClientOnboardingReview() {
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(s => {
-            const days = daysSince(s.submitted_at);
-            const overdue = s.submission_status === "submitted" && days > SLA_DAYS;
-            return (
-              <div key={s.id} onClick={() => setSelected(s)} className={`glass rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-card-hover transition-all ${overdue ? "border border-destructive/40" : ""}`}>
-                <div className={`w-2 h-2 rounded-full shrink-0 ${overdue ? "bg-destructive" : "bg-primary"}`} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground">{s.client_name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {s.submitted_at ? `Submitted ${new Date(s.submitted_at).toLocaleDateString()} · ${days}d ago` : "Not submitted yet"}
-                  </p>
-                </div>
-                {overdue && (
-                  <Badge className="text-xs bg-destructive/15 text-destructive border-destructive/40">
-                    SLA: {days}d
-                  </Badge>
-                )}
-                <Badge className={`text-xs border ${STATUS_COLORS[s.submission_status]} capitalize`}>{s.submission_status.replace(/_/g, " ")}</Badge>
-              </div>
-            );
-          })}
-        </div>
+           {filtered.map(s => {
+             const days = daysSince(s.submitted_at);
+             const overdue = s.submission_status === "submitted" && days > SLA_DAYS;
+             const client = clients[s.client_id];
+             return (
+               <div key={s.id} onClick={() => setSelected(s)} className={`glass rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-card-hover transition-all ${overdue ? "border border-destructive/40" : ""}`}>
+                 <div className={`w-2 h-2 rounded-full shrink-0 ${overdue ? "bg-destructive" : "bg-primary"}`} />
+                 <div className="flex-1 min-w-0">
+                   <p className="font-semibold text-foreground">{s.client_name}</p>
+                   <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                     {client?.contact_person && <p>👤 {client.contact_person}</p>}
+                     {client?.phone && <p>📱 {client.phone}</p>}
+                     {client?.status && <p>Status: <span className="capitalize">{client.status}</span></p>}
+                     {s.submitted_at && <p>{new Date(s.submitted_at).toLocaleDateString()} · {days}d ago</p>}
+                   </div>
+                 </div>
+                 {overdue && (
+                   <Badge className="text-xs bg-destructive/15 text-destructive border-destructive/40">
+                     SLA: {days}d
+                   </Badge>
+                 )}
+                 <Badge className={`text-xs border ${STATUS_COLORS[s.submission_status]} capitalize`}>{s.submission_status.replace(/_/g, " ")}</Badge>
+               </div>
+             );
+           })}
+         </div>
       )}
 
       {/* Detail Modal */}
