@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone, UserPlus, Search } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone, UserPlus, Search, ArrowLeft } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
@@ -144,6 +144,9 @@ export default function AppLayout({ children, title, subtitle }) {
         <div className="flex-1 flex flex-col min-w-0">
           <header className="px-4 lg:px-6 py-4 flex items-center gap-4"
             style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(10,10,20,0.6)", backdropFilter: "blur(10px)" }}>
+            <button onClick={() => navigate(-1)} className="shrink-0 hover:text-white transition-colors" style={{ color: "#6b6b85" }} title="Go back">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <div>
               <h1 className="text-base font-bold" style={{ color: "#f4f4fa" }}>{title}</h1>
               {subtitle && <p className="text-xs" style={{ color: "#6b6b85" }}>{subtitle}</p>}
@@ -458,6 +461,9 @@ export default function AppLayout({ children, title, subtitle }) {
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(10,10,20,0.6)", backdropFilter: "blur(10px)" }}>
           <button className="lg:hidden hover:text-white transition-colors" style={{ color: "#6b6b85" }} onClick={() => setMobileOpen(o => !o)}>
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+          <button onClick={() => navigate(-1)} className="shrink-0 hover:text-white transition-colors" style={{ color: "#6b6b85" }} title="Go back">
+            <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <h1 className="text-base font-bold" style={{ color: "#f4f4fa" }}>{title}</h1>

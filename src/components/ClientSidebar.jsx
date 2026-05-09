@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   Bell,
-  Search
+  Search,
+  ArrowLeft
 } from 'lucide-react';
 import { destroySession } from '@/lib/customAuth';
 import { useState } from 'react';

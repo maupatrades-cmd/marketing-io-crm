@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Menu } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { getCurrentUser } from '@/lib/customAuth';
@@ -16,6 +17,7 @@ export default function ClientLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setMobileOpen(false);
@@ -75,9 +77,26 @@ export default function ClientLayout() {
         setMobileOpen={setMobileOpen}
         onContact={() => setContactOpen(true)}
       />
-      <main className="flex-1 min-w-0 overflow-auto">
-        <Outlet />
+      <main className="flex-1 min-w-0 overflow-auto flex flex-col">
+        <div className="flex items-center gap-3 px-4 py-3 md:hidden" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(10,10,20,0.8)' }}>
+          <button onClick={() => setMobileOpen(o => !o)} style={{ color: '#6b6b85' }}>
+            <Menu className="w-5 h-5" />
+          </button>
+          <button onClick={() => navigate(-1)} style={{ color: '#6b6b85' }} title="Go back">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="hidden md:flex items-center gap-2 px-4 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-xs hover:text-white transition-colors" style={{ color: '#6b6b85' }} title="Go back">
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        </div>
+        <div className="flex-1">
+          <Outlet />
+        </div>
       </main>
+
 
       {contactOpen && (
         <ContactCenterModal
