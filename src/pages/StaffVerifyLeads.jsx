@@ -5,9 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AppLayout from "@/components/AppLayout";
-import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Plus } from "lucide-react";
 
 export default function StaffVerifyLeads() {
   const { user } = useAuth();
@@ -18,6 +19,14 @@ export default function StaffVerifyLeads() {
   const [clarificationLead, setClarificationLead] = useState(null);
   const [clarificationMsg, setClarificationMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [loadLeadOpen, setLoadLeadOpen] = useState(false);
+  const [newLead, setNewLead] = useState({
+    business_name: "",
+    contact_person: "",
+    email: "",
+    phone: "",
+    notes: "",
+  });
 
   // Admin-only access check
   useEffect(() => {
@@ -88,8 +97,56 @@ export default function StaffVerifyLeads() {
     }
   };
 
+  const handleLoadLead = async () => {
+    if (!newLead.business_name.trim() || !newLead.contact_person.trim()) return;
+
+    try {
+      setSubmitting(true);
+      const lead = await base44.entities.Lead.create({
+        business_name: newLead.business_name,
+        contact_person: newLead.contact_person,
+        email: newLead.email,
+        phone: newLead.phone,
+        notes: newLead.notes,
+        status: "pending_verification",
+        warm_lead_criteria: {
+          has_business_premises: false,
+          has_trading_history: false,
+          decision_maker_contacted: false,
+          expressed_interest: false,
+          has_budget_indication: false,
+        },
+      });
+
+      setLeads((prev) => [lead, ...prev]);
+      setNewLead({
+        business_name: "",
+        contact_person: "",
+        email: "",
+        phone: "",
+        notes: "",
+      });
+      setLoadLeadOpen(false);
+    } catch (error) {
+      console.error("Error loading lead:", error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <AppLayout title="Verify Leads" subtitle={`${leads.length} pending`}>
+      {/* Load Lead Button */}
+      <div className="mb-6">
+        <Button
+          onClick={() => setLoadLeadOpen(true)}
+          className="gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Load Lead
+        </Button>
+      </div>
+
       <div className="space-y-4">
         {loading ? (
           <div className="text-center py-12">
@@ -206,6 +263,74 @@ export default function StaffVerifyLeads() {
                 disabled={submitting || !clarificationMsg.trim()}
               >
                 Send Request
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Load Lead Modal */}
+      <Dialog open={loadLeadOpen} onOpenChange={setLoadLeadOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="gradient-text">Load New Lead</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Business Name *</label>
+              <Input
+                placeholder="e.g., Tech Solutions Ltd"
+                value={newLead.business_name}
+                onChange={(e) => setNewLead({ ...newLead, business_name: e.target.value })}
+                className="bg-secondary/50 border-border/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Contact Person *</label>
+              <Input
+                placeholder="e.g., John Doe"
+                value={newLead.contact_person}
+                onChange={(e) => setNewLead({ ...newLead, contact_person: e.target.value })}
+                className="bg-secondary/50 border-border/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Email</label>
+              <Input
+                type="email"
+                placeholder="john@example.com"
+                value={newLead.email}
+                onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                className="bg-secondary/50 border-border/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Phone</label>
+              <Input
+                placeholder="+27 123 456 7890"
+                value={newLead.phone}
+                onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
+                className="bg-secondary/50 border-border/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Notes</label>
+              <Textarea
+                placeholder="CPC notes, context, or observations..."
+                value={newLead.notes}
+                onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
+                className="min-h-20 bg-secondary/50 border-border/50"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setLoadLeadOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleLoadLead}
+                disabled={submitting || !newLead.business_name.trim() || !newLead.contact_person.trim()}
+              >
+                Load Lead
               </Button>
             </div>
           </div>
