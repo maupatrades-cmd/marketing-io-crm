@@ -3,17 +3,43 @@ import { useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight, FileText, Phone, Clock, AlertCircle } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import ActivityFeed from "@/components/activity/ActivityFeed";
 import CancelReactivatePanel from "@/components/client/CancelReactivatePanel";
 import { getCurrentUser } from "@/lib/customAuth";
+import { logClientActivityFromBrowser } from "@/lib/activityLog";
 
 const TABS = [
   "overview", "discovery", "contacts", "deals", "invoices", "deliverables",
   "communications", "files", "activity", "audit"
 ];
+
+const STATUS_OPTIONS = [
+  "lead", "prospect", "onboarding", "active", "suspended", "cancelled", "churned",
+];
+
+const PACKAGE_OPTIONS = {
+  none: "—",
+  ignite: "Ignite",
+  accelerate: "Accelerate",
+  dominate: "Dominate",
+  street_pulse: "Street Pulse",
+  township_pulse: "Township Pulse",
+};
+
+const EMPTY_EDIT_FORM = {
+  business_name: "", contact_person: "", email: "", phone: "",
+  industry: "", status: "lead", package: "none",
+  monthly_retainer: "", setup_fee_amount: "",
+  contract_end_date: "", notes: "",
+};
 
 const LEAD_SCORE_BADGES = {
   hot:         { label: "Hot",         emoji: "🔥", className: "bg-destructive/15 text-destructive border-destructive/40" },
@@ -88,9 +114,13 @@ export default function OwnerClientDetail() {
   const [files, setFiles] = useState([]);
   const [notes, setNotes] = useState("");
   const [editing, setEditing] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
+  const [editSaving, setEditSaving] = useState(false);
   // viewerRole drives ActivityFeed's actor-info column. The page is route-
   // guarded to admin|owner only, so we just need to know which one.
   const [viewerRole, setViewerRole] = useState("admin");
+  const { toast } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -143,8 +173,72 @@ export default function OwnerClientDetail() {
     })();
   }, [id]);
 
+  // Populate the edit form whenever the dialog opens against a fresh client.
+  useEffect(() => {
+    if (showEditDialog && client) {
+      setEditForm({
+        business_name:     client.business_name || "",
+        contact_person:    client.contact_person || "",
+        email:             client.email || "",
+        phone:             client.phone || "",
+        industry:          client.industry || "",
+        status:            client.status || "lead",
+        package:           client.package || "none",
+        monthly_retainer:  client.monthly_retainer ?? "",
+        setup_fee_amount:  client.setup_fee_amount ?? "",
+        contract_end_date: client.contract_end_date ? String(client.contract_end_date).slice(0, 10) : "",
+        notes:             client.notes || "",
+      });
+    }
+  }, [showEditDialog, client]);
+
+  const refetchClient = async () => {
+    const refreshed = await base44.entities.Client.list()
+      .then(res => Array.isArray(res) ? res.find(x => x.id === id) : res)
+      .catch(() => null);
+    if (refreshed) {
+      setClient(refreshed);
+      setNotes(refreshed.notes || "");
+    }
+    return refreshed;
+  };
+
+  const saveEdit = async () => {
+    if (!client?.id) return;
+    setEditSaving(true);
+    try {
+      const payload = {
+        ...editForm,
+        monthly_retainer: editForm.monthly_retainer === "" ? 0 : Number(editForm.monthly_retainer) || 0,
+        setup_fee_amount: editForm.setup_fee_amount === "" ? 0 : Number(editForm.setup_fee_amount) || 0,
+        contract_end_date: editForm.contract_end_date || null,
+      };
+      await base44.entities.Client.update(client.id, payload);
+      await refetchClient();
+      logClientActivityFromBrowser({
+        clientId:       client.id,
+        eventType:      "client_updated_by_staff",
+        eventCategory:  "profile",
+        eventSummary:   `Client details updated by ${viewerRole}`,
+        eventMetadata:  { fields: Object.keys(payload) },
+      });
+      setShowEditDialog(false);
+      toast({ title: "Client updated" });
+    } catch (err) {
+      console.error("[OwnerClientDetail] Client.update failed:", err);
+      toast({
+        title: "Couldn't save changes",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    }
+    setEditSaving(false);
+  };
+
   if (loading) return <LoadingSpinner />;
   if (!client) return <div className="p-6 text-center text-muted-foreground">Client not found</div>;
+
+  const emailChanged = editForm.email && client?.email && editForm.email !== client.email;
 
   const outstanding = invoices.filter(i => ["issued", "overdue"].includes(i.status)).reduce((s, i) => s + (i.total || 0), 0);
   const monthsAsClient = client.contract_start_date ? Math.floor((new Date() - new Date(client.contract_start_date)) / (1000 * 60 * 60 * 24 * 30)) : 0;
@@ -169,7 +263,7 @@ export default function OwnerClientDetail() {
               {client.assigned_field_agent && <span className="text-sm text-muted-foreground">Assigned: User {client.assigned_field_agent}</span>}
             </div>
           </div>
-          <Button variant="outline">Edit Client</Button>
+          <Button variant="outline" onClick={() => setShowEditDialog(true)}>Edit Client</Button>
         </div>
 
         <CancelReactivatePanel
@@ -208,13 +302,27 @@ export default function OwnerClientDetail() {
               <Card className="glass">
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Package</p>
-                  <p className="text-lg font-bold capitalize">{client.package}</p>
+                  {client.package && client.package !== "none" ? (
+                    <p className="text-lg font-bold">{PACKAGE_OPTIONS[client.package] || client.package}</p>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-muted-foreground italic">No package set</p>
+                      <button onClick={() => setShowEditDialog(true)} className="text-xs text-primary hover:underline mt-1">Set package</button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               <Card className="glass">
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Monthly Retainer</p>
-                  <p className="text-lg font-bold">R{(client.monthly_retainer || 0).toLocaleString()}</p>
+                  {Number(client.monthly_retainer || 0) > 0 ? (
+                    <p className="text-lg font-bold">R{Number(client.monthly_retainer).toLocaleString()}</p>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-muted-foreground italic">Not set</p>
+                      <button onClick={() => setShowEditDialog(true)} className="text-xs text-primary hover:underline mt-1">Set retainer</button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               <Card className="glass">
@@ -226,7 +334,14 @@ export default function OwnerClientDetail() {
               <Card className="glass">
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground mb-1">Next Renewal</p>
-                  <p className="text-lg font-bold">{client.contract_end_date ? new Date(client.contract_end_date).toLocaleDateString("en-ZA") : "N/A"}</p>
+                  {client.contract_end_date ? (
+                    <p className="text-lg font-bold">{new Date(client.contract_end_date).toLocaleDateString("en-ZA")}</p>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-muted-foreground italic">Not set</p>
+                      <button onClick={() => setShowEditDialog(true)} className="text-xs text-primary hover:underline mt-1">Set renewal</button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -484,7 +599,77 @@ export default function OwnerClientDetail() {
             </div>
           </div>
         )}
+
+        {/* Edit Client Dialog — full-field edit, mirrors the Add Client form
+            on /clients with the addition of Contract End Date. */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="bg-card border-border/50 max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="gradient-text">Edit Client</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <div className="col-span-2">
+                <EditField label="Business Name *" value={editForm.business_name} onChange={v => setEditForm(f => ({ ...f, business_name: v }))} />
+              </div>
+              <EditField label="Contact Person *" value={editForm.contact_person} onChange={v => setEditForm(f => ({ ...f, contact_person: v }))} />
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Email *</Label>
+                <Input
+                  type="text"
+                  value={editForm.email || ""}
+                  onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+                  className="bg-secondary/50 border-border/50"
+                />
+                {emailChanged && (
+                  <p className="text-xs text-warning mt-1">Changing email will require client to re-activate their portal.</p>
+                )}
+              </div>
+              <EditField label="Phone" value={editForm.phone} onChange={v => setEditForm(f => ({ ...f, phone: v }))} />
+              <EditField label="Industry" value={editForm.industry} onChange={v => setEditForm(f => ({ ...f, industry: v }))} />
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
+                <Select value={editForm.status} onValueChange={v => setEditForm(f => ({ ...f, status: v }))}>
+                  <SelectTrigger className="bg-secondary/50 border-border/50"><SelectValue /></SelectTrigger>
+                  <SelectContent>{STATUS_OPTIONS.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Package</Label>
+                <Select value={editForm.package} onValueChange={v => setEditForm(f => ({ ...f, package: v }))}>
+                  <SelectTrigger className="bg-secondary/50 border-border/50"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(PACKAGE_OPTIONS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <EditField label="Monthly Retainer (R)" type="number" value={editForm.monthly_retainer} onChange={v => setEditForm(f => ({ ...f, monthly_retainer: v }))} />
+              <EditField label="Setup Fee (R)" type="number" value={editForm.setup_fee_amount} onChange={v => setEditForm(f => ({ ...f, setup_fee_amount: v }))} />
+              <EditField label="Contract End Date" type="date" value={editForm.contract_end_date} onChange={v => setEditForm(f => ({ ...f, contract_end_date: v }))} />
+              <div className="col-span-2">
+                <Label className="text-xs text-muted-foreground mb-1 block">Notes</Label>
+                <Textarea
+                  value={editForm.notes}
+                  onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                  className="bg-secondary/50 border-border/50 h-20"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="ghost" onClick={() => setShowEditDialog(false)}>Cancel</Button>
+              <Button onClick={saveEdit} disabled={editSaving} className="gradient-bg text-white hover:opacity-90">
+                {editSaving ? "Saving…" : "Save Changes"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
+    </div>
+  );
+}
+
+function EditField({ label, value, onChange, type = "text" }) {
+  return (
+    <div>
+      <Label className="text-xs text-muted-foreground mb-1 block">{label}</Label>
+      <Input type={type} value={value ?? ""} onChange={e => onChange(e.target.value)} className="bg-secondary/50 border-border/50" />
     </div>
   );
 }
