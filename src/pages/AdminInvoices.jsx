@@ -347,16 +347,16 @@ export default function AdminInvoices() {
     try {
       const amount = Number(createForm.amount);
       const res = await base44.functions.invoke("create-invoice", {
-        token: getSessionToken(),
         client_id: createForm.client_id,
-        client_name: createForm.client_name,
-        invoice_type: createForm.invoice_type,
-        amount,
-        total_amount: amount,
-        due_date: createForm.due_date,
-        description: createForm.description,
-        status: createForm.send_email ? "sent" : "draft",
+        type: createForm.invoice_type,
+        due_date: createForm.due_date || null,
         send_email: createForm.send_email,
+        line_items: [{
+          product_name: createForm.invoice_type.replace(/_/g, " "),
+          description: createForm.description || createForm.invoice_type.replace(/_/g, " "),
+          amount,
+          quantity: 1,
+        }],
       });
       const payload = res?.data ?? res;
       toast({ title: `Invoice created`, description: `${payload?.invoice_number || ""} — ${fmtMoney(amount)}` });
