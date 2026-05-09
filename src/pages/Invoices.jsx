@@ -3,13 +3,30 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, Plus, FileText, AlertTriangle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import { useToast } from "@/components/ui/use-toast";
 import { notifyClient } from "@/lib/clientNotifier";
+import { PRODUCT_CATALOG, getProductById } from "@/data/ProductCatalog";
+
+const CUSTOM_PRODUCT_ID = "__custom__";
+
+const MONTHLY_INVOICE_TYPES = new Set(["monthly_retainer", "add_on_monthly", "per_sms"]);
+
+function prettyInvoiceType(t) {
+  if (!t) return "";
+  return t.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function priceForType(product, invoiceType) {
+  if (!product) return 0;
+  if (MONTHLY_INVOICE_TYPES.has(invoiceType)) return Number(product.monthly_price || 0);
+  return Number(product.setup_price || 0);
+}
 
 const STATUS_COLORS = {
   draft: "bg-muted/40 text-muted-foreground border-border/40",
@@ -28,8 +45,9 @@ const INVOICE_TYPES = [
 
 const EMPTY = {
   client_id: "", client_name: "", invoice_type: "monthly_retainer",
-  description: "", amount: "", vat_applicable: false, due_date: "",
-  status: "draft", payment_method: "", notes: "",
+  product_id: "", description: "", amount: "",
+  vat_applicable: false, due_date: "",
+  status: "sent", payment_method: "", notes: "",
 };
 
 export default function Invoices() {
@@ -41,6 +59,7 @@ export default function Invoices() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
   const load = () => Promise.all([
     base44.entities.Invoice.list("-created_date", 200),
@@ -56,14 +75,63 @@ export default function Invoices() {
   });
 
   const save = async () => {
-    setSaving(true);
+    if (!form.client_id) {
+      toast({ title: "Pick a client first", variant: "destructive" });
+      return;
+    }
     const amount = Number(form.amount) || 0;
-    const vat = form.vat_applicable ? amount * 0.15 : 0;
-    const data = { ...form, amount, vat_amount: vat, total_amount: amount + vat };
-    await base44.entities.Invoice.create(data);
+    if (amount <= 0) {
+      toast({ title: "Amount must be greater than zero", variant: "destructive" });
+      return;
+    }
+
+    const product = form.product_id && form.product_id !== CUSTOM_PRODUCT_ID
+      ? getProductById(form.product_id)
+      : null;
+    const description = (form.description || product?.name || prettyInvoiceType(form.invoice_type) || "Invoice item").trim();
+
+    const lineItem = {
+      product_id:   product ? product.id : "",
+      product_name: product ? product.name : "",
+      description,
+      amount,
+      quantity:     1,
+    };
+
+    setSaving(true);
+    try {
+      const res = await base44.functions.invoke("create-invoice", {
+        client_id:  form.client_id,
+        line_items: [lineItem],
+        type:       form.invoice_type,
+        due_date:   form.due_date || null,
+        send_email: true,
+      });
+      const payload = res?.data ?? res;
+      if (payload?.success) {
+        toast({
+          title: "Invoice created",
+          description: payload.invoice_number ? `${payload.invoice_number} — email sent to client.` : "Email sent to client.",
+        });
+        setShowForm(false);
+        load();
+      } else {
+        console.error("create-invoice failed:", payload);
+        toast({
+          title: "Couldn't create invoice",
+          description: payload?.error || "Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("create-invoice error:", err);
+      toast({
+        title: "Couldn't create invoice",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    }
     setSaving(false);
-    setShowForm(false);
-    load();
   };
 
   const updateStatus = async (id, status) => {
@@ -173,23 +241,70 @@ export default function Invoices() {
             </div>
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">Invoice Type</Label>
-              <Select value={form.invoice_type} onValueChange={v => setForm(f => ({ ...f, invoice_type: v }))}>
+              <Select value={form.invoice_type} onValueChange={v => setForm(f => {
+                // Re-resolve auto-fill amount/description if a catalog product is selected.
+                if (f.product_id && f.product_id !== CUSTOM_PRODUCT_ID) {
+                  const p = getProductById(f.product_id);
+                  if (p) {
+                    return {
+                      ...f,
+                      invoice_type: v,
+                      amount: String(priceForType(p, v)),
+                      description: `${p.name} — ${prettyInvoiceType(v)}`,
+                    };
+                  }
+                }
+                return { ...f, invoice_type: v };
+              })}>
                 <SelectTrigger className="bg-secondary/50 border-border/50"><SelectValue /></SelectTrigger>
                 <SelectContent>{INVOICE_TYPES.map(t => <SelectItem key={t} value={t} className="capitalize">{t.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <IField label="Amount (R)" value={form.amount} onChange={v => setForm(f => ({ ...f, amount: v }))} type="number" />
-            <IField label="Due Date" value={form.due_date} onChange={v => setForm(f => ({ ...f, due_date: v }))} type="date" />
             <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
-              <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                <SelectTrigger className="bg-secondary/50 border-border/50"><SelectValue /></SelectTrigger>
-                <SelectContent>{Object.keys(STATUS_COLORS).map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
+              <Label className="text-xs text-muted-foreground mb-1 block">Select Product</Label>
+              <Select value={form.product_id || ""} onValueChange={v => setForm(f => {
+                if (v === CUSTOM_PRODUCT_ID) {
+                  return { ...f, product_id: CUSTOM_PRODUCT_ID };
+                }
+                const p = getProductById(v);
+                if (!p) return { ...f, product_id: v };
+                return {
+                  ...f,
+                  product_id: v,
+                  amount: String(priceForType(p, f.invoice_type)),
+                  description: `${p.name} — ${prettyInvoiceType(f.invoice_type)}`,
+                };
+              })}>
+                <SelectTrigger className="bg-secondary/50 border-border/50"><SelectValue placeholder="Pick from catalog…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Packages</SelectLabel>
+                    {PRODUCT_CATALOG.filter(p => p.type === "package" || p.type === "physical").map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} — Setup R{Number(p.setup_price || 0).toLocaleString()} / Monthly R{Number(p.monthly_price || 0).toLocaleString()}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Add-ons</SelectLabel>
+                    {PRODUCT_CATALOG.filter(p => p.type === "addon").map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} — Setup R{Number(p.setup_price || 0).toLocaleString()} / Monthly R{Number(p.monthly_price || 0).toLocaleString()}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Other</SelectLabel>
+                    <SelectItem value={CUSTOM_PRODUCT_ID}>Custom item (enter manually)</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
               </Select>
             </div>
+            <IField label="Amount (R)" value={form.amount} onChange={v => setForm(f => ({ ...f, amount: v }))} type="number" />
+            <IField label="Due Date" value={form.due_date} onChange={v => setForm(f => ({ ...f, due_date: v }))} type="date" />
             <div className="col-span-2">
               <Label className="text-xs text-muted-foreground mb-1 block">Description</Label>
-              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="bg-secondary/50 border-border/50 h-16" />
+              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="bg-secondary/50 border-border/50 h-16" placeholder="Auto-filled from product. Edit if you need." />
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">

@@ -142,9 +142,12 @@ Deno.serve(async (req) => {
     lead_source_type: lead_source_type || 'self_signup'
   });
 
+  // Fire the "your invoice is ready" email. Non-blocking — a Resend hiccup
+  // must not roll back the invoice row. send-invoice-issued-email no-ops
+  // gracefully if the client has no email on file.
   if (send_email) {
-    base44.functions.invoke('send-invoice-email', { invoice_id: invoice.id })
-      .catch((err: any) => console.error('[create-invoice] send-invoice-email failed:', err));
+    base44.functions.invoke('send-invoice-issued-email', { invoice_id: invoice.id })
+      .catch((err: any) => console.error('[create-invoice] send-invoice-issued-email failed:', err));
   }
 
   // Portal activity feed entry — non-blocking, fire-and-forget.
