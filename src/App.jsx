@@ -112,18 +112,8 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      return <Navigate to="/login" replace />;
     }
   }
-
-  // Smart landing redirect based on role
-  const LandingRedirect = () => {
-    if (!user) return <Navigate to="/login" replace />;
-    if (user.role === "owner") return <Navigate to="/" replace />;
-    if (user.role === "client") return <Navigate to="/client-portal" replace />;
-    return <Navigate to="/staff" replace />;
-  };
 
   // Render the main app
   return (
@@ -132,7 +122,12 @@ const AuthenticatedApp = () => {
       <Route path="/onboarding-form" element={<StaffOnboardingForm />} />
       <Route path="/build-summary" element={<BuildSummary />} />
       {/* Add your page Route elements here */}
-      <Route path="/" element={user?.role === "owner" ? <OwnerDashboard /> : <LandingRedirect />} />
+      <Route path="/" element={
+        !user ? <Navigate to="/login" replace /> :
+        user.role === "owner" ? <OwnerDashboard /> :
+        user.role === "client" ? <Navigate to="/client-portal" replace /> :
+        <Navigate to="/staff" replace />
+      } />
       <Route path="/design-preview" element={<DesignPreview />} />
       <Route path="/clients" element={<Clients />} />
       <Route path="/clients/:id" element={<RouteGuard allowedRoles={["owner", "admin"]} fallbackPath="/"><OwnerClientDetail /></RouteGuard>} />
