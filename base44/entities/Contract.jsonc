@@ -58,6 +58,11 @@
       "format": "date-time",
       "description": "Timestamp of the last renewal reminder email sent \u2014 used for idempotency"
     },
+    "last_signature_email_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the last signature request email sent \u2014 used for 24h idempotency"
+    },
     "status": {
       "type": "string",
       "enum": [

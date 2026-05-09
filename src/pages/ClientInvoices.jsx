@@ -125,7 +125,7 @@ export default function ClientInvoices() {
   // Outstanding banner uses a single source of truth — same statuses for
   // total amount and count.
   const outstandingInvoices = invoices.filter((i) => OUTSTANDING_STATUSES.includes(i.status));
-  const outstanding         = outstandingInvoices.reduce((s, i) => s + (i.total || 0), 0);
+  const outstanding         = outstandingInvoices.reduce((s, i) => s + Number(i.total_amount || i.total || i.amount || 0), 0);
   const outstandingCount    = outstandingInvoices.length;
 
   // Per-tab counts for the small badges next to each label. Computed once
@@ -210,7 +210,7 @@ export default function ClientInvoices() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-foreground">R{(inv.total || 0).toLocaleString()}</span>
+                  <span className="font-bold text-foreground">R{Number(inv.total_amount || inv.total || inv.amount || 0).toLocaleString()}</span>
                   <Badge className={inv.status === "paid" ? "bg-success/15 text-success" : inv.status === "overdue" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning"}>
                     {inv.status}
                   </Badge>
@@ -262,7 +262,7 @@ export default function ClientInvoices() {
               <div className="glass rounded-lg p-4 border border-white/10 bg-primary/10">
                 <div className="flex justify-between items-end">
                   <span className="text-foreground font-semibold">Total Amount Due:</span>
-                  <span className="text-2xl font-bold text-primary">R{(selectedInv.total || 0).toLocaleString()}</span>
+                  <span className="text-2xl font-bold text-primary">R{Number(selectedInv.total_amount || selectedInv.total || selectedInv.amount || 0).toLocaleString()}</span>
                 </div>
               </div>
 

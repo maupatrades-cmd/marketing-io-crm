@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AppLayout from "@/components/AppLayout";
-import { CheckCircle2, Clock, Target, TrendingUp, Plus } from "lucide-react";
+import { CheckCircle2, Clock, Target, TrendingUp, Plus, AlertTriangle, FileText, ListChecks } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Link } from "react-router-dom";
 
 const KPI_CONFIG = {
   field_agent: [
@@ -39,41 +40,54 @@ export default function StaffMyDay() {
   const [tasks, setTasks] = useState([]);
   const [activity, setActivity] = useState([]);
   const [deals, setDeals] = useState([]);
+  const [overdueInvoices, setOverdueInvoices] = useState([]);
+  const [pendingSubmissions, setPendingSubmissions] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [loadingActivity, setLoadingActivity] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch today's tasks
         setLoadingTasks(true);
-        const allTasks = await base44.entities.Task.list("-created_date", 200);
-        const today = new Date().toISOString().split("T")[0];
-        const todayTasks = allTasks.filter(
-          (t) =>
-            t.assigned_to === user?.id &&
-            t.due_date === today &&
-            ["open", "in_progress"].includes(t.status)
-        );
-        setTasks(todayTasks);
-
-        // Fetch recent activity
         setLoadingActivity(true);
-        const allActivity = await base44.entities.ClientActivityLog.list("-created_date", 100);
-        const myActivity = allActivity
-          .filter((a) => a.created_by === user?.id)
-          .slice(0, 5);
-        setActivity(myActivity);
+        const today = new Date().toISOString().split("T")[0];
 
-        // Fetch this week's pipeline (Field Agent + CPC only)
-        if (["field_agent", "cpc"].includes(user?.role)) {
-          const allDeals = await base44.entities.Deal.list();
-          const thisWeekDeals = allDeals.filter(
-            (d) =>
-              (d.closer_id === user?.id || d.cpc_id === user?.id) &&
-              !["closed_won", "closed_lost"].includes(d.stage)
+        if (user?.role === "admin") {
+          // Admin overview: tasks (any assigned to admin), overdue invoices, pending submissions
+          const [allTasks, invs, subs, acts] = await Promise.all([
+            base44.entities.Task.list("-created_date", 200).catch(() => []),
+            base44.entities.Invoice.list("-created_date", 200).catch(() => []),
+            base44.entities.ClientOnboardingSubmission.list("-created_date", 50).catch(() => []),
+            base44.entities.ClientActivityLog.list("-created_date", 50).catch(() => []),
+          ]);
+          const todayTasks = (Array.isArray(allTasks) ? allTasks : []).filter(
+            (t) => (t.assigned_to === user?.id || t.assigned_role === "admin") && ["open", "in_progress"].includes(t.status)
           );
-          setDeals(thisWeekDeals.slice(0, 5));
+          setTasks(todayTasks);
+          const overdue = (Array.isArray(invs) ? invs : []).filter(
+            (i) => i.status === "overdue" || (i.status === "sent" && i.due_date && new Date(i.due_date) < new Date())
+          ).slice(0, 10);
+          setOverdueInvoices(overdue);
+          const pending = (Array.isArray(subs) ? subs : []).filter((s) => s.status === "submitted").slice(0, 10);
+          setPendingSubmissions(pending);
+          setActivity((Array.isArray(acts) ? acts : []).slice(0, 5));
+        } else {
+          const allTasks = await base44.entities.Task.list("-created_date", 200).catch(() => []);
+          const todayTasks = (Array.isArray(allTasks) ? allTasks : []).filter(
+            (t) => t.assigned_to === user?.id && t.due_date === today && ["open", "in_progress"].includes(t.status)
+          );
+          setTasks(todayTasks);
+
+          const allActivity = await base44.entities.ClientActivityLog.list("-created_date", 100).catch(() => []);
+          setActivity((Array.isArray(allActivity) ? allActivity : []).filter((a) => a.created_by === user?.id).slice(0, 5));
+
+          if (["field_agent", "cpc"].includes(user?.role)) {
+            const allDeals = await base44.entities.Deal.list().catch(() => []);
+            const thisWeekDeals = (Array.isArray(allDeals) ? allDeals : []).filter(
+              (d) => (d.closer_id === user?.id || d.cpc_id === user?.id) && !["closed_won", "closed_lost"].includes(d.stage)
+            );
+            setDeals(thisWeekDeals.slice(0, 5));
+          }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -111,10 +125,11 @@ export default function StaffMyDay() {
             ) : tasks.length === 0 ? (
               <div className="text-center py-6">
                 <p className="text-muted-foreground">No tasks due today</p>
-                <Button size="sm" className="mt-3 gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Task
-                </Button>
+                  <Link to="/tasks">
+                    <Button size="sm" className="mt-3 gap-2">
+                      <Plus className="w-4 h-4" /> Add Task
+                    </Button>
+                  </Link>
               </div>
             ) : (
               <div className="space-y-2">
@@ -164,6 +179,75 @@ export default function StaffMyDay() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Admin Overview */}
+        {user?.role === "admin" && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="glass rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-destructive">{overdueInvoices.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Overdue Invoices</p>
+                <Link to="/admin/invoices" className="text-xs text-primary hover:underline">View →</Link>
+              </div>
+              <div className="glass rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-warning">{pendingSubmissions.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Onboarding Queue</p>
+                <Link to="/onboarding-submissions" className="text-xs text-primary hover:underline">Review →</Link>
+              </div>
+              <div className="glass rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-primary">{tasks.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Open Tasks</p>
+                <Link to="/tasks" className="text-xs text-primary hover:underline">View →</Link>
+              </div>
+            </div>
+
+            {overdueInvoices.length > 0 && (
+              <Card className="bg-card border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <AlertTriangle className="w-5 h-5 text-destructive" /> Overdue Invoices
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {overdueInvoices.map(inv => (
+                      <div key={inv.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{inv.client_name || "—"}</p>
+                          <p className="text-xs text-muted-foreground">{inv.invoice_number || inv.id.slice(0, 8)}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-destructive">R{Number(inv.total_amount || inv.total || inv.amount || 0).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {pendingSubmissions.length > 0 && (
+              <Card className="bg-card border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <ListChecks className="w-5 h-5 text-warning" /> Pending Onboarding Submissions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {pendingSubmissions.map(sub => (
+                      <div key={sub.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{sub.business_name || sub.client_name || "—"}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(sub.created_date).toLocaleDateString("en-ZA")}</p>
+                        </div>
+                        <Badge className="bg-warning/15 text-warning">Awaiting review</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
 
         {/* This Week's Pipeline */}

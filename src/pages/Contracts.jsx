@@ -92,10 +92,15 @@ export default function Contracts() {
   const handleSendForSignature = async (contract) => {
     setUpdating(true);
     try {
-      await base44.entities.Contract.update(contract.id, {
-        status: "sent",
-      });
-      toast({ title: "Contract sent", description: "Email sent to client with download link." });
+      await base44.entities.Contract.update(contract.id, { status: "sent" });
+      // Fire signing email (non-fatal)
+      try {
+        await base44.functions.invoke("send-contract-for-signature", { contract_id: contract.id });
+        toast({ title: "Contract sent", description: "Signing email dispatched to client." });
+      } catch (emailErr) {
+        console.warn("[Contracts] signing email failed (non-fatal):", emailErr);
+        toast({ title: "Contract sent", description: "Status updated. Email send failed — check Resend logs.", variant: "destructive" });
+      }
       setShowDetail(false);
       load();
     } catch (err) {

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, FileText, Mail, CheckCircle2, ExternalLink, Repeat, Loader2, AlertTriangle, RefreshCw, Clock } from "lucide-react";
+import { Search, FileText, Mail, CheckCircle2, ExternalLink, Repeat, Loader2, AlertTriangle, RefreshCw, Clock, Plus } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -109,8 +109,15 @@ export default function AdminInvoices() {
   const [sweepSubmitting, setSweepSubmitting] = useState(false);
   const [renewalSubmitting, setRenewalSubmitting] = useState(false);
 
+  // Create invoice modal
+  const [createOpen, setCreateOpen] = useState(false);
+  const [allClients, setAllClients] = useState([]);
+  const [createForm, setCreateForm] = useState({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: "", description: "", send_email: true });
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+
   useEffect(() => {
     loadAll();
+    base44.entities.Client.list("-created_date", 500).then(rows => setAllClients(Array.isArray(rows) ? rows : [])).catch(() => {});
   }, []);
 
   const loadAll = async () => {
@@ -328,6 +335,40 @@ export default function AdminInvoices() {
 
   const paymentsForInvoice = (invId) => payments.filter((p) => p.invoice_id === invId);
 
+  const openCreate = () => {
+    const defaultDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    setCreateForm({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: defaultDue, description: "", send_email: true });
+    setCreateOpen(true);
+  };
+
+  const submitCreate = async () => {
+    if (!createForm.client_id || !createForm.amount) return;
+    setCreateSubmitting(true);
+    try {
+      const amount = Number(createForm.amount);
+      const res = await base44.functions.invoke("create-invoice", {
+        token: getSessionToken(),
+        client_id: createForm.client_id,
+        client_name: createForm.client_name,
+        invoice_type: createForm.invoice_type,
+        amount,
+        total_amount: amount,
+        due_date: createForm.due_date,
+        description: createForm.description,
+        status: createForm.send_email ? "sent" : "draft",
+        send_email: createForm.send_email,
+      });
+      const payload = res?.data ?? res;
+      toast({ title: `Invoice created`, description: `${payload?.invoice_number || ""} — ${fmtMoney(amount)}` });
+      setCreateOpen(false);
+      await loadAll();
+    } catch (err) {
+      toast({ title: "Create failed", description: err.message, variant: "destructive" });
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
+
   const runOverdueSweep = async () => {
     setSweepSubmitting(true);
     try {
@@ -397,6 +438,9 @@ export default function AdminInvoices() {
             <Button onClick={previewBatch} disabled={batchSubmitting}>
               <Repeat className="w-4 h-4 mr-2" />
               {batchSubmitting ? "Loading…" : "Generate this month's batch"}
+            </Button>
+            <Button onClick={openCreate} className="gradient-bg text-white">
+              <Plus className="w-4 h-4 mr-2" /> Create invoice
             </Button>
           </div>
         </div>
@@ -643,6 +687,64 @@ export default function AdminInvoices() {
             <Button variant="outline" onClick={() => setEftOpen(false)} disabled={eftSubmitting}>Cancel</Button>
             <Button onClick={submitEft} disabled={eftSubmitting || !eftReference.trim()}>
               {eftSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording…</> : "Mark paid"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Invoice modal */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Invoice</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm">
+            <div>
+              <Label>Client *</Label>
+              <Select value={createForm.client_id} onValueChange={(v) => {
+                const c = allClients.find(cl => cl.id === v);
+                setCreateForm(f => ({ ...f, client_id: v, client_name: c?.business_name || "" }));
+              }}>
+                <SelectTrigger><SelectValue placeholder="Select client…" /></SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {allClients.map(c => <SelectItem key={c.id} value={c.id}>{c.business_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Invoice Type *</Label>
+              <Select value={createForm.invoice_type} onValueChange={(v) => setCreateForm(f => ({ ...f, invoice_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["setup_fee","monthly_retainer","add_on_setup","add_on_monthly","once_off","per_sms","cancellation_fee","acceleration_amount"].map(t => (
+                    <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Amount (R) *</Label>
+                <Input type="number" value={createForm.amount} onChange={e => setCreateForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
+              </div>
+              <div>
+                <Label>Due Date</Label>
+                <Input type="date" value={createForm.due_date} onChange={e => setCreateForm(f => ({ ...f, due_date: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Optional note on this invoice" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="send_email" checked={createForm.send_email} onCheckedChange={(v) => setCreateForm(f => ({ ...f, send_email: !!v }))} />
+              <Label htmlFor="send_email">Send invoice email to client</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={createSubmitting}>Cancel</Button>
+            <Button onClick={submitCreate} disabled={createSubmitting || !createForm.client_id || !createForm.amount}>
+              {createSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating…</> : "Create Invoice"}
             </Button>
           </DialogFooter>
         </DialogContent>
