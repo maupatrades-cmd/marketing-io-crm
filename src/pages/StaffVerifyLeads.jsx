@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AppLayout from "@/components/AppLayout";
-import { CheckCircle2, XCircle, AlertCircle, Plus } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Plus, Clock } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 export default function StaffVerifyLeads() {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ export default function StaffVerifyLeads() {
     phone: "",
     notes: "",
   });
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [verifiedLead, setVerifiedLead] = useState(null);
 
   // Admin-only access check
   useEffect(() => {
@@ -55,10 +58,13 @@ export default function StaffVerifyLeads() {
   const handleApprove = async (lead) => {
     try {
       setSubmitting(true);
-      await base44.entities.Lead.update(lead.id, {
+      const updated = await base44.entities.Lead.update(lead.id, {
         status: "verified",
+        verified_date: new Date().toISOString().split('T')[0],
       });
       setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+      setVerifiedLead({ ...lead, status: "verified", verified_date: new Date().toISOString().split('T')[0] });
+      setDetailOpen(true);
     } catch (error) {
       console.error("Error approving lead:", error);
     } finally {
@@ -266,6 +272,69 @@ export default function StaffVerifyLeads() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Verified Lead Detail Modal */}
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="gradient-text flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-success" />
+              Lead Verified
+            </DialogTitle>
+          </DialogHeader>
+          {verifiedLead && (
+            <div className="space-y-4 mt-4">
+              {/* Business Info */}
+              <div className="bg-success/5 border border-success/20 rounded-lg p-4">
+                <p className="text-xs text-muted-foreground mb-1">Business Name</p>
+                <p className="font-semibold text-foreground">{verifiedLead.business_name}</p>
+              </div>
+
+              {/* Contact Info Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-secondary/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Contact Person</p>
+                  <p className="text-sm font-medium text-foreground">{verifiedLead.contact_person}</p>
+                </div>
+                <div className="bg-secondary/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Phone</p>
+                  <p className="text-sm font-medium text-foreground">{verifiedLead.phone}</p>
+                </div>
+              </div>
+
+              {verifiedLead.email && (
+                <div className="bg-secondary/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Email</p>
+                  <p className="text-sm font-medium text-foreground">{verifiedLead.email}</p>
+                </div>
+              )}
+
+              {/* Timestamp */}
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground">Verified</p>
+                  <p className="text-sm text-foreground">{formatDistanceToNow(new Date(), { addSuffix: true })}</p>
+                </div>
+              </div>
+
+              {verifiedLead.notes && (
+                <div className="bg-secondary/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Notes</p>
+                  <p className="text-sm text-foreground">{verifiedLead.notes}</p>
+                </div>
+              )}
+
+              <Button
+                onClick={() => setDetailOpen(false)}
+                className="w-full gradient-bg text-white hover:opacity-90"
+              >
+                Close
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
