@@ -21,15 +21,7 @@ export async function getCurrentUser() {
   const token = localStorage.getItem(SESSION_KEY);
   if (!token) return null;
 
-  // Fast path — use cached user object
-  const cached = localStorage.getItem(SESSION_USER_KEY);
-  if (cached) {
-    try {
-      return JSON.parse(cached);
-    } catch (_) {}
-  }
-
-  // Fallback — verify server-side and re-cache
+  // Always verify server-side — ensures the session is valid across domains/tabs
   try {
     const res = await base44.functions.invoke('auth-me', { token });
     const user = res.data?.user;
@@ -38,7 +30,7 @@ export async function getCurrentUser() {
       return user;
     }
   } catch (_) {
-    // Token invalid or expired
+    // Token invalid or expired — clear session
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(SESSION_USER_KEY);
   }
