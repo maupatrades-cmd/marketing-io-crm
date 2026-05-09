@@ -73,14 +73,14 @@ export default function Tasks() {
 
   const load = () => Promise.all([
     base44.entities.Task.list("-created_date", 300),
-    base44.entities.User.list(),
+    base44.entities.AppUser.list(),
     base44.entities.Client.list("-created_date", 200),
     getCurrentUser(),
   ]).then(([t, u, c, me]) => {
     if (!me) { window.location.href = '/login'; return; }
     setTasks(t);
-    setUsers(u);
-    setClients(c);
+    setUsers(u.filter(usr => usr.role && usr.role !== "client"));
+    setClients(c.filter(cl => cl.status === "active" || cl.status === "lead"));
     setCurrentUser(me);
     setLoading(false);
   });

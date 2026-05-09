@@ -4,7 +4,7 @@
  * Shows a badge count and a dropdown list of recent notifications.
  */
 import { useState, useEffect, useRef } from "react";
-import { Bell } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -45,6 +45,18 @@ export default function AdminNotificationBell() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const dismissNotification = async (id) => {
+    try {
+      await base44.entities.ClientNotification.update(id, {
+        is_read: true,
+        read_at: new Date().toISOString(),
+      });
+      setNotifications(prev => prev.filter(x => x.id !== id));
+    } catch (err) {
+      console.error("[AdminNotificationBell] dismiss failed:", err);
+    }
+  };
 
   const markAllRead = async () => {
     const unreadRows = notifications.filter(n => !n.is_read);
@@ -98,7 +110,7 @@ export default function AdminNotificationBell() {
               notifications.map(n => (
                 <div
                   key={n.id}
-                  className="px-4 py-3 border-b cursor-pointer hover:bg-white/5 transition-colors"
+                  className="group px-4 py-3 border-b cursor-pointer hover:bg-white/5 transition-colors flex items-start gap-2"
                   style={{
                     borderColor: "rgba(255,255,255,0.05)",
                     background: n.is_read ? "transparent" : "rgba(167,100,230,0.07)",
@@ -111,16 +123,21 @@ export default function AdminNotificationBell() {
                     if (n.action_url) window.location.href = n.action_url;
                   }}
                 >
-                  <div className="flex items-start gap-2">
-                    {!n.is_read && <span className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">{n.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
-                      <p className="text-[10px] text-muted-foreground/60 mt-1">
-                        {n.created_date ? new Date(n.created_date).toLocaleString("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
-                      </p>
-                    </div>
+                  {!n.is_read && <span className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white truncate">{n.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-1">
+                      {n.created_date ? new Date(n.created_date).toLocaleString("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
+                    </p>
                   </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); dismissNotification(n.id); }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded shrink-0 mt-0.5"
+                    title="Dismiss"
+                  >
+                    <X className="w-3 h-3 text-muted-foreground" />
+                  </button>
                 </div>
               ))
             )}
