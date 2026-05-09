@@ -39,8 +39,6 @@ export default function StaffVerifyLeads() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [verifiedLead, setVerifiedLead] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState("");
-  const [qualifyOpen, setQualifyOpen] = useState(false);
-  const [qualifyingLead, setQualifyingLead] = useState(null);
 
   const PACKAGES = [
     { id: "ignite", label: "Ignite" },
@@ -300,28 +298,33 @@ export default function StaffVerifyLeads() {
                 </Badge>
               </div>
 
-              {/* Qualification Criteria */}
-              <div className="bg-secondary/30 p-4 rounded-lg">
-                <p className="text-sm font-semibold text-foreground mb-3">Qualification Criteria</p>
-                <div className="space-y-2 text-sm">
-                  {[
-                    { key: "has_business_premises", label: "Business premises" },
-                    { key: "has_trading_history", label: "Trading history" },
-                    { key: "decision_maker_contacted", label: "Decision maker contacted" },
-                    { key: "expressed_interest", label: "Expressed interest" },
-                    { key: "has_budget_indication", label: "Budget indication" },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="flex items-center gap-2">
-                      {lead.warm_lead_criteria?.[key] ? (
-                        <CheckCircle2 className="w-4 h-4 text-success" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-destructive" />
-                      )}
-                      <span className="text-foreground">{label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Qualification Form Inline */}
+              <LeadQualificationForm
+                initialData={lead}
+                onSave={async (qualificationData) => {
+                  try {
+                    setSubmitting(true);
+                    await base44.entities.Lead.update(lead.id, {
+                      ...qualificationData,
+                      qualified_by: user?.id,
+                      qualification_complete: 
+                        Object.values(qualificationData.warm_lead_criteria_v2 || {}).filter(c => c.answer !== null).length === 7 &&
+                        qualificationData.qualification_extras?.lead_temperature !== null,
+                    });
+                    
+                    // Update local state
+                    setLeads(prev => prev.map(l => 
+                      l.id === lead.id 
+                        ? { ...l, ...qualificationData, qualified_by: user?.id }
+                        : l
+                    ));
+                  } catch (error) {
+                    console.error("Error saving qualification:", error);
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+              />
 
               {/* Best Time to Call */}
               {lead.best_time_to_call_date && (
@@ -360,19 +363,6 @@ export default function StaffVerifyLeads() {
               <div className="flex gap-2 justify-end flex-wrap">
                 {lead.status !== "verified" && (
                   <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setQualifyingLead(lead);
-                        setQualifyOpen(true);
-                      }}
-                      disabled={submitting}
-                      className="gap-2"
-                    >
-                      <Zap className="w-4 h-4" />
-                      Qualify
-                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -513,46 +503,7 @@ export default function StaffVerifyLeads() {
         </DialogContent>
       </Dialog>
 
-      {/* Qualification Form Modal */}
-      <Dialog open={qualifyOpen} onOpenChange={setQualifyOpen}>
-        <DialogContent className="bg-card border-border/50 max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="gradient-text">Qualify Lead: {qualifyingLead?.business_name}</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto pr-4">
-            {qualifyingLead && (
-              <LeadQualificationForm
-                initialData={qualifyingLead}
-                onSave={async (qualificationData) => {
-                  try {
-                    setSubmitting(true);
-                    await base44.entities.Lead.update(qualifyingLead.id, {
-                      ...qualificationData,
-                      qualified_by: user?.id,
-                      qualification_complete: 
-                        Object.values(qualificationData.warm_lead_criteria_v2 || {}).filter(c => c.answer !== null).length === 7 &&
-                        qualificationData.qualification_extras?.lead_temperature !== null,
-                    });
-                    
-                    // Update local state
-                    setLeads(prev => prev.map(l => 
-                      l.id === qualifyingLead.id 
-                        ? { ...l, ...qualificationData, qualified_by: user?.id }
-                        : l
-                    ));
-                    
-                    setQualifyOpen(false);
-                  } catch (error) {
-                    console.error("Error saving qualification:", error);
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Load Lead Modal */}
       <Dialog open={loadLeadOpen} onOpenChange={setLoadLeadOpen}>
