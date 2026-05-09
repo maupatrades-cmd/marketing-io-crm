@@ -96,6 +96,37 @@
     },
     "notes": {
       "type": "string"
+    },
+    "cancellation_reason": {
+      "type": "string",
+      "description": "Reason for cancelling this invoice"
+    },
+    "cancelled_by_id": {
+      "type": "string",
+      "description": "User ID of the person who cancelled the invoice"
+    },
+    "cancelled_by_name": {
+      "type": "string",
+      "description": "Name of the person who cancelled the invoice"
+    },
+    "cancelled_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when invoice was cancelled"
+    },
+    "assigned_cpc_id": {
+      "type": "string",
+      "description": "CPC user ID linked to this invoice (for reporting)"
+    },
+    "assigned_cpc_name": {
+      "type": "string"
+    },
+    "assigned_field_agent_id": {
+      "type": "string",
+      "description": "Field agent user ID linked to this invoice (for reporting)"
+    },
+    "assigned_field_agent_name": {
+      "type": "string"
     }
   },
   "required": [

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, XCircle } from "lucide-react";
 
 const REPORTS = [
   { id: 1, name: "Clients with no contact in 30 days", description: "Inactive accounts needing outreach" },
@@ -15,16 +15,25 @@ const REPORTS = [
   { id: 8, name: "Onboarding bottlenecks (longest in each phase)", description: "Identify slow phases" },
   { id: 9, name: "Deliverable approval lag", description: "Avg days from delivery to approval" },
   { id: 10, name: "Most-used playbooks and KPI hit rate", description: "Content effectiveness" },
+  { id: 11, name: "Cancelled Invoices", description: "All cancelled invoices with reasons, assigned CPC, field agent and owner attribution", icon: "cancel" },
 ];
 
 export default function OwnerReports() {
   const [selected, setSelected] = useState(null);
   const [results, setResults] = useState([]);
+  const [cancelledInvoices, setCancelledInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const handleSelectReport = async (report) => {
     setSelected(report);
     setLoading(true);
+    if (report.id === 11) {
+      // Real data: fetch cancelled invoices
+      const invs = await base44.entities.Invoice.filter({ status: "cancelled" }, "-cancelled_at", 200);
+      setCancelledInvoices(invs);
+      setLoading(false);
+      return;
+    }
     // Simulate data fetch — actual implementation would query entities
     setTimeout(() => {
       setResults([
@@ -80,6 +89,8 @@ export default function OwnerReports() {
                   <div className="flex items-center justify-center py-8">
                     <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
                   </div>
+                ) : selected?.id === 11 ? (
+                  <CancelledInvoicesReport invoices={cancelledInvoices} />
                 ) : results.length > 0 ? (
                   <>
                     <div className="space-y-3 mb-6">
@@ -101,6 +112,74 @@ export default function OwnerReports() {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CancelledInvoicesReport({ invoices }) {
+  const total = invoices.reduce((s, i) => s + (i.total_amount || i.amount || 0), 0);
+
+  if (invoices.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <XCircle className="w-8 h-8 mx-auto mb-2 text-muted-foreground/30" />
+        <p className="text-muted-foreground text-sm">No cancelled invoices found.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary bar */}
+      <div className="flex items-center justify-between bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-2">
+        <span className="text-sm text-destructive font-medium">{invoices.length} cancelled invoice{invoices.length !== 1 ? "s" : ""}</span>
+        <span className="text-sm font-bold text-destructive">Total: R{total.toLocaleString()}</span>
+      </div>
+
+      {/* Invoice rows */}
+      <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+        {invoices.map(inv => (
+          <div key={inv.id} className="glass rounded-lg p-3 border border-border/30 space-y-1.5">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-semibold text-sm text-foreground">{inv.client_name || "Unknown"}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {inv.invoice_number ? `${inv.invoice_number} · ` : ""}
+                  {inv.invoice_type?.replace(/_/g, " ")}
+                  {inv.cancelled_at ? ` · Cancelled ${new Date(inv.cancelled_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}` : ""}
+                </p>
+              </div>
+              <span className="text-sm font-bold text-foreground shrink-0">R{(inv.total_amount || inv.amount || 0).toLocaleString()}</span>
+            </div>
+
+            {/* Attribution */}
+            <div className="flex flex-wrap gap-2 text-[11px]">
+              {inv.cancelled_by_name && (
+                <span className="px-2 py-0.5 rounded-full bg-muted/40 text-muted-foreground">
+                  Cancelled by: <strong>{inv.cancelled_by_name}</strong>
+                </span>
+              )}
+              {inv.assigned_cpc_name && (
+                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  CPC: <strong>{inv.assigned_cpc_name}</strong>
+                </span>
+              )}
+              {inv.assigned_field_agent_name && (
+                <span className="px-2 py-0.5 rounded-full bg-warning/10 text-warning">
+                  Field Agent: <strong>{inv.assigned_field_agent_name}</strong>
+                </span>
+              )}
+            </div>
+
+            {/* Cancellation reason */}
+            {inv.cancellation_reason && (
+              <div className="bg-secondary/40 rounded px-2 py-1.5 text-xs text-muted-foreground italic">
+                "{inv.cancellation_reason}"
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

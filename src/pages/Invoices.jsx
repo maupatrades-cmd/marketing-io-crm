@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, FileText, AlertTriangle } from "lucide-react";
+import { Search, Plus, FileText, AlertTriangle, XCircle } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
 import { notifyClient } from "@/lib/clientNotifier";
 import { PRODUCT_CATALOG, getProductById } from "@/data/ProductCatalog";
+import CancelInvoiceModal from "@/components/invoices/CancelInvoiceModal";
 
 const CUSTOM_PRODUCT_ID = "__custom__";
 
@@ -59,6 +60,7 @@ export default function Invoices() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState(null);
   const { toast } = useToast();
 
   const load = () => Promise.all([
@@ -217,11 +219,23 @@ export default function Invoices() {
                     Mark Failed
                   </Button>
                 )}
+                {inv.status !== "cancelled" && inv.status !== "paid" && (
+                  <Button size="sm" variant="outline" className="border-muted-foreground/30 text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 text-xs h-7 gap-1" onClick={() => setCancelTarget(inv)}>
+                    <XCircle className="w-3.5 h-3.5" /> Cancel
+                  </Button>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <CancelInvoiceModal
+        invoice={cancelTarget}
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onCancelled={() => { setCancelTarget(null); load(); }}
+      />
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="bg-card border-border/50 max-w-lg max-h-[90vh] overflow-y-auto">
