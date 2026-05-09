@@ -243,6 +243,7 @@ export default function Tasks() {
         clients={clients}
         users={users}
         currentUserId={currentUser?.id}
+        currentUser={currentUser}
         onSave={handleSave}
       />
     </AppLayout>
