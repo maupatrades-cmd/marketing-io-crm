@@ -10,7 +10,6 @@
       "type": "string",
       "description": "Snapshot of Client.business_name or contact_person at write time."
     },
-
     "actor_id": {
       "type": "string",
       "description": "FK User/AppUser of whoever performed the action. Nullable for system-initiated or pre-auth events."
@@ -18,8 +17,14 @@
     "actor_role": {
       "type": "string",
       "enum": [
-        "client", "admin", "owner", "cpc",
-        "field_agent", "head_of_tech", "driver", "system"
+        "client",
+        "admin",
+        "owner",
+        "cpc",
+        "field_agent",
+        "head_of_tech",
+        "driver",
+        "system"
       ],
       "description": "Role the actor was acting in at event time."
     },
@@ -30,8 +35,15 @@
     "event_category": {
       "type": "string",
       "enum": [
-        "auth", "profile", "payment", "invoice",
-        "document", "communication", "support", "account", "lead"
+        "auth",
+        "profile",
+        "payment",
+        "invoice",
+        "document",
+        "communication",
+        "support",
+        "account",
+        "lead"
       ],
       "description": "Functional grouping for the activity feed UI filter dropdown."
     },
@@ -71,39 +83,38 @@
       "type": "string",
       "description": "Caller user agent (truncated to 500 chars)."
     },
-
     "title": {
       "type": "string",
-      "description": "Legacy field — older portal-feed entries used this instead of event_summary. log-client-activity mirrors title into event_summary on write so this stays in sync."
+      "description": "Legacy field \u2014 older portal-feed entries used this instead of event_summary. log-client-activity mirrors title into event_summary on write so this stays in sync."
     },
     "body": {
       "type": "string",
-      "description": "Legacy field — long-form detail for old portal-feed entries. New code uses event_metadata."
+      "description": "Legacy field \u2014 long-form detail for old portal-feed entries. New code uses event_metadata."
     },
     "icon": {
       "type": "string",
-      "description": "Legacy field — Lucide icon name. New activity feed icons are derived from event_category."
+      "description": "Legacy field \u2014 Lucide icon name. New activity feed icons are derived from event_category."
     },
     "category": {
       "type": "string",
-      "description": "Legacy SEVERITY field — info/success/warning/error. NOT to be confused with event_category which is functional grouping."
+      "description": "Legacy SEVERITY field \u2014 info/success/warning/error. NOT to be confused with event_category which is functional grouping."
     },
     "source": {
       "type": "string",
-      "description": "Legacy field — which subsystem wrote this (invoice/payment/signup/etc). New code uses event_category instead."
+      "description": "Legacy field \u2014 which subsystem wrote this (invoice/payment/signup/etc). New code uses event_category instead."
     },
     "link": {
       "type": "string",
-      "description": "Legacy field — deep-link URL to the related portal page."
+      "description": "Legacy field \u2014 deep-link URL to the related portal page."
     },
     "read_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Legacy field — when the client opened the activity feed and saw this row."
+      "description": "Legacy field \u2014 when the client opened the activity feed and saw this row."
     },
     "user_id": {
       "type": "string",
-      "description": "Legacy field — AppUser.id of recipient. New code uses actor_id."
+      "description": "Legacy field \u2014 AppUser.id of recipient. New code uses actor_id."
     }
   },
   "required": [
@@ -118,9 +129,19 @@
     "create": {},
     "read": {
       "$or": [
-        { "data.client_id": "{{user.data.client_id}}" },
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } }
+        {
+          "data.client_id": "{{user.data.client_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     }
   }
