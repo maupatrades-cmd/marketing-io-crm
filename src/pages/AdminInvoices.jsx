@@ -112,7 +112,7 @@ export default function AdminInvoices() {
   // Create invoice modal
   const [createOpen, setCreateOpen] = useState(false);
   const [allClients, setAllClients] = useState([]);
-  const [createForm, setCreateForm] = useState({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: "", description: "", send_email: true });
+  const [createForm, setCreateForm] = useState({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: "", description: "", product_name: "", send_email: true });
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
   useEffect(() => {
@@ -337,7 +337,7 @@ export default function AdminInvoices() {
 
   const openCreate = () => {
     const defaultDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    setCreateForm({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: defaultDue, description: "", send_email: true });
+    setCreateForm({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: defaultDue, description: "", product_name: "", send_email: true });
     setCreateOpen(true);
   };
 
@@ -352,8 +352,8 @@ export default function AdminInvoices() {
         due_date: createForm.due_date || null,
         send_email: createForm.send_email,
         line_items: [{
-          product_name: createForm.invoice_type.replace(/_/g, " "),
-          description: createForm.description || createForm.invoice_type.replace(/_/g, " "),
+          product_name: createForm.product_name || createForm.invoice_type.replace(/_/g, " "),
+          description: createForm.description || createForm.product_name || createForm.invoice_type.replace(/_/g, " "),
           amount,
           quantity: 1,
         }],
@@ -733,8 +733,12 @@ export default function AdminInvoices() {
               </div>
             </div>
             <div>
-              <Label>Description</Label>
-              <Textarea value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Optional note on this invoice" />
+              <Label>Product / Service Name *</Label>
+              <Input value={createForm.product_name} onChange={e => setCreateForm(f => ({ ...f, product_name: e.target.value }))} placeholder="e.g. Social Media Management, Setup Fee, AI Chatbot…" />
+            </div>
+            <div>
+              <Label>Description (optional)</Label>
+              <Textarea value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Additional notes or details for this invoice" />
             </div>
             <div className="flex items-center gap-2">
               <Checkbox id="send_email" checked={createForm.send_email} onCheckedChange={(v) => setCreateForm(f => ({ ...f, send_email: !!v }))} />
