@@ -89,7 +89,8 @@ export default function SignIn() {
           <img
             src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
             alt="Marketing iO"
-            className="h-12 mx-auto mb-4 object-contain"
+            className="h-24 mx-auto mb-4 object-contain"
+            style={{ filter: "drop-shadow(0 0 0 white) drop-shadow(0 0 2px white) drop-shadow(0 0 4px white) brightness(1.1)" }}
           />
           <h1 className="text-2xl font-bold text-white">Welcome back</h1>
           <p className="text-slate-400 mt-1 text-sm">Sign in to your Marketing iO account</p>
