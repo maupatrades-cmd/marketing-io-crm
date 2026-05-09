@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/customAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, FileText, AlertCircle, Banknote, XCircle } from "lucide-react";
+import { Download, FileText, AlertCircle, Banknote, XCircle, CreditCard, Loader2 } from "lucide-react";
 import EftModal from "@/components/clientportal/EftModal";
 import CancelInvoiceModal from "@/components/clientportal/CancelInvoiceModal";
 
@@ -79,6 +79,43 @@ export default function ClientInvoices() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [eftInvoice, setEftInvoice] = useState(null);
   const [cancelInvoice, setCancelInvoice] = useState(null);
+  const [payingInvoiceId, setPayingInvoiceId] = useState(null);
+
+  const SESSION_KEY = 'mio_session_token';
+
+  const handlePayViaPayfast = async (inv) => {
+    setPayingInvoiceId(inv.id);
+    try {
+      const sessionToken = localStorage.getItem(SESSION_KEY) || '';
+      const res = await base44.functions.invoke('payfast-invoice-init', {
+        invoice_id: inv.id,
+        session_token: sessionToken,
+      });
+      const data = res?.data ?? res;
+      if (!data?.fields || !data?.process_url) {
+        alert(data?.error || 'Could not generate a payment link. Please try again.');
+        return;
+      }
+      // POST form to PayFast
+      const form = document.createElement('form');
+      form.method = 'post';
+      form.action = data.process_url;
+      form.style.display = 'none';
+      for (const [name, value] of Object.entries(data.fields)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      }
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err) {
+      alert('Could not reach payment system. Please try again.');
+    } finally {
+      setPayingInvoiceId(null);
+    }
+  };
 
   const fetchInvoices = async (clientId) => {
     const invs = await base44.entities.Invoice.filter({ client_id: clientId }, "-created_date", 100);
@@ -267,6 +304,18 @@ export default function ClientInvoices() {
               </div>
 
               <div className="space-y-2">
+                {PAYABLE_STATUSES.includes(selectedInv.status) && (
+                  <Button
+                    className="w-full gap-2 gradient-bg text-white"
+                    onClick={() => handlePayViaPayfast(selectedInv)}
+                    disabled={payingInvoiceId === selectedInv.id}
+                  >
+                    {payingInvoiceId === selectedInv.id
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Preparing payment…</>
+                      : <><CreditCard className="w-4 h-4" /> Pay via PayFast</>
+                    }
+                  </Button>
+                )}
                 {PAYABLE_STATUSES.includes(selectedInv.status) && (
                   <Button
                     variant="outline"
