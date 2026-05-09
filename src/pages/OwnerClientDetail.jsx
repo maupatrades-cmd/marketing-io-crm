@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight, FileText, Phone, Clock, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ActivityFeed from "@/components/activity/ActivityFeed";
+import DiscoveryTab from "@/components/clients/DiscoveryTab";
 import CancelReactivatePanel from "@/components/client/CancelReactivatePanel";
 import { getCurrentUser } from "@/lib/customAuth";
 import { logClientActivityFromBrowser } from "@/lib/activityLog";
@@ -375,69 +376,9 @@ export default function OwnerClientDetail() {
           </div>
         )}
 
-        {/* TAB: Discovery — qualifier answers from the 5-step signup */}
+        {/* TAB: Discovery — qualifier answers, fully editable by admin/owner */}
         {activeTab === "discovery" && (
-          <div className="space-y-6">
-            <div className="glass rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-lg">Lead Discovery</h3>
-                <p className="text-xs text-muted-foreground">
-                  Completed {client.signup_completed_steps || 1}/5 signup steps
-                  {client.lead_score_calculated_at ? ` · scored ${new Date(client.lead_score_calculated_at).toLocaleDateString("en-ZA")}` : ""}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Business Info */}
-                <div>
-                  <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Business Info</h4>
-                  <dl className="space-y-2 text-sm">
-                    <DRow label="Industry" value={fmt(client.industry)} />
-                    <DRow label="Years in business" value={fmt(client.years_in_business)} />
-                    <DRow label="Team size" value={fmt(client.number_of_employees)} />
-                    <DRow label="City" value={fmt(client.business_city)} />
-                    <DRow label="Address" value={fmt(client.business_address)} />
-                    <DRow label="Province" value={fmt(client.business_province)} />
-                  </dl>
-                </div>
-
-                {/* Story */}
-                <div>
-                  <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Their Story</h4>
-                  <dl className="space-y-2 text-sm">
-                    <DRow label="12-month goal" value={fmt(client.twelve_month_goal)} />
-                    <DRow label="Biggest challenge" value={fmt(client.biggest_challenge)} />
-                    <DRow label="What inspired them" value={client.founder_inspiration || "—"} multiline />
-                    <DRow label="Competitor envy" value={client.competitor_envy || "—"} multiline />
-                  </dl>
-                </div>
-
-                {/* Current State */}
-                <div>
-                  <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Current State</h4>
-                  <dl className="space-y-2 text-sm">
-                    <DRow label="Monthly revenue" value={fmt(client.monthly_revenue_range)} />
-                    <DRow label="New customers wanted" value={fmt(client.new_customers_target)} />
-                    <DRow label="Urgency" value={fmt(client.urgency_level)} />
-                    <DRow label="Marketing assets they have" value={humanList(client.current_marketing_assets) || "—"} />
-                    <DRow label="Agency history" value={fmt(client.agency_history)} />
-                  </dl>
-                </div>
-
-                {/* Preferences */}
-                <div>
-                  <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-3">How To Reach Them</h4>
-                  <dl className="space-y-2 text-sm">
-                    <DRow label="Marketing budget" value={fmt(client.monthly_marketing_budget)} />
-                    <DRow label="Preferred channels" value={humanList(client.preferred_contact_channels) || "—"} />
-                    <DRow label="Best call time" value={fmt(client.best_call_time)} />
-                    <DRow label="Wants consultation call" value={client.wants_consultation_call ? "Yes" : "No"} />
-                    <DRow label="Wants personalized proposal" value={client.wants_personalized_proposal ? "Yes" : "No"} />
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+          <DiscoveryTab client={client} clientId={id} onSaved={refetchClient} viewerRole={viewerRole} />
         )}
 
         {/* TAB: Contacts */}
