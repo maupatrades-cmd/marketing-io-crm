@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Mail, Zap, Lock } from "lucide-react";
+import LaunchReadinessModal from "@/components/owner/LaunchReadinessModal";
 
 const TABS = ["users", "packages", "commissions", "emails", "integrations", "audit"];
 
@@ -30,7 +31,10 @@ export default function OwnerSettings() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold gradient-text mb-8">Settings</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold gradient-text">Settings</h1>
+          <LaunchReadinessModal />
+        </div>
 
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-muted/30 rounded-xl mb-6 overflow-x-auto">
