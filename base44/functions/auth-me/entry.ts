@@ -20,16 +20,9 @@ Deno.serve(async (req) => {
     console.error('[auth-me] AppUser lookup failed:', err);
   }
 
-  if (!user) {
-    try {
-      const legacyUsers = await base44.asServiceRole.entities.User.filter({ session_token: token });
-      if (legacyUsers?.[0]) {
-        user = legacyUsers[0];
-      }
-    } catch (err) {
-      console.error('[auth-me] User lookup failed:', err);
-    }
-  }
+  // NOTE: Legacy User entity fallback removed — the built-in User entity
+  // cannot be queried via asServiceRole from backend functions on production.
+  // All users must be in AppUser.
 
   if (!user) {
     return Response.json({ error: 'Invalid session' }, { status: 401 });

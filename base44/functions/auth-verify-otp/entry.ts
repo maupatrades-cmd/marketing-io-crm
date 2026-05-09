@@ -25,17 +25,9 @@ Deno.serve(async (req) => {
     console.error('[auth-verify-otp] AppUser lookup failed:', err);
   }
 
-  if (!user) {
-    try {
-      const legacyUsers = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
-      if (legacyUsers?.[0]) {
-        user = legacyUsers[0];
-        userEntity = 'User';
-      }
-    } catch (err) {
-      console.error('[auth-verify-otp] User lookup failed:', err);
-    }
-  }
+  // NOTE: Legacy User entity fallback removed — the built-in User entity
+  // cannot be queried via asServiceRole from backend functions on production.
+  // All users (clients, staff, owner) must be in AppUser.
 
   let otpValid = false;
   
@@ -100,7 +92,7 @@ Deno.serve(async (req) => {
       userUpdate.failed_login_count = 0;
     }
 
-    await base44.asServiceRole.entities[userEntity].update(user.id, userUpdate);
+    await base44.asServiceRole.entities.AppUser.update(user.id, userUpdate);
 
     // Activity audit (Client Portal PR A): login_success only for login_mfa.
     // signup_verification is already covered by account_created in auth-register.

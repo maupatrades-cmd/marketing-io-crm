@@ -72,17 +72,9 @@ Deno.serve(async (req) => {
     console.error('[auth-login] AppUser lookup failed:', err);
   }
 
-  if (!user) {
-    try {
-      const legacyUsers = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
-      if (legacyUsers?.[0]) {
-        user = legacyUsers[0];
-        userEntity = 'User';
-      }
-    } catch (err) {
-      console.error('[auth-login] User lookup failed:', err);
-    }
-  }
+  // NOTE: Legacy User entity fallback removed — the built-in User entity
+  // cannot be queried via asServiceRole from backend functions on production.
+  // All users (clients, staff, owner) must be in AppUser.
 
   if (!user) {
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
@@ -96,7 +88,7 @@ Deno.serve(async (req) => {
     // Re-generate OTP so they can verify
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    await base44.asServiceRole.entities[userEntity].update(user.id, {
+    await base44.asServiceRole.entities.AppUser.update(user.id, {
       pending_otp_code: otp,
       pending_otp_expires_at: expires,
       pending_otp_purpose: 'signup_verification'
@@ -113,7 +105,7 @@ Deno.serve(async (req) => {
     if (newCount >= 5) {
       updateData.lockout_until = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     }
-    await base44.asServiceRole.entities[userEntity].update(user.id, updateData);
+    await base44.asServiceRole.entities.AppUser.update(user.id, updateData);
 
     // Activity audit (Client Portal PR A): login_failed. Only log if we can
     // resolve the user's Client row — the activity feed is per-client, so
@@ -153,7 +145,7 @@ Deno.serve(async (req) => {
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-  await base44.asServiceRole.entities[userEntity].update(user.id, {
+  await base44.asServiceRole.entities.AppUser.update(user.id, {
     pending_otp_code: otp,
     pending_otp_expires_at: expires,
     pending_otp_purpose: 'login_mfa',

@@ -50,17 +50,7 @@ Deno.serve(async (req) => {
     console.error('[resend-otp] AppUser lookup failed:', err);
   }
 
-  if (!user) {
-    try {
-      const legacyUsers = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
-      if (legacyUsers?.[0]) {
-        user = legacyUsers[0];
-        userEntity = 'User';
-      }
-    } catch (err) {
-      console.error('[resend-otp] User lookup failed:', err);
-    }
-  }
+  // NOTE: Legacy User entity fallback removed — all users must be in AppUser.
 
   if (!user) {
     // Return success even if not found — don't expose user existence
@@ -72,7 +62,7 @@ Deno.serve(async (req) => {
     ? new Date(Date.now() + 10 * 60 * 1000).toISOString()
     : new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-  await base44.asServiceRole.entities[userEntity].update(user.id, {
+  await base44.asServiceRole.entities.AppUser.update(user.id, {
     pending_otp_code: newOtp,
     pending_otp_expires_at: expiry,
     pending_otp_purpose: purpose
