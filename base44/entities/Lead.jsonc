@@ -82,7 +82,7 @@
     },
     "warm_lead_criteria": {
       "type": "object",
-      "description": "7 warm-lead qualification criteria",
+      "description": "7 warm-lead qualification criteria (legacy v1, kept for backwards compat)",
       "properties": {
         "has_business_premises": {
           "type": "boolean",
@@ -113,6 +113,222 @@
           "default": false
         }
       }
+    },
+    "warm_lead_criteria_v2": {
+      "type": "object",
+      "description": "7 warm-lead qualification criteria with rich context (v2 - replaces v1)",
+      "properties": {
+        "has_business_premises": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "has_trading_history": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "decision_maker_contacted": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "has_budget_indication": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "expressed_interest": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "follow_up_agreed": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "permission_to_contact": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "qualification_extras": {
+      "type": "object",
+      "description": "Additional qualification context beyond the 7 criteria",
+      "properties": {
+        "monthly_revenue_band": {
+          "type": "string",
+          "enum": [
+            "under_20k",
+            "20k_50k",
+            "50k_150k",
+            "150k_500k",
+            "500k_plus",
+            "prefer_not_say"
+          ]
+        },
+        "industry_vertical": {
+          "type": "string",
+          "enum": [
+            "retail",
+            "food_beverage",
+            "beauty_salons",
+            "construction",
+            "professional_services",
+            "health_wellness",
+            "education",
+            "automotive",
+            "township_sme",
+            "other"
+          ]
+        },
+        "employee_band": {
+          "type": "string",
+          "enum": [
+            "just_me",
+            "2_5",
+            "6_10",
+            "11_25",
+            "26_50",
+            "50_plus"
+          ]
+        },
+        "decision_timeline": {
+          "type": "string",
+          "enum": [
+            "this_week",
+            "this_month",
+            "30_60_days",
+            "just_exploring",
+            "unsure"
+          ]
+        },
+        "marketing_situation": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Multi-select: no_marketing, diy_social, has_marketing_person, used_agency_before, has_website, has_logo, other"
+        },
+        "package_interest": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Multi-select: ignite, accelerate, dominate, street_pulse, township_pulse, addons, not_sure"
+        },
+        "lead_temperature": {
+          "type": "string",
+          "enum": [
+            "cold",
+            "warm",
+            "hot"
+          ],
+          "description": "Qualifier's gut-feel rating: cold (researching), warm (interested), hot (ready to buy)"
+        },
+        "best_followup_time": {
+          "type": "string",
+          "description": "HH:MM format time when best to reach the lead"
+        },
+        "best_followup_days": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Days of week: Monday, Tuesday, etc."
+        },
+        "qualifier_notes": {
+          "type": "string",
+          "description": "Free-text notes from the qualifier"
+        }
+      }
+    },
+    "qualified_by": {
+      "type": "string",
+      "description": "User ID who completed the qualification"
+    },
+    "qualified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the lead was qualified"
+    },
+    "qualification_complete": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if all 7 criteria + lead_temperature filled"
     },
     "lead_score": {
       "type": "number",

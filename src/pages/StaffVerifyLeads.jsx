@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AppLayout from "@/components/AppLayout";
-import { CheckCircle2, XCircle, AlertCircle, Plus, Clock, Star } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Plus, Clock, Star, Zap } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+import LeadQualificationForm from "@/components/lead/LeadQualificationForm";
 
 export default function StaffVerifyLeads() {
   const { user } = useAuth();
@@ -38,6 +39,8 @@ export default function StaffVerifyLeads() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [verifiedLead, setVerifiedLead] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState("");
+  const [qualifyOpen, setQualifyOpen] = useState(false);
+  const [qualifyingLead, setQualifyingLead] = useState(null);
 
   const PACKAGES = [
     { id: "ignite", label: "Ignite" },
@@ -360,6 +363,19 @@ export default function StaffVerifyLeads() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => {
+                        setQualifyingLead(lead);
+                        setQualifyOpen(true);
+                      }}
+                      disabled={submitting}
+                      className="gap-2"
+                    >
+                      <Zap className="w-4 h-4" />
+                      Qualify
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleReject(lead)}
                       disabled={submitting}
                       className="gap-2"
@@ -494,6 +510,47 @@ export default function StaffVerifyLeads() {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Qualification Form Modal */}
+      <Dialog open={qualifyOpen} onOpenChange={setQualifyOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="gradient-text">Qualify Lead: {qualifyingLead?.business_name}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-4">
+            {qualifyingLead && (
+              <LeadQualificationForm
+                initialData={qualifyingLead}
+                onSave={async (qualificationData) => {
+                  try {
+                    setSubmitting(true);
+                    await base44.entities.Lead.update(qualifyingLead.id, {
+                      ...qualificationData,
+                      qualified_by: user?.id,
+                      qualification_complete: 
+                        Object.values(qualificationData.warm_lead_criteria_v2 || {}).filter(c => c.answer !== null).length === 7 &&
+                        qualificationData.qualification_extras?.lead_temperature !== null,
+                    });
+                    
+                    // Update local state
+                    setLeads(prev => prev.map(l => 
+                      l.id === qualifyingLead.id 
+                        ? { ...l, ...qualificationData, qualified_by: user?.id }
+                        : l
+                    ));
+                    
+                    setQualifyOpen(false);
+                  } catch (error) {
+                    console.error("Error saving qualification:", error);
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
