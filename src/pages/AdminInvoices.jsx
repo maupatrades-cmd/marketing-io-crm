@@ -9,7 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, FileText, Mail, CheckCircle2, ExternalLink, Repeat, Loader2, AlertTriangle, RefreshCw, Clock, Plus } from "lucide-react";
+import { Search, FileText, Mail, CheckCircle2, ExternalLink, Repeat, Loader2, AlertTriangle, RefreshCw, Clock, Plus, CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
 import { PRODUCT_CATALOG } from "@/data/ProductCatalog";
@@ -730,7 +733,22 @@ export default function AdminInvoices() {
               </div>
               <div>
                 <Label>Due Date</Label>
-                <Input type="date" value={createForm.due_date} onChange={e => setCreateForm(f => ({ ...f, due_date: e.target.value }))} />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {createForm.due_date ? format(new Date(createForm.due_date), "d MMM yyyy") : "Pick a date…"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={createForm.due_date ? new Date(createForm.due_date) : undefined}
+                      onSelect={(date) => setCreateForm(f => ({ ...f, due_date: date ? date.toISOString().slice(0, 10) : "" }))}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
             <div>
