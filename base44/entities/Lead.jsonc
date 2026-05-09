@@ -28,9 +28,16 @@
         "fnc_referral",
         "inbound",
         "referral",
+        "phone_call_to_admin",
         "other"
       ],
       "default": "cpc_outbound"
+    },
+    "urgency": {
+      "type": "string",
+      "enum": ["normal", "urgent"],
+      "default": "normal",
+      "description": "Set by admin to flag urgent leads for owner"
     },
     "submitted_by": {
       "type": "string",
