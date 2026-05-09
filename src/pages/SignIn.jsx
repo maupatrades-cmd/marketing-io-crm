@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 function makeCaptcha() {
@@ -84,10 +84,6 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
-      <button onClick={() => navigate(-1)} className="absolute top-4 left-4 flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
-        <ArrowLeft className="w-4 h-4" />
-        Back
-      </button>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img
