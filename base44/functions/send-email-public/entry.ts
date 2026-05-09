@@ -114,7 +114,7 @@ function renderEmail(purpose, payload) {
       return {
         subject: `Your Marketing iO contract for ${p.package || 'your package'} has been signed`,
         preheader: 'Welcome to Marketing iO!',
-        cta: { text: 'Open Client Portal →', url: p.portal_url || 'https://app.base44.com/client-portal' },
+        cta: { text: 'Open Client Portal →', url: p.portal_url || 'https://app.marketingio.co.za/client-portal' },
         bodyHtml: `<p style="margin:0 0 16px 0;">Hi ${name},</p>
           <p style="margin:0 0 16px 0;">Your contract for <strong>${p.package || 'your package'}</strong> has been signed. Welcome to Marketing iO!</p>
           <p style="margin:0 0 16px 0;">Our team will contact you within 1 business day to begin onboarding.</p>`
@@ -177,7 +177,7 @@ function renderEmail(purpose, payload) {
       return {
         subject: `Welcome to Marketing iO, ${p.business_name || name}!`,
         preheader: `Your ${p.package || ''} package is now active.`,
-        cta: { text: 'Open Client Portal →', url: p.portal_url || 'https://app.base44.com/client-portal' },
+        cta: { text: 'Open Client Portal →', url: p.portal_url || 'https://app.marketingio.co.za/client-portal' },
         bodyHtml: `<p style="margin:0 0 16px 0;">Hi ${name},</p>
           <p style="margin:0 0 16px 0;">Welcome to Marketing iO! Your <strong>${p.package || ''}</strong> package is now active.</p>
           <p style="margin:0 0 16px 0;">Here's what happens next:</p>

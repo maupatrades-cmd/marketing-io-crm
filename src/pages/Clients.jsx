@@ -162,6 +162,38 @@ export default function Clients() {
           await createOnboardingTasks(created.id, data.business_name);
           toast({ title: "Onboarding checklist created", description: `${ONBOARDING_TASKS.length} tasks added for ${data.business_name}` });
         }
+
+        // Fire portal invitation. Failure does NOT roll back the Client record.
+        if (data.email) {
+          let token = "";
+          try { token = localStorage.getItem("mio_session_token") || ""; } catch { /* ignore */ }
+          try {
+            const res = await base44.functions.invoke("provision-client-user", {
+              token,
+              client_id: created.id,
+            });
+            const payload = res?.data ?? res;
+            if (payload?.success && payload?.already_exists) {
+              toast({ title: "Client added", description: `Portal access already exists for ${data.email}` });
+            } else if (payload?.success) {
+              toast({ title: "Client added", description: `Portal invitation sent to ${data.email}` });
+            } else {
+              console.error("provision-client-user failed:", payload);
+              toast({
+                title: "Client added but invitation email failed",
+                description: "You can resend from the client detail page.",
+                variant: "destructive",
+              });
+            }
+          } catch (err) {
+            console.error("provision-client-user error:", err);
+            toast({
+              title: "Client added but invitation email failed",
+              description: "You can resend from the client detail page.",
+              variant: "destructive",
+            });
+          }
+        }
       }
     }
     setSaving(false);

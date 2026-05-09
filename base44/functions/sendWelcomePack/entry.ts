@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       <p style="margin:0 0 16px 0;">We'll guide you through every step. If you have any questions, reach out anytime at <a href="mailto:info@marketingio.co.za" style="color:#a764e6;">info@marketingio.co.za</a>.</p>
       <p style="margin:0;">Let's get your business visible, heard, and growing!</p>
       <table cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr><td>
-        <a href="https://app.base44.com/client-portal" style="display:inline-block;background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);color:#ffffff;padding:14px 32px;border-radius:8px;font-weight:600;font-size:16px;text-decoration:none;">Open Client Portal →</a>
+        <a href="https://app.marketingio.co.za/client-portal" style="display:inline-block;background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);color:#ffffff;padding:14px 32px;border-radius:8px;font-weight:600;font-size:16px;text-decoration:none;">Open Client Portal →</a>
       </td></tr></table>`;
 
     const apiKey = Deno.env.get('RESEND_API_KEY');
