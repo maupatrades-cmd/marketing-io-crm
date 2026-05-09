@@ -48,7 +48,7 @@ export default function ClientOnboardingReview() {
     });
 
     const unsubClients = base44.entities.Client.subscribe((event) => {
-      if (event.type === 'update' && event.id) {
+      if (event.id) {
         setClients(prev => ({ ...prev, [event.id]: event.data }));
       }
     });
@@ -60,31 +60,34 @@ export default function ClientOnboardingReview() {
   }, []);
 
   const loadSubmissions = async () => {
-    try {
-      const subs = await base44.entities.ClientOnboardingSubmission.list("-submitted_at", 100);
-      setSubmissions(subs);
-      
-      // Load associated clients
-      const clientIds = [...new Set(subs.map(s => s.client_id).filter(Boolean))];
-      if (clientIds.length > 0) {
-        try {
-          const clientData = {};
-          for (const id of clientIds) {
-            const result = await base44.entities.Client.filter({ id }, "", 1);
-            if (result) {
-              clientData[id] = Array.isArray(result) ? result[0] : result;
-            }
-          }
-          setClients(clientData);
-        } catch (clientErr) {
-          console.error("Failed to load client data:", clientErr);
-        }
-      }
-      setLoading(false);
-    } catch (err) {
-      toast({ title: "Error loading submissions", description: err.message, variant: "destructive" });
-      setLoading(false);
-    }
+   try {
+     const subs = await base44.entities.ClientOnboardingSubmission.list("-submitted_at", 100);
+     setSubmissions(subs);
+
+     // Load associated clients
+     const clientIds = [...new Set(subs.map(s => s.client_id).filter(Boolean))];
+     if (clientIds.length > 0) {
+       try {
+         const clientData = {};
+         for (const id of clientIds) {
+           try {
+             const result = await base44.entities.Client.list();
+             const c = Array.isArray(result) ? result.find(x => x.id === id) : (result?.id === id ? result : null);
+             if (c) clientData[id] = c;
+           } catch (e) {
+             console.error(`Failed to load client ${id}:`, e);
+           }
+         }
+         setClients(clientData);
+       } catch (clientErr) {
+         console.error("Failed to load client data:", clientErr);
+       }
+     }
+     setLoading(false);
+   } catch (err) {
+     toast({ title: "Error loading submissions", description: err.message, variant: "destructive" });
+     setLoading(false);
+   }
   };
 
   // Sort oldest unreviewed first (Round 4 SLA discipline).
