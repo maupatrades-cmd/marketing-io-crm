@@ -23,7 +23,7 @@ export default function ClientOrders() {
 
   useEffect(() => {
     getCurrentUser().then(async (me) => {
-      if (!me) { window.location.href = '/login'; return; }
+      if (!me) { setLoading(false); return; }
       const clients = await base44.entities.Client.filter({ email: me.email });
       if (clients.length > 0) {
         const c = Array.isArray(clients) ? clients[0] : clients;

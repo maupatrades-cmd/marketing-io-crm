@@ -31,7 +31,7 @@ export default function ClientSubscription() {
     const load = async () => {
       const me = authUser || (await getCurrentUser());
       if (!me) {
-        window.location.href = "/login";
+        setLoading(false);
         return;
       }
 

@@ -89,23 +89,20 @@ export default function OwnerDashboard() {
       base44.entities.Client.list("-created_date", 100),
       base44.entities.Deal.list("-created_date", 100),
       base44.entities.Commission.list("-created_date", 100),
-      // Round 5: bumped to 500 + sort by issue_date so the 12-week paid
-      // chart has enough rows to compute over a full quarter.
       base44.entities.Invoice.list("-issue_date", 500),
       base44.entities.Lead.list("-created_date", 100),
       base44.entities.MonthlyReport.list("-created_date", 100),
       getCurrentUser(),
     ]).then(([c, d, com, inv, l, r, me]) => {
-      if (!me) { window.location.href = '/login'; return; }
-      setClients(c);
-      setDeals(d);
-      setCommissions(com);
-      setInvoices(inv);
-      setLeads(l);
-      setReports(r);
+      setClients(Array.isArray(c) ? c : []);
+      setDeals(Array.isArray(d) ? d : []);
+      setCommissions(Array.isArray(com) ? com : []);
+      setInvoices(Array.isArray(inv) ? inv : []);
+      setLeads(Array.isArray(l) ? l : []);
+      setReports(Array.isArray(r) ? r : []);
       setCurrentUser(me);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   // Round 5: real 12-week paid-invoice series (replaces hardcoded data).

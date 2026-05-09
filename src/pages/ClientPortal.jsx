@@ -104,7 +104,6 @@ export default function ClientPortal() {
       const me = authUser || await getCurrentUser();
       if (!me) {
         setLoading(false);
-        window.location.href = "/login";
         return;
       }
 

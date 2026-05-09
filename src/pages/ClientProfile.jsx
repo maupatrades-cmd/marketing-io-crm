@@ -16,7 +16,7 @@ export default function ClientProfile() {
 
   useEffect(() => {
     getCurrentUser().then(async (me) => {
-      if (!me) { window.location.href = '/login'; return; }
+      if (!me) { setLoading(false); return; }
       setUser(me);
       const clients = await base44.entities.Client.filter({ email: me.email });
       if (clients.length > 0) {

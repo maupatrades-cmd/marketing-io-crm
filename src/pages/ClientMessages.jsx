@@ -101,7 +101,7 @@ export default function ClientMessages() {
   useEffect(() => {
     (async () => {
       const me = await getCurrentUser();
-      if (!me) { window.location.href = '/login'; return; }
+      if (!me) { setLoading(false); return; }
       setUser(me);
 
       const clients = await base44.entities.Client.filter({ email: me.email });

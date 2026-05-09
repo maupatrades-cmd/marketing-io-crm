@@ -45,7 +45,7 @@ export default function ClientUploads() {
 
   useEffect(() => {
     getCurrentUser().then(async (me) => {
-      if (!me) { setLoading(false); window.location.href = '/login'; return; }
+      if (!me) { setLoading(false); return; }
       const clients = await base44.entities.Client.filter({ email: me.email });
       if (clients.length > 0) {
         const c = clients[0];

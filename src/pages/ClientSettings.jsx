@@ -115,7 +115,7 @@ export default function ClientSettings() {
     let cancelled = false;
     (async () => {
       const me = await getCurrentUser();
-      if (!me) { window.location.href = '/login'; return; }
+      if (!me) { setLoading(false); return; }
       if (cancelled) return;
       setUser(me);
       setFullName(me.full_name || '');

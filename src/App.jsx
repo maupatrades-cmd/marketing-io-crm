@@ -97,7 +97,7 @@ import PortalCheckout from './pages/PortalCheckout';
 
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, user } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -123,6 +123,7 @@ const AuthenticatedApp = () => {
       <Route path="/build-summary" element={<BuildSummary />} />
       {/* Add your page Route elements here */}
       <Route path="/" element={
+        isLoadingAuth ? null :
         !user ? <Navigate to="/login" replace /> :
         user.role === "owner" ? <OwnerDashboard /> :
         user.role === "client" ? <Navigate to="/client-portal" replace /> :
