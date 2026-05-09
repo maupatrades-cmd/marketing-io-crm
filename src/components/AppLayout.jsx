@@ -38,6 +38,7 @@ const STAFF_NAV = {
     { path: "/admin/invoices", label: "Invoice Chase", icon: FileText },
     { path: "/onboarding-submissions", label: "Onboarding Queue", icon: ListChecks },
     { path: "/staff/verify-leads", label: "Verify Leads", icon: CheckCircle2 },
+    { path: "/owner/staff-activity", label: "Verified Leads", icon: Star },
     { path: "/contracts", label: "Contracts", icon: File },
     { path: "/receipts", label: "Receipts", icon: Receipt },
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
