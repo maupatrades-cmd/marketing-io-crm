@@ -433,11 +433,11 @@ export default function StaffVerifyLeads() {
 
       {/* Load Lead Modal */}
       <Dialog open={loadLeadOpen} onOpenChange={setLoadLeadOpen}>
-        <DialogContent className="bg-card border-border/50 max-w-lg">
+        <DialogContent className="bg-card border-border/50 max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="gradient-text">Load New Lead</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
+          <div className="space-y-4 mt-4 flex-1 overflow-y-auto pr-4">
             <div>
               <label className="text-sm font-medium text-foreground mb-1 block">Business Name *</label>
               <Input
@@ -546,7 +546,7 @@ export default function StaffVerifyLeads() {
                  className="min-h-20 bg-secondary/50 border-border/50"
                />
              </div>
-            <div className="flex justify-end gap-2">
+            <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-card via-card to-transparent pt-4 pb-2 flex justify-end gap-2 -mx-6 px-6">
               <Button variant="ghost" onClick={() => setLoadLeadOpen(false)}>
                 Cancel
               </Button>
