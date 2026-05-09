@@ -35,7 +35,7 @@ const RATE_MAX       = 60;
 
 const VALID_CATEGORIES = new Set([
   'auth', 'profile', 'payment', 'invoice',
-  'document', 'communication', 'support', 'account',
+  'document', 'communication', 'support', 'account', 'lead',
 ]);
 
 const ipHits: Map<string, number[]> = new Map();

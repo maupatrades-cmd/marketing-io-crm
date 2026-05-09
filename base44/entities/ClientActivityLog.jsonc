@@ -31,7 +31,7 @@
       "type": "string",
       "enum": [
         "auth", "profile", "payment", "invoice",
-        "document", "communication", "support", "account"
+        "document", "communication", "support", "account", "lead"
       ],
       "description": "Functional grouping for the activity feed UI filter dropdown."
     },
