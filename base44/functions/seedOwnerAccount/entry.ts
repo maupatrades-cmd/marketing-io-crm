@@ -6,7 +6,7 @@ import bcrypt from 'npm:bcryptjs@2.4.3';
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
-  const email = 'maupatrades@gmail.com';
+  const email = 'business.lekgoro@gmail.com';
   const password = 'MarketingIO2026!';
   const hash = await bcrypt.hash(password, 10);
 

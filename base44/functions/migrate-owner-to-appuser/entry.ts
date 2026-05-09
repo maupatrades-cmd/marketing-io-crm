@@ -6,7 +6,7 @@ import bcrypt from 'npm:bcryptjs@2.4.3';
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
-  const email = 'maupatrades@gmail.com';
+  const email = 'business.lekgoro@gmail.com';
   const password = 'MarketingIO2026!';
 
   // Check if already in AppUser
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   try {
     const newUser = await base44.asServiceRole.entities.AppUser.create({
       email,
-      full_name: 'Thapelo Maupa',
+      full_name: 'Lekgoro',
       role: 'owner',
       password_hash: hash,
       pending_verification: false,
