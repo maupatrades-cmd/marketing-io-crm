@@ -136,20 +136,23 @@ Deno.serve(async (req) => {
 
   const mPaymentId = generateMPaymentId();
 
+  const returnUrlWithRef = appendRef(returnUrl, mPaymentId);
+  const cancelUrlWithRef = appendRef(cancelUrl, mPaymentId);
+
   const candidate = {
     merchant_id:      merchantId,
     merchant_key:     merchantKey,
-    return_url:       appendRef(returnUrl, mPaymentId),
-    cancel_url:       appendRef(cancelUrl, mPaymentId),
+    return_url:       returnUrlWithRef,
+    cancel_url:       cancelUrlWithRef,
     notify_url:       notifyUrl,
     name_first:       nameFirst,
     name_last:        nameLast,
     email_address:    client.email || '',
-    cell_number:      client.phone || '',
+    cell_number:      '',
     m_payment_id:     mPaymentId,
     amount:           amountStr,
     item_name:        itemName,
-    item_description: `Payment for ${itemName} — Marketing iO`,
+    item_description: `Payment for ${itemName} - Marketing iO`,
     custom_str1:      'invoice',       // marks this as an invoice payment in ITN
     custom_str2:      client.id,       // client_id for ITN attribution
     custom_str3:      invoice.id,      // invoice_id so ITN can mark it paid
@@ -165,6 +168,9 @@ Deno.serve(async (req) => {
 
   const { queryString, signature } = buildSignedSet(fields, passphrase);
   fields.signature = signature;
+
+  console.log('[payfast-invoice-init] fields to POST:', JSON.stringify(fields, null, 2));
+  console.log('[payfast-invoice-init] queryString for signature:', queryString);
 
   const signedPayloadHash = createHash('sha256').update(queryString).digest('hex');
 

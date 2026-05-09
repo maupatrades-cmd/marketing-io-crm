@@ -117,6 +117,7 @@ Deno.serve(async (req) => {
           await base44.asServiceRole.entities.ClientActivityLog.create({
             client_id: client.id, client_name: String(client.business_name || '').trim(),
             actor_id: user.id, actor_role: 'client', event_type: 'login_failed',
+            event_label: 'Login Failed',
             event_category: 'auth', event_summary: 'Login attempt failed (wrong password)',
             event_metadata: { failed_login_count: newCount, locked: newCount >= 5 },
             logged_by: user.id, logged_by_name: String(user.full_name || user.email || ''),

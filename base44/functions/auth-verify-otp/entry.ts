@@ -104,7 +104,8 @@ Deno.serve(async (req) => {
           await base44.asServiceRole.entities.ClientActivityLog.create({
             client_id: client.id, client_name: String(client.business_name || '').trim(),
             actor_id: user.id, actor_role: String(user.role || 'client'),
-            event_type: 'login_success', event_category: 'auth', event_summary: 'Logged in',
+            event_type: 'login_success', event_label: 'Login',
+            event_category: 'auth', event_summary: 'Logged in',
             logged_by: user.id, logged_by_name: String(user.full_name || user.email || ''),
             ip_address: ip.slice(0, 64), user_agent: (req.headers.get('user-agent') || '').slice(0, 500),
           });
