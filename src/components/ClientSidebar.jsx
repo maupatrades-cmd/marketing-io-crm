@@ -12,9 +12,11 @@ import {
   Lightbulb,
   Menu,
   X,
-  Bell
+  Bell,
+  Search
 } from 'lucide-react';
 import { destroySession } from '@/lib/customAuth';
+import { useState } from 'react';
 
 const SIDEBAR_BG = '#0f172a';
 const HOVER_BG = 'rgba(255,255,255,0.04)';
@@ -85,6 +87,7 @@ export default function ClientSidebar({
   onContact = () => {}
 }) {
   const location = useLocation();
+  const [navSearch, setNavSearch] = useState("");
 
   const handleSignOut = async () => {
     try {
@@ -137,24 +140,40 @@ export default function ClientSidebar({
       >
         {/* Logo + subtitle */}
         <div
-          className="px-5 py-5 flex items-center gap-3"
+          className="px-5 py-4 flex flex-col gap-3"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
         >
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'linear-gradient(135deg,#a764e6 0%,#ec4899 100%)' }}
-          >
-            <Lightbulb className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'linear-gradient(135deg,#a764e6 0%,#ec4899 100%)' }}
+            >
+              <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-white leading-tight truncate">Marketing iO</p>
+              <p className="text-[11px] text-slate-400 leading-tight">Client Portal</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-white leading-tight truncate">Marketing iO</p>
-            <p className="text-[11px] text-slate-400 leading-tight">Client Portal</p>
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: "#6b6b85" }} />
+            <input
+              type="text"
+              placeholder="Search menu..."
+              value={navSearch}
+              onChange={e => setNavSearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", color: "#f4f4fa" }}
+            />
           </div>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 space-y-0.5">
-          {PRIMARY_NAV.map(({ path, label, icon: Icon, badgeKey }) => (
+          {PRIMARY_NAV.filter(({ label }) =>
+            !navSearch || label.toLowerCase().includes(navSearch.toLowerCase())
+          ).map(({ path, label, icon: Icon, badgeKey }) => (
             <NavRow
               key={path}
               to={path}
@@ -162,7 +181,7 @@ export default function ClientSidebar({
               Icon={Icon}
               badge={badgeKey ? (unreadCounts[badgeKey] || 0) : 0}
               active={location.pathname === path || (path === '/client-portal' && location.pathname === '/')}
-              onNavigate={closeOnNav}
+              onNavigate={() => { closeOnNav(); setNavSearch(""); }}
             />
           ))}
 

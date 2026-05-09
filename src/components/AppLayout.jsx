@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone, UserPlus } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone, UserPlus, Search } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
@@ -95,10 +95,12 @@ const OWNER_NAV = [
 
 export default function AppLayout({ children, title, subtitle }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
   const [switchedRole, setSwitchedRole] = useState(null);
   const [leadCount, setLeadCount] = useState(0);
+  const [navSearch, setNavSearch] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem("__owner_switched_role");
@@ -174,11 +176,23 @@ export default function AppLayout({ children, title, subtitle }) {
             className="w-full max-w-[168px] object-contain"
             style={{ filter: "invert(1) brightness(2)", mixBlendMode: "screen" }}
           />
+          {/* Search bar */}
+          <div className="mt-3 relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: "#6b6b85" }} />
+            <input
+              type="text"
+              placeholder="Search menu..."
+              value={navSearch}
+              onChange={e => setNavSearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs outline-none"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", color: "#f4f4fa" }}
+            />
+          </div>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {user?.role === "owner" && (
+          {user?.role === "owner" && !navSearch && (
             <>
               <Link
                 to="/team-kpis"
@@ -325,31 +339,56 @@ export default function AppLayout({ children, title, subtitle }) {
               </Link>
               </>
               )}
-          {(STAFF_NAV[displayRole] || OWNER_NAV).map(({ path, label, icon: Icon, badgeKey }) => {
-            const active = location.pathname === path;
-            const badge = badgeKey ? (navBadges[badgeKey] || 0) : 0;
-            return (
-              <Link
-                key={path}
-                to={path}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  active
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
-                }`}
-                style={active ? {} : { color: "#a8a8c0" }}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="flex-1 min-w-0 truncate">{label}</span>
-                {badge > 0 && (
-                  <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-rose-500 text-white">
-                    {badge > 99 ? '99+' : badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+          {(() => {
+            const allNav = navSearch
+              ? [
+                  ...(user?.role === "owner" ? [
+                    { path: "/team-kpis", label: "Team KPIs" },
+                    { path: "/onboarding-submissions", label: "Onboarding Forms" },
+                    { path: "/monthly-reports", label: "Monthly Reports" },
+                    { path: "/team-oversight", label: "Team Performance" },
+                    { path: "/email-templates", label: "Email Templates" },
+                    { path: "/owner/financials", label: "Financials" },
+                    { path: "/owner/reports", label: "Reports" },
+                    { path: "/owner/settings", label: "Settings" },
+                    { path: "/staff-productivity", label: "Staff Productivity" },
+                    { path: "/owner/campaigns", label: "Campaign Manager" },
+                    { path: "/deliverable-quality", label: "Deliverable Quality" },
+                  ] : []),
+                  ...(STAFF_NAV[displayRole] || OWNER_NAV),
+                ].filter((item, idx, arr) => arr.findIndex(x => x.path === item.path) === idx)
+              : (STAFF_NAV[displayRole] || OWNER_NAV);
+
+            const filtered = navSearch
+              ? allNav.filter(item => item.label?.toLowerCase().includes(navSearch.toLowerCase()))
+              : allNav;
+
+            return filtered.map(({ path, label, icon: Icon, badgeKey }) => {
+              const active = location.pathname === path;
+              const badge = badgeKey ? (navBadges[badgeKey] || 0) : 0;
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  onClick={() => { setMobileOpen(false); setNavSearch(""); }}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    active
+                      ? "gradient-bg text-white shadow-glow-purple"
+                      : "hover:bg-white/5"
+                  }`}
+                  style={active ? {} : { color: "#a8a8c0" }}
+                >
+                  {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                  <span className="flex-1 min-w-0 truncate">{label}</span>
+                  {badge > 0 && (
+                    <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-rose-500 text-white">
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            });
+          })()}
         </nav>
 
         {/* Owner Switch View + Client Portal */}
