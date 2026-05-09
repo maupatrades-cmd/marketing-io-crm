@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Search, FileText, Mail, CheckCircle2, ExternalLink, Repeat, Loader2, AlertTriangle, RefreshCw, Clock, Plus } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
+import { PRODUCT_CATALOG } from "@/data/ProductCatalog";
 
 // =============================================================================
 // /admin/invoices — chase queue (Round 4 of recovery plan)
@@ -112,7 +113,7 @@ export default function AdminInvoices() {
   // Create invoice modal
   const [createOpen, setCreateOpen] = useState(false);
   const [allClients, setAllClients] = useState([]);
-  const [createForm, setCreateForm] = useState({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: "", description: "", product_name: "", send_email: true });
+  const [createForm, setCreateForm] = useState({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: "", description: "", product_name: "", product_id: "", send_email: true });
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
   useEffect(() => {
@@ -337,7 +338,7 @@ export default function AdminInvoices() {
 
   const openCreate = () => {
     const defaultDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    setCreateForm({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: defaultDue, description: "", product_name: "", send_email: true });
+    setCreateForm({ client_id: "", client_name: "", invoice_type: "once_off", amount: "", due_date: defaultDue, description: "", product_name: "", product_id: "", send_email: true });
     setCreateOpen(true);
   };
 
@@ -733,9 +734,51 @@ export default function AdminInvoices() {
               </div>
             </div>
             <div>
-              <Label>Product / Service Name *</Label>
-              <Input value={createForm.product_name} onChange={e => setCreateForm(f => ({ ...f, product_name: e.target.value }))} placeholder="e.g. Social Media Management, Setup Fee, AI Chatbot…" />
+              <Label>Product / Service</Label>
+              <Select value={createForm.product_id || ""} onValueChange={(v) => {
+                if (v === "__custom__") {
+                  setCreateForm(f => ({ ...f, product_id: "__custom__", product_name: "", amount: "" }));
+                  return;
+                }
+                const [pid, pricetype] = v.split("|");
+                const prod = PRODUCT_CATALOG.find(p => p.id === pid);
+                if (!prod) return;
+                const isMonthly = pricetype === "monthly";
+                const price = isMonthly ? prod.monthly_price : prod.setup_price;
+                setCreateForm(f => ({
+                  ...f,
+                  product_id: v,
+                  product_name: `${prod.name}${isMonthly ? " — Monthly Retainer" : " — Setup Fee"}`,
+                  amount: price > 0 ? String(price) : f.amount,
+                  invoice_type: isMonthly ? "monthly_retainer" : "setup_fee",
+                }));
+              }}>
+                <SelectTrigger><SelectValue placeholder="Pick a product…" /></SelectTrigger>
+                <SelectContent className="max-h-72 overflow-y-auto">
+                  {PRODUCT_CATALOG.map(p => {
+                    const options = [];
+                    if (p.setup_price > 0) options.push(
+                      <SelectItem key={`${p.id}|setup`} value={`${p.id}|setup`}>
+                        {p.emoji} {p.name} — Setup (R{p.setup_price.toLocaleString()})
+                      </SelectItem>
+                    );
+                    if (p.monthly_price > 0) options.push(
+                      <SelectItem key={`${p.id}|monthly`} value={`${p.id}|monthly`}>
+                        {p.emoji} {p.name} — Monthly (R{p.monthly_price.toLocaleString()})
+                      </SelectItem>
+                    );
+                    return options;
+                  })}
+                  <SelectItem value="__custom__">✏️ Custom (enter manually)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            {createForm.product_id === "__custom__" && (
+              <div>
+                <Label>Custom Product / Service Name *</Label>
+                <Input value={createForm.product_name} onChange={e => setCreateForm(f => ({ ...f, product_name: e.target.value }))} placeholder="e.g. Bespoke Design Package…" />
+              </div>
+            )}
             <div>
               <Label>Description (optional)</Label>
               <Textarea value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Additional notes or details for this invoice" />
