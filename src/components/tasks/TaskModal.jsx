@@ -7,7 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import TaskCheckbox from "./TaskCheckbox";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -139,7 +142,22 @@ export default function TaskModal({ open, onClose, task, clients, users, current
             </div>
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">Due Date</Label>
-              <Input type="date" value={form.due_date || ""} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} className="bg-secondary/50 border-border/50" />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal bg-secondary/50 border-border/50">
+                    <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {form.due_date ? format(new Date(form.due_date), "d MMM yyyy") : <span className="text-muted-foreground">Pick a date…</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.due_date ? new Date(form.due_date) : undefined}
+                    onSelect={(date) => setForm(f => ({ ...f, due_date: date ? date.toISOString().slice(0, 10) : "" }))}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
