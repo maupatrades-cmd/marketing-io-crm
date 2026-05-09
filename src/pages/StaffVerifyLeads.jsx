@@ -8,8 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AppLayout from "@/components/AppLayout";
-import { CheckCircle2, XCircle, AlertCircle, Plus, Clock } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { CheckCircle2, XCircle, AlertCircle, Plus, Clock, Star } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
 
 export default function StaffVerifyLeads() {
   const { user } = useAuth();
@@ -27,9 +27,23 @@ export default function StaffVerifyLeads() {
     email: "",
     phone: "",
     notes: "",
+    source: "phone_call_to_admin",
+    best_time_to_call_date: "",
+    best_time_to_call_time: "",
+    interested_products: [],
   });
   const [detailOpen, setDetailOpen] = useState(false);
   const [verifiedLead, setVerifiedLead] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState("");
+
+  const PACKAGES = [
+    { id: "ignite", label: "Ignite" },
+    { id: "accelerate", label: "Accelerate" },
+    { id: "dominate", label: "Dominate" },
+    { id: "street_pulse", label: "Street Pulse" },
+    { id: "township_pulse", label: "Township Pulse" },
+    { id: "not_sure", label: "Not Sure Yet" },
+  ];
 
   // Admin-only access check
   useEffect(() => {
@@ -58,11 +72,15 @@ export default function StaffVerifyLeads() {
   const handleApprove = async (lead) => {
     try {
       setSubmitting(true);
-      const updated = await base44.entities.Lead.update(lead.id, {
+      await base44.entities.Lead.update(lead.id, {
         status: "verified",
         verified_date: new Date().toISOString().split('T')[0],
       });
-      setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+      // Keep the lead in the list instead of removing it
+      const updatedLeads = leads.map((l) =>
+        l.id === lead.id ? { ...l, status: "verified", verified_date: new Date().toISOString().split('T')[0] } : l
+      );
+      setLeads(updatedLeads);
       setVerifiedLead({ ...lead, status: "verified", verified_date: new Date().toISOString().split('T')[0] });
       setDetailOpen(true);
     } catch (error) {
@@ -103,6 +121,32 @@ export default function StaffVerifyLeads() {
     }
   };
 
+  const handleMarkUrgent = async (lead) => {
+    try {
+      setSubmitting(true);
+      // Create activity log and notify owner
+      await base44.functions.invoke("send-owner-lead-notification", {
+        lead_id: lead.id,
+        urgency: "urgent",
+        lead_name: lead.business_name,
+      });
+      
+      // Update lead with urgency
+      await base44.entities.Lead.update(lead.id, {
+        urgency: "urgent",
+      });
+      
+      // Update in list
+      setLeads((prev) =>
+        prev.map((l) => (l.id === lead.id ? { ...l, urgency: "urgent" } : l))
+      );
+    } catch (error) {
+      console.error("Error marking urgent:", error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleLoadLead = async () => {
     if (!newLead.business_name.trim() || !newLead.contact_person.trim()) return;
 
@@ -114,7 +158,11 @@ export default function StaffVerifyLeads() {
         email: newLead.email,
         phone: newLead.phone,
         notes: newLead.notes,
+        source: newLead.source,
         status: "pending_verification",
+        best_time_to_call_date: newLead.best_time_to_call_date,
+        best_time_to_call_time: newLead.best_time_to_call_time,
+        interested_products: newLead.interested_products,
         warm_lead_criteria: {
           has_business_premises: false,
           has_trading_history: false,
@@ -131,6 +179,10 @@ export default function StaffVerifyLeads() {
         email: "",
         phone: "",
         notes: "",
+        source: "phone_call_to_admin",
+        best_time_to_call_date: "",
+        best_time_to_call_time: "",
+        interested_products: [],
       });
       setLoadLeadOpen(false);
     } catch (error) {
@@ -159,13 +211,13 @@ export default function StaffVerifyLeads() {
             <p className="text-muted-foreground">Loading leads...</p>
           </div>
         ) : leads.length === 0 ? (
-          <div className="glass rounded-xl p-12 text-center">
-            <CheckCircle2 className="w-12 h-12 text-success/30 mx-auto mb-3" />
-            <p className="text-muted-foreground">No leads to verify</p>
-          </div>
-        ) : (
-          leads.map((lead) => (
-            <div key={lead.id} className="glass rounded-xl p-6 space-y-4 border-l-4 border-warning">
+           <div className="glass rounded-xl p-12 text-center">
+             <CheckCircle2 className="w-12 h-12 text-success/30 mx-auto mb-3" />
+             <p className="text-muted-foreground">No leads to verify</p>
+           </div>
+         ) : (
+           leads.map((lead) => (
+             <div key={lead.id} className={`glass rounded-xl p-6 space-y-4 border-l-4 ${lead.status === "verified" ? "border-success" : "border-warning"}`}>
               {/* Header */}
               <div className="flex items-start justify-between">
                 <div>
@@ -174,7 +226,9 @@ export default function StaffVerifyLeads() {
                     {lead.contact_person} · {lead.phone}
                   </p>
                 </div>
-                <Badge className="bg-warning/20 text-warning border-0">Pending</Badge>
+                <Badge className={lead.status === "verified" ? "bg-success/20 text-success border-0" : "bg-warning/20 text-warning border-0"}>
+                  {lead.status === "verified" ? "Verified" : "Pending"}
+                </Badge>
               </div>
 
               {/* Qualification Criteria */}
@@ -200,6 +254,31 @@ export default function StaffVerifyLeads() {
                 </div>
               </div>
 
+              {/* Best Time to Call */}
+              {lead.best_time_to_call_date && (
+                <div className="bg-secondary/30 p-4 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-2">Best Time to Call Back</p>
+                  <div className="flex gap-2 text-sm text-foreground">
+                    <Clock className="w-4 h-4 shrink-0 text-primary" />
+                    <span>{format(new Date(lead.best_time_to_call_date), "MMM dd, yyyy")} at {lead.best_time_to_call_time}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Interested Products */}
+              {lead.interested_products?.length > 0 && (
+                <div className="bg-secondary/30 p-4 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-2">Interested Products</p>
+                  <div className="flex flex-wrap gap-2">
+                    {lead.interested_products.map((pkg) => (
+                      <Badge key={pkg} variant="secondary" className="bg-primary/20 text-primary border-0">
+                        {PACKAGES.find((p) => p.id === pkg)?.label || pkg}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Notes */}
               {lead.notes && (
                 <div className="bg-secondary/30 p-4 rounded-lg">
@@ -209,38 +288,52 @@ export default function StaffVerifyLeads() {
               )}
 
               {/* Actions */}
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleReject(lead)}
-                  disabled={submitting}
-                  className="gap-2"
-                >
-                  <XCircle className="w-4 h-4" />
-                  Reject
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setClarificationLead(lead);
-                    setClarificationOpen(true);
-                  }}
-                  disabled={submitting}
-                  className="gap-2"
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  Clarification
-                </Button>
-                <Button
-                  onClick={() => handleApprove(lead)}
-                  disabled={submitting}
-                  className="gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Approve
-                </Button>
+              <div className="flex gap-2 justify-end flex-wrap">
+                {lead.status !== "verified" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleReject(lead)}
+                      disabled={submitting}
+                      className="gap-2"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Reject
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setClarificationLead(lead);
+                        setClarificationOpen(true);
+                      }}
+                      disabled={submitting}
+                      className="gap-2"
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                      Clarification
+                    </Button>
+                    <Button
+                      onClick={() => handleApprove(lead)}
+                      disabled={submitting}
+                      className="gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Approve
+                    </Button>
+                  </>
+                )}
+                {lead.status === "verified" && (
+                  <Button
+                    onClick={() => handleMarkUrgent(lead)}
+                    disabled={submitting}
+                    className="gap-2 bg-rose-500 hover:bg-rose-600"
+                  >
+                    <Star className="w-4 h-4" />
+                    Mark Urgent
+                  </Button>
+                )}
               </div>
             </div>
           ))
@@ -383,14 +476,76 @@ export default function StaffVerifyLeads() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">Notes</label>
-              <Textarea
-                placeholder="CPC notes, context, or observations..."
-                value={newLead.notes}
-                onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
-                className="min-h-20 bg-secondary/50 border-border/50"
-              />
-            </div>
+               <label className="text-sm font-medium text-foreground mb-1 block">Source</label>
+               <select
+                 value={newLead.source}
+                 onChange={(e) => setNewLead({ ...newLead, source: e.target.value })}
+                 className="w-full px-3 py-2 rounded-md border border-input bg-secondary/50 text-foreground text-sm"
+               >
+                 <option value="phone_call_to_admin">Phone Call to Admin</option>
+                 <option value="cpc_outbound">CPC Outbound</option>
+                 <option value="field_agent_direct">Field Agent Direct</option>
+                 <option value="inbound">Inbound</option>
+                 <option value="referral">Referral</option>
+               </select>
+             </div>
+             <div className="grid grid-cols-2 gap-3">
+               <div>
+                 <label className="text-sm font-medium text-foreground mb-1 block">Best Time to Call (Date)</label>
+                 <Input
+                   type="date"
+                   value={newLead.best_time_to_call_date}
+                   onChange={(e) => setNewLead({ ...newLead, best_time_to_call_date: e.target.value })}
+                   className="bg-secondary/50 border-border/50"
+                 />
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-foreground mb-1 block">Best Time to Call (Time)</label>
+                 <Input
+                   type="time"
+                   value={newLead.best_time_to_call_time}
+                   onChange={(e) => setNewLead({ ...newLead, best_time_to_call_time: e.target.value })}
+                   className="bg-secondary/50 border-border/50"
+                 />
+               </div>
+             </div>
+             <div>
+               <label className="text-sm font-medium text-foreground mb-2 block">Interested Products</label>
+               <div className="space-y-2">
+                 {PACKAGES.map((pkg) => (
+                   <label key={pkg.id} className="flex items-center gap-2 cursor-pointer">
+                     <input
+                       type="checkbox"
+                       checked={newLead.interested_products.includes(pkg.id)}
+                       onChange={(e) => {
+                         if (e.target.checked) {
+                           setNewLead({
+                             ...newLead,
+                             interested_products: [...newLead.interested_products, pkg.id],
+                           });
+                         } else {
+                           setNewLead({
+                             ...newLead,
+                             interested_products: newLead.interested_products.filter((p) => p !== pkg.id),
+                           });
+                         }
+                       }}
+                       className="rounded border-input"
+                     />
+                     <span className="text-sm text-foreground">{pkg.label}</span>
+                   </label>
+                 ))}
+               </div>
+             </div>
+             <div>
+               <label className="text-sm font-medium text-foreground mb-1 block">Notes</label>
+               <Textarea
+                 placeholder="CPC notes, context, or observations..."
+                 value={newLead.notes}
+                 onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
+                 className="min-h-20 bg-secondary/50 border-border/50"
+               />
+             </div>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setLoadLeadOpen(false)}>
                 Cancel
