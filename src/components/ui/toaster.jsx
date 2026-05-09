@@ -28,7 +28,13 @@ export function Toaster() {
               )}
             </div>
             {action}
-            <ToastClose onClick={(e) => { e.stopPropagation(); dismiss(id); }} />
+            <ToastClose
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                dismiss(id);
+              }}
+            />
           </Toast>
         );
       })}

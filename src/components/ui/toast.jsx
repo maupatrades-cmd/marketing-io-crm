@@ -68,11 +68,12 @@ const ToastClose = React.forwardRef(({ className, onClick, ...props }, ref) => (
       className
     )}
     toast-close=""
+    type="button"
     onClick={(e) => {
       e.stopPropagation();
+      e.preventDefault();
       onClick && onClick(e);
     }}
-    {...props}
   >
     <X className="h-4 w-4 pointer-events-none" />
   </button>
