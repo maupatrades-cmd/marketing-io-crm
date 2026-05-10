@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone, UserPlus, Search, ArrowLeft, XCircle } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone, UserPlus, Search, ArrowLeft, XCircle, ShoppingBag } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
@@ -18,6 +18,8 @@ const STAFF_NAV = {
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
     { path: "/staff/communications", label: "Communications", icon: Send },
     { path: "/commissions", label: "My Commissions", icon: DollarSign },
+    { path: "/staff/earnings", label: "My Earnings", icon: TrendingUp },
+    { path: "/staff/add-ons", label: "Add-on Catalog", icon: ShoppingBag },
     { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
     { path: "/playbooks", label: "Playbooks", icon: BookOpen },
     { path: "/profile", label: "Profile", icon: UserCircle },
@@ -31,6 +33,8 @@ const STAFF_NAV = {
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
     { path: "/staff/communications", label: "Communications", icon: Send },
     { path: "/commissions", label: "My Commissions", icon: DollarSign },
+    { path: "/staff/earnings", label: "My Earnings", icon: TrendingUp },
+    { path: "/staff/add-ons", label: "Add-on Catalog", icon: ShoppingBag },
     { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
     { path: "/playbooks", label: "Playbooks", icon: BookOpen },
     { path: "/profile", label: "Profile", icon: UserCircle },

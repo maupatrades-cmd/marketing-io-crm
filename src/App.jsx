@@ -101,6 +101,9 @@ import PayfastTest from './pages/PayfastTest';
 import Checkout from './pages/Checkout';
 import PortalCheckout from './pages/PortalCheckout';
 import CancelledContracts from './pages/CancelledContracts';
+import StaffAddOnCatalog from './pages/StaffAddOnCatalog';
+import StaffMyEarnings from './pages/StaffMyEarnings';
+
 
 
 
@@ -191,6 +194,8 @@ const AuthenticatedApp = () => {
       <Route path="/owner/cpc-activity" element={<CPCActivityLog />} />
       <Route path="/owner/field-activity" element={<FieldActivityLog />} />
       <Route path="/unsubscribe" element={<Unsubscribe />} />
+      <Route path="/staff/add-ons" element={<RouteGuard allowedRoles={["field_agent","cpc","admin","owner"]} fallbackPath="/"><StaffAddOnCatalog /></RouteGuard>} />
+      <Route path="/staff/earnings" element={<RouteGuard allowedRoles={["field_agent","cpc","admin","owner"]} fallbackPath="/"><StaffMyEarnings /></RouteGuard>} />
 
       {/* Staff Portal Routes */}
       <Route path="/staff" element={<RouteGuard allowedRoles={["admin", "owner", "field_agent", "cpc", "head_of_tech", "driver"]} fallbackPath="/"><StaffMyDay /></RouteGuard>} />
