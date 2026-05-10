@@ -346,6 +346,58 @@ export default function AppLayout({ children, title, subtitle }) {
                 Staff Activity
               </Link>
               <Link
+                to="/owner/client-activity"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/owner/client-activity"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/owner/client-activity" ? {} : { color: "#a8a8c0" }}
+              >
+                <Users className="w-4 h-4 shrink-0" />
+                Client Activity
+              </Link>
+              <Link
+                to="/owner/admin-activity-log"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/owner/admin-activity-log"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/owner/admin-activity-log" ? {} : { color: "#a8a8c0" }}
+              >
+                <Users className="w-4 h-4 shrink-0" />
+                Admin Activity
+              </Link>
+              <Link
+                to="/owner/cpc-activity"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/owner/cpc-activity"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/owner/cpc-activity" ? {} : { color: "#a8a8c0" }}
+              >
+                <Users className="w-4 h-4 shrink-0" />
+                CPC Activity
+              </Link>
+              <Link
+                to="/owner/field-activity"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/owner/field-activity"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/owner/field-activity" ? {} : { color: "#a8a8c0" }}
+              >
+                <Users className="w-4 h-4 shrink-0" />
+                Field Agent Activity
+              </Link>
+              <Link
                 to="/owner/campaigns"
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${

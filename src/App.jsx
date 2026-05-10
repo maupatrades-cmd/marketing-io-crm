@@ -70,6 +70,10 @@ import CommissionDashboard from './pages/owner/CommissionDashboard';
 import LeadInbox from './pages/owner/LeadInbox';
 import AdminActivityLog from './pages/owner/AdminActivityLog';
 import StaffActivityLog from './pages/owner/StaffActivityLog';
+import ClientActivityLog from './pages/owner/ClientActivityLog';
+import AdminActivityLogPage from './pages/owner/AdminActivityLog';
+import CPCActivityLog from './pages/owner/CPCActivityLog';
+import FieldActivityLog from './pages/owner/FieldActivityLog';
 import ClientLayout from './components/ClientLayout';
 import ClientProducts from './pages/ClientProducts';
 import ClientSettings from './pages/ClientSettings';
@@ -181,6 +185,10 @@ const AuthenticatedApp = () => {
       <Route path="/owner/leads/:leadId" element={<LeadInbox />} />
       <Route path="/owner/admin-activity" element={<AdminActivityLog />} />
       <Route path="/owner/staff-activity" element={<StaffActivityLog />} />
+      <Route path="/owner/client-activity" element={<ClientActivityLog />} />
+      <Route path="/owner/admin-activity-log" element={<AdminActivityLogPage />} />
+      <Route path="/owner/cpc-activity" element={<CPCActivityLog />} />
+      <Route path="/owner/field-activity" element={<FieldActivityLog />} />
       <Route path="/unsubscribe" element={<Unsubscribe />} />
 
       {/* Staff Portal Routes */}

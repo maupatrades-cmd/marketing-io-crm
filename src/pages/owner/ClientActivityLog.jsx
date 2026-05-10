@@ -6,10 +6,13 @@ import { MessageSquare, Search, Clock } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 
 const EVENT_COLORS = {
-  invoice: { bg: "rgba(59,182,246,0.12)", border: "rgba(59,182,246,0.3)", text: "#3b82f6" },
-  contract: { bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)", text: "#f59e0b" },
   payment: { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", text: "#10b981" },
-  onboarding: { bg: "rgba(236,72,153,0.12)", border: "rgba(236,72,153,0.3)", text: "#ec4899" },
+  invoice: { bg: "rgba(59,182,246,0.12)", border: "rgba(59,182,246,0.3)", text: "#3b82f6" },
+  document: { bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)", text: "#f59e0b" },
+  communication: { bg: "rgba(236,72,153,0.12)", border: "rgba(236,72,153,0.3)", text: "#ec4899" },
+  auth: { bg: "rgba(107,107,133,0.12)", border: "rgba(107,107,133,0.3)", text: "#6b6b85" },
+  support: { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", text: "#10b981" },
+  account: { bg: "rgba(59,182,246,0.12)", border: "rgba(59,182,246,0.3)", text: "#3b82f6" },
   default: { bg: "rgba(167,100,230,0.12)", border: "rgba(167,100,230,0.3)", text: "#a764e6" },
 };
 
@@ -21,11 +24,13 @@ function timeAgo(date) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export default function AdminActivityLog() {
+export default function ClientActivityLog() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [daysFilter, setDaysFilter] = useState(7);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [clients, setClients] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -33,61 +38,43 @@ export default function AdminActivityLog() {
       const cutoffDate = new Date(Date.now() - daysFilter * 24 * 60 * 60 * 1000);
 
       try {
-        const [invoices, contracts, tasks] = await Promise.all([
-          base44.entities.Invoice.list("-updated_date", 100),
-          base44.entities.Contract.list("-updated_date", 100),
-          base44.entities.Task.list("-updated_date", 100),
+        const [activities, clientList] = await Promise.all([
+          base44.entities.ClientActivityLog.list("-created_date", 300),
+          base44.entities.Client.list(),
         ]);
 
-        const all = [
-          ...invoices
-            .filter(i => new Date(i.updated_date || i.created_date) > cutoffDate)
-            .map(i => ({
-              id: i.id,
-              type: "invoice",
-              label: `Invoice #${i.invoice_number || i.id.slice(0, 8)}`,
-              detail: `${i.client_name || "Unknown"} · R${(i.total_amount || i.amount || 0).toLocaleString()} · ${i.status}`,
-              category: "invoice",
-              time: i.updated_date || i.created_date,
-            })),
-          ...contracts
-            .filter(c => new Date(c.updated_date || c.created_date) > cutoffDate)
-            .map(c => ({
-              id: c.id,
-              type: "contract",
-              label: `Contract · ${c.client_name || "Unknown"}`,
-              detail: `${c.package} · ${c.status}`,
-              category: "contract",
-              time: c.updated_date || c.created_date,
-            })),
-          ...tasks
-            .filter(t => new Date(t.updated_date || t.created_date) > cutoffDate && t.title)
-            .map(t => ({
-              id: t.id,
-              type: "task",
-              label: `Task · ${t.title}`,
-              detail: `${t.client_name || "—"} · ${t.status}`,
-              category: "onboarding",
-              time: t.updated_date || t.created_date,
-            })),
-        ].sort((a, b) => new Date(b.time) - new Date(a.time));
+        setClients(clientList || []);
 
-        setEvents(all);
+        const filtered = activities
+          .filter(a => new Date(a.created_date) > cutoffDate && (!selectedClient || a.client_id === selectedClient))
+          .map(a => ({
+            id: a.id,
+            clientId: a.client_id,
+            clientName: a.client_name || "Unknown Client",
+            eventType: a.event_type,
+            eventCategory: a.event_category || "default",
+            eventSummary: a.event_summary || a.event_label,
+            actor: a.logged_by_name || a.actor_role,
+            time: a.created_date,
+          }))
+          .sort((a, b) => new Date(b.time) - new Date(a.time));
+
+        setEvents(filtered);
       } catch (err) {
-        console.error("Error loading admin activity:", err);
+        console.error("Error loading client activity:", err);
       }
       setLoading(false);
     };
 
     loadData();
-  }, [daysFilter]);
+  }, [daysFilter, selectedClient]);
 
   const filtered = events.filter(e =>
-    !search || e.label.toLowerCase().includes(search.toLowerCase()) || e.detail.toLowerCase().includes(search.toLowerCase())
+    !search || e.clientName.toLowerCase().includes(search.toLowerCase()) || e.eventSummary.toLowerCase().includes(search.toLowerCase()) || e.actor?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <AppLayout title="Admin Activity" subtitle="Invoices, contracts, and administrative tasks">
+    <AppLayout title="Client Activity" subtitle="All client-related activity and interactions">
       <div className="mb-6 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
@@ -101,6 +88,30 @@ export default function AdminActivityLog() {
             <option value={90}>Last 90 days</option>
           </select>
         </div>
+
+        {clients.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => setSelectedClient(null)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                selectedClient === null ? "bg-primary text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All Clients
+            </button>
+            {clients.slice(0, 10).map(c => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedClient(c.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                  selectedClient === c.id ? "bg-primary text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {c.business_name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -108,14 +119,14 @@ export default function AdminActivityLog() {
       ) : filtered.length === 0 ? (
         <div className="glass rounded-xl p-16 text-center">
           <MessageSquare className="w-12 h-12 mx-auto mb-3" style={{ color: "#6b6b85" }} />
-          <p style={{ color: "#a8a8c0" }}>No admin activity found</p>
+          <p style={{ color: "#a8a8c0" }}>No client activity found</p>
         </div>
       ) : (
         <div className="relative">
           <div className="absolute left-5 top-0 bottom-0 w-px" style={{ background: "rgba(255,255,255,0.06)" }} />
           <div className="space-y-1 pl-12">
             {filtered.map((ev, i) => {
-              const col = EVENT_COLORS[ev.category] || EVENT_COLORS.default;
+              const col = EVENT_COLORS[ev.eventCategory] || EVENT_COLORS.default;
               return (
                 <div key={ev.id + i} className="relative">
                   <div className="absolute -left-7 top-3.5 w-3 h-3 rounded-full border-2" style={{ background: col.bg, borderColor: col.text }} />
@@ -124,12 +135,12 @@ export default function AdminActivityLog() {
                       <Clock className="w-4 h-4" style={{ color: col.text }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: "#f4f4fa" }}>{ev.label}</p>
-                      <p className="text-xs" style={{ color: "#a8a8c0" }}>{ev.detail}</p>
+                      <p className="text-sm font-medium" style={{ color: "#f4f4fa" }}>{ev.clientName}</p>
+                      <p className="text-xs" style={{ color: "#a8a8c0" }}>{ev.eventSummary}{ev.actor ? ` · by ${ev.actor}` : ""}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className="text-[10px] px-2 py-0.5 border capitalize" style={{ background: col.bg, color: col.text, borderColor: col.border }}>
-                        {ev.category}
+                        {ev.eventCategory}
                       </Badge>
                       <span className="text-xs" style={{ color: "#6b6b85" }}>{timeAgo(ev.time)}</span>
                     </div>

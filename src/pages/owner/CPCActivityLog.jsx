@@ -6,10 +6,10 @@ import { MessageSquare, Search, Clock } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 
 const EVENT_COLORS = {
-  invoice: { bg: "rgba(59,182,246,0.12)", border: "rgba(59,182,246,0.3)", text: "#3b82f6" },
-  contract: { bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)", text: "#f59e0b" },
-  payment: { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", text: "#10b981" },
-  onboarding: { bg: "rgba(236,72,153,0.12)", border: "rgba(236,72,153,0.3)", text: "#ec4899" },
+  deal: { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", text: "#10b981" },
+  lead: { bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)", text: "#f59e0b" },
+  commission: { bg: "rgba(59,182,246,0.12)", border: "rgba(59,182,246,0.3)", text: "#3b82f6" },
+  task: { bg: "rgba(236,72,153,0.12)", border: "rgba(236,72,153,0.3)", text: "#ec4899" },
   default: { bg: "rgba(167,100,230,0.12)", border: "rgba(167,100,230,0.3)", text: "#a764e6" },
 };
 
@@ -21,11 +21,13 @@ function timeAgo(date) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export default function AdminActivityLog() {
+export default function CPCActivityLog() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [daysFilter, setDaysFilter] = useState(7);
+  const [cpcs, setCpcs] = useState([]);
+  const [selectedCpc, setSelectedCpc] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -33,32 +35,52 @@ export default function AdminActivityLog() {
       const cutoffDate = new Date(Date.now() - daysFilter * 24 * 60 * 60 * 1000);
 
       try {
-        const [invoices, contracts, tasks] = await Promise.all([
-          base44.entities.Invoice.list("-updated_date", 100),
-          base44.entities.Contract.list("-updated_date", 100),
+        const [deals, leads, commissions, tasks, users] = await Promise.all([
+          base44.entities.Deal.list("-updated_date", 100),
+          base44.entities.Lead.list("-updated_date", 100),
+          base44.entities.Commission.list("-updated_date", 100),
           base44.entities.Task.list("-updated_date", 100),
+          base44.entities.User.filter({ role: "cpc" }),
         ]);
 
+        setCpcs(users || []);
+
         const all = [
-          ...invoices
-            .filter(i => new Date(i.updated_date || i.created_date) > cutoffDate)
-            .map(i => ({
-              id: i.id,
-              type: "invoice",
-              label: `Invoice #${i.invoice_number || i.id.slice(0, 8)}`,
-              detail: `${i.client_name || "Unknown"} · R${(i.total_amount || i.amount || 0).toLocaleString()} · ${i.status}`,
-              category: "invoice",
-              time: i.updated_date || i.created_date,
+          ...deals
+            .filter(d => new Date(d.updated_date || d.created_date) > cutoffDate && (!selectedCpc || d.cpc_id === selectedCpc))
+            .map(d => ({
+              id: d.id,
+              cpcId: d.cpc_id,
+              type: "deal",
+              label: `Deal · ${d.client_name || "Unknown"}`,
+              detail: `${d.package} · ${d.stage?.replace(/_/g, " ")} · R${d.setup_fee || 0}`,
+              category: "deal",
+              time: d.updated_date || d.created_date,
+              actor: d.closer_name,
             })),
-          ...contracts
-            .filter(c => new Date(c.updated_date || c.created_date) > cutoffDate)
+          ...leads
+            .filter(l => new Date(l.updated_date || l.created_date) > cutoffDate && (!selectedCpc || l.submitted_by === selectedCpc))
+            .map(l => ({
+              id: l.id,
+              cpcId: l.submitted_by,
+              type: "lead",
+              label: `Lead · ${l.business_name}`,
+              detail: `${l.status?.replace(/_/g, " ")} · ${l.source}`,
+              category: "lead",
+              time: l.updated_date || l.created_date,
+              actor: l.submitted_by_name,
+            })),
+          ...commissions
+            .filter(c => new Date(c.updated_date || c.created_date) > cutoffDate && (!selectedCpc || c.staff_id === selectedCpc))
             .map(c => ({
               id: c.id,
-              type: "contract",
-              label: `Contract · ${c.client_name || "Unknown"}`,
-              detail: `${c.package} · ${c.status}`,
-              category: "contract",
+              cpcId: c.staff_id,
+              type: "commission",
+              label: `Commission · ${c.staff_name || "—"}`,
+              detail: `R${(c.commission_amount || 0).toLocaleString()} · ${c.status}`,
+              category: "commission",
               time: c.updated_date || c.created_date,
+              actor: c.staff_name,
             })),
           ...tasks
             .filter(t => new Date(t.updated_date || t.created_date) > cutoffDate && t.title)
@@ -67,27 +89,28 @@ export default function AdminActivityLog() {
               type: "task",
               label: `Task · ${t.title}`,
               detail: `${t.client_name || "—"} · ${t.status}`,
-              category: "onboarding",
+              category: "task",
               time: t.updated_date || t.created_date,
+              actor: t.assigned_to_name,
             })),
         ].sort((a, b) => new Date(b.time) - new Date(a.time));
 
         setEvents(all);
       } catch (err) {
-        console.error("Error loading admin activity:", err);
+        console.error("Error loading CPC activity:", err);
       }
       setLoading(false);
     };
 
     loadData();
-  }, [daysFilter]);
+  }, [daysFilter, selectedCpc]);
 
   const filtered = events.filter(e =>
-    !search || e.label.toLowerCase().includes(search.toLowerCase()) || e.detail.toLowerCase().includes(search.toLowerCase())
+    !search || e.label.toLowerCase().includes(search.toLowerCase()) || e.detail.toLowerCase().includes(search.toLowerCase()) || e.actor?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <AppLayout title="Admin Activity" subtitle="Invoices, contracts, and administrative tasks">
+    <AppLayout title="CPC Activity" subtitle="Leads, deals, and commissions from CPC team">
       <div className="mb-6 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
@@ -101,6 +124,30 @@ export default function AdminActivityLog() {
             <option value={90}>Last 90 days</option>
           </select>
         </div>
+
+        {cpcs.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => setSelectedCpc(null)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                selectedCpc === null ? "bg-primary text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All CPCs
+            </button>
+            {cpcs.map(c => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCpc(c.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                  selectedCpc === c.id ? "bg-primary text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {c.full_name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -108,7 +155,7 @@ export default function AdminActivityLog() {
       ) : filtered.length === 0 ? (
         <div className="glass rounded-xl p-16 text-center">
           <MessageSquare className="w-12 h-12 mx-auto mb-3" style={{ color: "#6b6b85" }} />
-          <p style={{ color: "#a8a8c0" }}>No admin activity found</p>
+          <p style={{ color: "#a8a8c0" }}>No CPC activity found</p>
         </div>
       ) : (
         <div className="relative">
@@ -125,7 +172,7 @@ export default function AdminActivityLog() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: "#f4f4fa" }}>{ev.label}</p>
-                      <p className="text-xs" style={{ color: "#a8a8c0" }}>{ev.detail}</p>
+                      <p className="text-xs" style={{ color: "#a8a8c0" }}>{ev.detail}{ev.actor ? ` · by ${ev.actor}` : ""}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className="text-[10px] px-2 py-0.5 border capitalize" style={{ background: col.bg, color: col.text, borderColor: col.border }}>
