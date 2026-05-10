@@ -5,16 +5,23 @@ import AppLayout from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { TrendingUp, TrendingDown, CheckCircle2, AlertCircle, Plus, X } from 'lucide-react';
 import { calculateMetricValue, getKPIStatus, getProgressPercentage } from '@/lib/kpiCalculator';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function MyKPIs() {
   const [user, setUser] = useState(null);
   const [targets, setTargets] = useState([]);
   const [metrics, setMetrics] = useState([]);
+  const [personalKPIs, setPersonalKPIs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('monthly');
+  const [showDialog, setShowDialog] = useState(false);
+  const [newKPI, setNewKPI] = useState({ name: '', target: '', period: 'monthly' });
+  const { toast } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -39,6 +46,14 @@ export default function MyKPIs() {
           }))
         );
         setMetrics(metricsData);
+
+        // Load personal KPIs
+        const personal = await base44.entities.KPITarget.filter({
+          created_by: currentUser.email,
+          is_personal: true
+        });
+        setPersonalKPIs(Array.isArray(personal) ? personal : personal ? [personal] : []);
+
         setLoading(false);
       } catch (error) {
         console.error('Failed to load KPIs:', error);
@@ -46,6 +61,43 @@ export default function MyKPIs() {
       }
     })();
   }, []);
+
+  const addPersonalKPI = async () => {
+    if (!newKPI.name.trim() || !newKPI.target) {
+      toast({ title: "Missing fields", description: "Name and target are required", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const kpi = await base44.entities.KPITarget.create({
+        metric_name: newKPI.name,
+        target_value: parseFloat(newKPI.target),
+        target_period: newKPI.period,
+        direction: 'maximum',
+        unit: 'units',
+        is_personal: true,
+        is_active: true,
+        role: user.role,
+        metric_code: `personal_${Date.now()}`
+      });
+      setPersonalKPIs([...personalKPIs, kpi]);
+      setNewKPI({ name: '', target: '', period: 'monthly' });
+      setShowDialog(false);
+      toast({ title: "KPI created", description: "Your personal KPI has been added" });
+    } catch (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const deletePersonalKPI = async (id) => {
+    try {
+      await base44.entities.KPITarget.delete(id);
+      setPersonalKPIs(personalKPIs.filter(k => k.id !== id));
+      toast({ title: "KPI deleted" });
+    } catch (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
   const filteredMetrics = metrics.filter(m => m.target_period === period || period === 'all');
 
@@ -100,6 +152,43 @@ export default function MyKPIs() {
             </p>
           </div>
         </div>
+
+        {/* Personal KPIs Section */}
+        {personalKPIs.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">My Personal Goals</h2>
+              <Button onClick={() => setShowDialog(true)} size="sm" variant="outline" className="gap-1">
+                <Plus className="w-3 h-3" /> Add Goal
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {personalKPIs.map((kpi) => (
+                <Card key={kpi.id} className="glass border-accent/20">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-sm">{kpi.metric_name}</CardTitle>
+                      <button onClick={() => deletePersonalKPI(kpi.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground capitalize">{kpi.target_period}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-accent">{kpi.target_value}</div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add Personal KPI Button */}
+        {personalKPIs.length === 0 && (
+          <Button onClick={() => setShowDialog(true)} variant="outline" className="w-full gap-2">
+            <Plus className="w-4 h-4" /> Create Your First Personal Goal
+          </Button>
+        )}
 
         {/* Metrics grid */}
         {filteredMetrics.length === 0 ? (
@@ -191,6 +280,58 @@ export default function MyKPIs() {
           </div>
         )}
       </div>
+
+      {/* Add Personal KPI Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="bg-card border-border/50">
+          <DialogHeader>
+            <DialogTitle>Add Personal Goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Goal Name</label>
+              <Input
+                placeholder="e.g., Close 5 deals"
+                value={newKPI.name}
+                onChange={(e) => setNewKPI({ ...newKPI, name: e.target.value })}
+                className="bg-secondary/50 border-border/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Target Value</label>
+              <Input
+                type="number"
+                placeholder="e.g., 5"
+                value={newKPI.target}
+                onChange={(e) => setNewKPI({ ...newKPI, target: e.target.value })}
+                className="bg-secondary/50 border-border/50"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Period</label>
+              <Select value={newKPI.period} onValueChange={(v) => setNewKPI({ ...newKPI, period: v })}>
+                <SelectTrigger className="bg-secondary/50 border-border/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowDialog(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={addPersonalKPI} className="flex-1 gradient-bg text-white">
+                Create Goal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
