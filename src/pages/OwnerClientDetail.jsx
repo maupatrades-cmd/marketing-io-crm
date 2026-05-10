@@ -241,7 +241,7 @@ export default function OwnerClientDetail() {
 
   const emailChanged = editForm.email && client?.email && editForm.email !== client.email;
 
-  const outstanding = invoices.filter(i => ["issued", "overdue"].includes(i.status)).reduce((s, i) => s + (i.total || 0), 0);
+  const outstanding = invoices.filter(i => ["sent", "overdue"].includes(i.status)).reduce((s, i) => s + (i.total_amount || i.amount || 0), 0);
   const monthsAsClient = client.contract_start_date ? Math.floor((new Date() - new Date(client.contract_start_date)) / (1000 * 60 * 60 * 24 * 30)) : 0;
 
   return (
@@ -422,13 +422,13 @@ export default function OwnerClientDetail() {
         {activeTab === "invoices" && (
           <div className="space-y-4">
             {outstanding > 0 && (
-              <div className="glass rounded-xl p-4 border border-destructive/30 flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-destructive" />
-                <div>
-                  <p className="font-semibold">R{outstanding.toLocaleString()} outstanding</p>
-                  <p className="text-xs text-muted-foreground">{invoices.filter(i => ["issued", "overdue"].includes(i.status)).length} unpaid</p>
-                </div>
+            <div className="glass rounded-xl p-4 border border-destructive/30 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-destructive" />
+              <div>
+                <p className="font-semibold">R{outstanding.toLocaleString()} outstanding</p>
+                <p className="text-xs text-muted-foreground">{invoices.filter(i => ["sent", "overdue"].includes(i.status)).length} unpaid</p>
               </div>
+            </div>
             )}
             <div className="space-y-3">
               {invoices.length === 0 ? (
@@ -441,8 +441,8 @@ export default function OwnerClientDetail() {
                       <p className="text-xs text-muted-foreground">{new Date(inv.created_date).toLocaleDateString("en-ZA")}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">R{(inv.total || 0).toLocaleString()}</p>
-                      <Badge className={inv.status === "paid" ? "bg-success/15 text-success" : "bg-warning/15 text-warning"} variant="outline" className="text-xs mt-1">
+                      <p className="font-bold">R{(inv.total_amount || inv.amount || 0).toLocaleString()}</p>
+                      <Badge className={`text-xs mt-1 ${inv.status === "paid" ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
                         {inv.status}
                       </Badge>
                     </div>

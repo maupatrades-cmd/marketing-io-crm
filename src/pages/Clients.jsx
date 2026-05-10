@@ -120,7 +120,7 @@ export default function Clients() {
         client_id: clientId,
         client_name: clientName,
         priority: t.priority,
-        status: "todo",
+        status: "open",
       }))
     );
   };

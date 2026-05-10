@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { DollarSign, TrendingUp, AlertCircle } from "lucide-react";
+import AppLayout from "@/components/AppLayout";
 
 export default function OwnerFinancials() {
   const [invoices, setInvoices] = useState([]);
@@ -27,22 +28,21 @@ export default function OwnerFinancials() {
   }, []);
 
   const thisMonth = new Date().getMonth();
-  const thisYear = new Date().getFullYear();
   const paidThisMonth = invoices
-    .filter(i => i.status === "paid" && new Date(i.paid_date || i.created_date).getMonth() === thisMonth)
-    .reduce((s, i) => s + (i.total || 0), 0);
+    .filter(i => i.status === "paid" && new Date(i.payment_date || i.paid_date || i.created_date).getMonth() === thisMonth)
+    .reduce((s, i) => s + (i.total_amount || i.amount || 0), 0);
 
   const activeClients = clients.filter(c => c.status === "active");
   const expectedNextMonth = activeClients.reduce((s, c) => s + (c.monthly_retainer || 0), 0);
 
   const outstanding = invoices
     .filter(i => ["sent", "overdue"].includes(i.status))
-    .reduce((s, i) => s + (i.total || 0), 0);
+    .reduce((s, i) => s + (i.total_amount || i.amount || 0), 0);
   const outstandingCount = invoices.filter(i => ["sent", "overdue"].includes(i.status)).length;
 
   const pendingComm = commissions
     .filter(c => ["pending", "approved"].includes(c.status))
-    .reduce((s, c) => s + (c.total || 0), 0);
+    .reduce((s, c) => s + (c.commission_amount || 0), 0);
 
   const overdueInvoices = invoices
     .filter(i => ["sent", "overdue"].includes(i.status))
@@ -51,9 +51,8 @@ export default function OwnerFinancials() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold gradient-text mb-8">Financials</h1>
+    <AppLayout title="Financials" subtitle="Revenue & billing overview">
+      <div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -125,7 +124,7 @@ export default function OwnerFinancials() {
 
         <p className="text-xs text-muted-foreground text-center pt-4">Dashboard initialized. Charts and detailed reports will render once data populated.</p>
       </div>
-    </div>
+    </AppLayout>
   );
 }
 

@@ -67,7 +67,7 @@ export default function StaffMyDay() {
             base44.entities.ClientActivityLog.list("-created_date", 50).catch(() => []),
           ]);
           const todayTasks = (Array.isArray(allTasks) ? allTasks : []).filter(
-            (t) => (t.assigned_to === user?.id || t.assigned_role === "admin") && ["open", "in_progress"].includes(t.status)
+            (t) => t.assigned_to === user?.id && ["open", "in_progress"].includes(t.status)
           );
           setTasks(todayTasks);
           const overdue = (Array.isArray(invs) ? invs : []).filter(

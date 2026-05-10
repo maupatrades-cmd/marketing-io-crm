@@ -51,8 +51,8 @@ export default function StaffMyClients() {
           const allMyClientIds = [...new Set([...myLeadClientIds, ...myDealClientIds])];
           myClients = allClients.filter((c) => allMyClientIds.includes(c.id));
         } else if (user?.role === "head_of_tech") {
-          // Tech sees Bucket B clients
-          myClients = allClients.filter((c) => c.package === "bucket_b");
+          // Tech sees all active/onboarding clients
+          myClients = allClients.filter((c) => ["active", "onboarding"].includes(c.status));
         } else {
           myClients = allClients;
         }

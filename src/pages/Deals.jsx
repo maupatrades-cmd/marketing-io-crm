@@ -127,7 +127,7 @@ export default function Deals() {
      const [d, c, u] = await Promise.all([
        base44.entities.Deal.list("-created_date", 200),
        base44.entities.Client.list("-created_date", 200),
-       base44.entities.User.list(),
+       base44.entities.AppUser.list(),
      ]);
 
      setDeals(d); 

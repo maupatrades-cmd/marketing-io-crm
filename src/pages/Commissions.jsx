@@ -31,7 +31,7 @@ export default function Commissions() {
   const filtered = commissions.filter(c => {
     // Staff can only see their own commissions
     if (user?.role === "field_agent" || user?.role === "cpc" || user?.role === "driver" || user?.role === "head_of_tech") {
-      if (c.staff_email !== user.email) return false;
+      if (c.staff_id !== user.id) return false;
     }
     const matchSearch = !search || c.staff_name?.toLowerCase().includes(search.toLowerCase()) || c.client_name?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || c.status === statusFilter;

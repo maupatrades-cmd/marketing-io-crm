@@ -66,13 +66,7 @@ function buildWeeklyPaidSeries(invoices) {
   return buckets.map(b => ({ weekLabel: b.weekLabel, paid: b.paid }));
 }
 
-const pipelineData = [
-  { stage: "New Lead", count: 12 },
-  { stage: "Discovery", count: 8 },
-  { stage: "Proposal", count: 5 },
-  { stage: "Negotiation", count: 3 },
-  { stage: "Won", count: 7 },
-];
+// pipelineData is now computed from real deals inside the component
 
 export default function OwnerDashboard() {
   const [clients, setClients] = useState([]);
@@ -123,6 +117,15 @@ export default function OwnerDashboard() {
   const overdueInvoices = invoices.filter(i => i.status === "overdue" || i.status === "failed").length;
   const pendingLeads = leads.filter(l => l.status === "pending_verification").length;
   const accelerationClients = clients.filter(c => c.acceleration_triggered).length;
+
+  // Build real pipeline chart data from deals
+  const pipelineData = [
+    { stage: "New Lead",    count: deals.filter(d => d.stage === "new_lead").length },
+    { stage: "Discovery",  count: deals.filter(d => d.stage === "discovery_visit").length },
+    { stage: "Proposal",   count: deals.filter(d => d.stage === "proposal_sent").length },
+    { stage: "Negotiation",count: deals.filter(d => d.stage === "negotiation").length },
+    { stage: "Won",        count: deals.filter(d => d.stage === "closed_won").length },
+  ];
 
   const recentActivity = [
     ...deals.filter(d => d.stage === "closed_won").slice(0, 3).map(d => ({
