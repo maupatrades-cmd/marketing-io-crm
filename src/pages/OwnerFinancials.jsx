@@ -36,16 +36,16 @@ export default function OwnerFinancials() {
   const expectedNextMonth = activeClients.reduce((s, c) => s + (c.monthly_retainer || 0), 0);
 
   const outstanding = invoices
-    .filter(i => ["issued", "overdue"].includes(i.status))
+    .filter(i => ["sent", "overdue"].includes(i.status))
     .reduce((s, i) => s + (i.total || 0), 0);
-  const outstandingCount = invoices.filter(i => ["issued", "overdue"].includes(i.status)).length;
+  const outstandingCount = invoices.filter(i => ["sent", "overdue"].includes(i.status)).length;
 
   const pendingComm = commissions
     .filter(c => ["pending", "approved"].includes(c.status))
     .reduce((s, c) => s + (c.total || 0), 0);
 
   const overdueInvoices = invoices
-    .filter(i => ["issued", "overdue"].includes(i.status))
+    .filter(i => ["sent", "overdue"].includes(i.status))
     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
 
   if (loading) return <LoadingSpinner />;

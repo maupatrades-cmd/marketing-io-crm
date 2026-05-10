@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AppLayout from "@/components/AppLayout";
-import { CheckCircle2, Clock, Target, TrendingUp, Plus, AlertTriangle, FileText, ListChecks } from "lucide-react";
+import { CheckCircle2, Clock, Target, TrendingUp, Plus, AlertTriangle, FileText, ListChecks, MapPin, CalendarClock, Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "react-router-dom";
+import LogVisitModal from "@/components/staff/LogVisitModal";
+import ScheduleFollowUpModal from "@/components/staff/ScheduleFollowUpModal";
+import QuickUpdateModal from "@/components/staff/QuickUpdateModal";
 
 const KPI_CONFIG = {
   field_agent: [
@@ -44,6 +47,9 @@ export default function StaffMyDay() {
   const [pendingSubmissions, setPendingSubmissions] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [loadingActivity, setLoadingActivity] = useState(true);
+  const [showVisitModal, setShowVisitModal] = useState(false);
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [showQuickMsgModal, setShowQuickMsgModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,6 +116,41 @@ export default function StaffMyDay() {
         <div className="text-xl font-semibold text-foreground">
           Good {greeting}, {user?.full_name || "there"}
         </div>
+
+        {/* FA Quick Actions — field_agent only */}
+        {user?.role === "field_agent" && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Button
+              className="h-14 flex-col gap-1 text-xs gradient-bg text-white shadow-glow-purple"
+              onClick={() => setShowVisitModal(true)}
+            >
+              <MapPin className="w-5 h-5" />
+              Log a Visit
+            </Button>
+            <Link to="/leads" className="contents">
+              <Button variant="outline" className="h-14 flex-col gap-1 text-xs border-primary/40 text-primary hover:bg-primary/10 w-full">
+                <Plus className="w-5 h-5" />
+                Add a Lead
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              className="h-14 flex-col gap-1 text-xs border-primary/40 text-primary hover:bg-primary/10"
+              onClick={() => setShowFollowUpModal(true)}
+            >
+              <CalendarClock className="w-5 h-5" />
+              Schedule Follow-up
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 flex-col gap-1 text-xs border-primary/40 text-primary hover:bg-primary/10"
+              onClick={() => setShowQuickMsgModal(true)}
+            >
+              <Send className="w-5 h-5" />
+              Send Quick Update
+            </Button>
+          </div>
+        )}
 
         {/* Today's Tasks */}
         <Card className="bg-card border-border/50">
@@ -312,6 +353,11 @@ export default function StaffMyDay() {
           </CardContent>
         </Card>
       </div>
+
+      {/* FA Modals */}
+      {showVisitModal && <LogVisitModal user={user} onClose={() => setShowVisitModal(false)} />}
+      {showFollowUpModal && <ScheduleFollowUpModal user={user} onClose={() => setShowFollowUpModal(false)} />}
+      {showQuickMsgModal && <QuickUpdateModal user={user} onClose={() => setShowQuickMsgModal(false)} />}
     </AppLayout>
   );
 }

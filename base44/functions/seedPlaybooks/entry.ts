@@ -195,8 +195,8 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (user?.role !== 'founder') {
-      return Response.json({ error: 'Only founder can seed playbooks' }, { status: 403 });
+    if (!['founder', 'owner', 'admin'].includes(user?.role)) {
+      return Response.json({ error: 'Only owner/admin can seed playbooks' }, { status: 403 });
     }
 
     // Clear existing playbooks

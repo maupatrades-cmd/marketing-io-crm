@@ -31,8 +31,9 @@ export default function TeamKPIs() {
         }
 
         // Get all staff
-        const staff = await base44.entities.User.list();
-        setStaffMembers(staff || []);
+        const allUsers = await base44.entities.AppUser.list();
+        const staff = (allUsers || []).filter(u => u.role && u.role !== 'client');
+        setStaffMembers(staff);
 
         // Get all KPI targets
         const allTargets = await base44.entities.KPITarget.filter({ is_active: true });

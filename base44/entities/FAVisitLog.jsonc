@@ -1,0 +1,76 @@
+{
+  "name": "FAVisitLog",
+  "type": "object",
+  "properties": {
+    "field_agent_id": {
+      "type": "string",
+      "description": "AppUser.id of the field agent who logged the visit"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "Optional \u2014 if visiting an existing client"
+    },
+    "lead_id": {
+      "type": "string",
+      "description": "Optional \u2014 if visiting a lead"
+    },
+    "prospect_name": {
+      "type": "string",
+      "description": "Optional \u2014 if neither client nor lead (cold visit)"
+    },
+    "visit_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time of the visit"
+    },
+    "location_address": {
+      "type": "string",
+      "description": "Physical address or area of the visit"
+    },
+    "location_lat": {
+      "type": "number",
+      "description": "Optional GPS latitude"
+    },
+    "location_lng": {
+      "type": "number",
+      "description": "Optional GPS longitude"
+    },
+    "visit_type": {
+      "type": "string",
+      "enum": [
+        "discovery",
+        "follow_up",
+        "signing",
+        "support",
+        "cold"
+      ],
+      "default": "discovery"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "interested",
+        "not_interested",
+        "signed",
+        "deferred",
+        "no_show"
+      ],
+      "default": "interested"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "next_step": {
+      "type": "string"
+    },
+    "next_step_due_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "field_agent_id",
+    "visit_type",
+    "outcome"
+  ]
+}

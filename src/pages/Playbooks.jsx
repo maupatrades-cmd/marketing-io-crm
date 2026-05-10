@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { BookOpen, Copy, Heart, ChevronDown, ChevronUp, Search, Edit2 } from "lucide-react";
+import { BookOpen, Copy, Heart, ChevronDown, ChevronUp, Search, Edit2, Zap } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -39,6 +40,7 @@ export default function Playbooks() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     const fetchPlaybooks = async () => {
@@ -118,6 +120,23 @@ export default function Playbooks() {
     toast({ title: "Playbook updated!" });
   };
 
+  const handleSeedPlaybooks = async () => {
+    setSeeding(true);
+    try {
+      const res = await base44.functions.invoke("seedPlaybooks", {});
+      sonnerToast.success(res?.data?.message || "Playbooks seeded!");
+      // Reload
+      const all = await base44.entities.Playbook.list();
+      const userPlaybooks = all.filter(pb => pb.visible_to_roles?.includes(user.role));
+      setPlaybooks(userPlaybooks);
+      setFilteredPlaybooks(userPlaybooks);
+    } catch (err) {
+      sonnerToast.error("Failed to seed playbooks");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   if (loading) return <AppLayout title="Playbooks & Scripts"><div className="text-center py-8">Loading...</div></AppLayout>;
 
   return (
@@ -127,6 +146,22 @@ export default function Playbooks() {
     >
       <div className="max-w-6xl mx-auto space-y-6">
         
+        {/* Owner seed button */}
+        {["owner", "admin", "founder"].includes(user?.role) && (
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedPlaybooks}
+              disabled={seeding}
+              className="gap-2 text-xs border-primary/40 text-primary hover:bg-primary/10"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              {seeding ? "Seeding..." : "Seed Default Playbooks"}
+            </Button>
+          </div>
+        )}
+
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -282,7 +317,7 @@ export default function Playbooks() {
                       </Button>
                     )}
                     
-                    {user.role === "founder" && !isEditing && (
+                    {["founder", "owner", "admin"].includes(user.role) && !isEditing && (
                       <Button
                         onClick={() => startEdit(pb)}
                         variant="outline"

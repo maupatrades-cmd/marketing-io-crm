@@ -26,7 +26,7 @@ export default function Deliverables() {
     Promise.all([
       base44.entities.Deliverable.list('-created_date', 500),
       base44.entities.Client.list('-created_date', 200),
-      base44.entities.User.list(),
+      base44.entities.AppUser.list().then(users => (users || []).filter(u => u.role && u.role !== 'client')),
       base44.entities.TimeLog.list('-date_worked', 2000),
     ]).then(([d, c, u, tl]) => {
       setDeliverables(d);

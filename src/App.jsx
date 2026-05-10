@@ -134,7 +134,7 @@ const AuthenticatedApp = () => {
       } />
       <Route path="/design-preview" element={<DesignPreview />} />
       <Route path="/clients" element={<Clients />} />
-      <Route path="/clients/:id" element={<RouteGuard allowedRoles={["owner", "admin"]} fallbackPath="/"><OwnerClientDetail /></RouteGuard>} />
+      <Route path="/clients/:id" element={<RouteGuard allowedRoles={["owner", "admin", "field_agent"]} fallbackPath="/"><OwnerClientDetail /></RouteGuard>} />
       <Route path="/inbox" element={<RouteGuard allowedRoles={["owner", "admin"]} fallbackPath="/"><OwnerInbox /></RouteGuard>} />
       <Route path="/deals" element={<Deals />} />
       <Route path="/leads" element={<RouteGuard allowedRoles={["admin", "owner", "cpc", "field_agent"]} fallbackPath="/"><Leads /></RouteGuard>} />

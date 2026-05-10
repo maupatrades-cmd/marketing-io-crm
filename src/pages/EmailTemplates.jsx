@@ -271,8 +271,10 @@ export default function EmailTemplates() {
               <div>
                 <label className="text-sm font-semibold mb-2 block">HTML Preview</label>
                 <iframe
-                  srcDoc={selectedTemplate.html_body}
-                  className="w-full h-96 border border-border rounded-md"
+                  srcDoc={selectedTemplate.html_body
+                    ? `<!DOCTYPE html><html><body style="margin:0;padding:16px;font-family:Arial,sans-serif;">${selectedTemplate.html_body}</body></html>`
+                    : '<p style="color:#666;font-family:Arial">Template body not configured</p>'}
+                  className="w-full h-96 border border-border rounded-md bg-white"
                   title="Email Preview"
                 />
               </div>
