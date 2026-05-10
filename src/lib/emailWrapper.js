@@ -112,15 +112,19 @@ export function wrapEmail(bodyHtml, options = {}) {
 
           <!-- FOOTER -->
           <tr>
-            <td align="center" style="background-color:#0f172a; padding: 32px 24px;">
+            <td align="center" style="background-color:#0f172a; padding: 20px 24px 32px;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="padding-bottom: 20px; padding-top: 8px;">
-                    <div style="display:inline-block;padding:10px 20px;border-radius:12px;box-shadow:0 0 18px 4px rgba(167,100,230,0.55), 0 0 40px 8px rgba(236,72,153,0.25);background:rgba(167,100,230,0.08);">
-                      <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
-                        height="32" alt="Marketing iO"
-                        style="display:block;height:32px;width:auto;filter:invert(1) brightness(10);mix-blend-mode:screen;margin:0 auto;" />
-                    </div>
+                  <td align="center" style="padding-bottom: 20px;">
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                      <tr>
+                        <td align="center" style="padding:10px 24px;border-radius:12px;border:1px solid rgba(167,100,230,0.5);background:rgba(167,100,230,0.12);">
+                          <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
+                            height="32" alt="Marketing iO"
+                            style="display:block;height:32px;width:auto;filter:invert(1) brightness(10);margin:0 auto;" />
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 <tr>
