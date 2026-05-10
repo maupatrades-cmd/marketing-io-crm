@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { Resend } from 'npm:resend@3.2.0';
 
-const HEADER_IMG = 'https://media.base44.com/images/public/69f52863b2b733d922d90b62/9ca95056f_header.jpg';
+const HEADER_IMG = 'https://res.cloudinary.com/didwjb1et/image/upload/e_gen_restore/v1778379260/wmremove-transformed_1_ecjtyh.jpg';
 const LOGO_URL = 'https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png';
 
 function wrapEmail(bodyHtml) {

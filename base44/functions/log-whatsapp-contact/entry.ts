@@ -39,8 +39,8 @@ async function sendUrgentEmail(opts: {
   const phone = client.phone || sender?.mobile_number || '—';
 
   const bodyHtml = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0f172a;">
-  <div style="background:#0f172a;padding:18px;text-align:center;">
-    <img src="${LOGO_URL}" alt="Marketing iO" width="180" style="display:block;margin:0 auto;" />
+  <div style="background-color:#0f172a;background-image:url('https://res.cloudinary.com/didwjb1et/image/upload/e_gen_restore/v1778379260/wmremove-transformed_1_ecjtyh.jpg');background-position:center center;background-size:cover;background-repeat:no-repeat;padding:60px 24px;text-align:center;">
+    <img src="${LOGO_URL}" alt="Marketing iO" width="280" style="width:280px;max-width:80%;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 0 24px rgba(167,100,230,0.85)) drop-shadow(0 0 48px rgba(236,72,153,0.55));" />
   </div>
   <div style="padding:24px;background:#fff;">
     <h2 style="color:#dc2626;margin:0 0 8px 0;">⚠️ Urgent contact via WhatsApp flow</h2>
