@@ -47,6 +47,23 @@
     <clipPath id="sunBottom">
       <rect x="422" y="180" width="180" height="90"/>
     </clipPath>
+
+    <!-- White outline + neon glow filter for the logo. Dilates the alpha
+         channel to create a slightly larger silhouette, floods that with
+         white, blurs a copy for the soft neon halo, then stacks the
+         original artwork on top so the brand colours stay intact while
+         the letters read crisply against the dark synthwave sky. -->
+    <filter id="logoOutline" x="-25%" y="-25%" width="150%" height="150%">
+      <feMorphology in="SourceAlpha" operator="dilate" radius="2.5" result="outlineMask"/>
+      <feFlood flood-color="#ffffff" flood-opacity="1" result="whiteFlood"/>
+      <feComposite in="whiteFlood" in2="outlineMask" operator="in" result="whiteOutline"/>
+      <feGaussianBlur in="whiteOutline" stdDeviation="3" result="outerGlow"/>
+      <feMerge>
+        <feMergeNode in="outerGlow"/>
+        <feMergeNode in="whiteOutline"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
   <!-- BACKGROUND -->
@@ -123,11 +140,13 @@
   <ellipse cx="512" cy="70" rx="110" ry="55" fill="url(#logoGlow)"/>
 
   <!-- LOGO: actual Marketing iO brand mark, embedded via the public CDN URL.
-       Centred on the halo. Width 160px keeps the wordmark legible at email
-       sizes; halo above gives it the "white glow" pop against the dark sky. -->
+       Centred on the halo. The outline + neon-glow filter wraps every letter
+       in a white stroke so the dark-blue brand mark pops against the
+       synthwave sky while keeping the original colours. -->
   <image href="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
          x="432" y="20" width="160" height="100"
-         preserveAspectRatio="xMidYMid meet"/>
+         preserveAspectRatio="xMidYMid meet"
+         filter="url(#logoOutline)"/>
 
   <!-- BOTTOM ACCENT STRIP -->
   <rect x="0" y="312" width="1024" height="8" fill="url(#accentGrad)"/>
