@@ -512,8 +512,8 @@ export default function AdminInvoices() {
         </div>
 
         {/* Table */}
-        <div className="glass rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="glass rounded-xl overflow-x-auto">
+          <table className="min-w-[900px] w-full text-sm">
             <thead className="bg-muted/20 border-b border-border/40">
               <tr>
                 <th className="w-12 px-4 py-3 text-left">
