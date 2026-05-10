@@ -102,7 +102,7 @@ export default function ContractSigningPublic() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!fullName.trim()) {
       toast.error("Please enter your full name");
       return;
@@ -127,8 +127,8 @@ export default function ContractSigningPublic() {
     setSigning(true);
 
     try {
-      // Create ContractSignature record
-      const signature = await base44.entities.ContractSignature.create({
+      // Create ContractSignature record (triggering automation)
+      await base44.entities.ContractSignature.create({
         contract_id: contract.id,
         signer_role: "client",
         signer_full_name: fullName,
@@ -137,37 +137,21 @@ export default function ContractSigningPublic() {
         signature_method: signatureMethod,
         drawn_signature_data_url: drawnSignature,
         signed_date: new Date().toISOString(),
-        signed_ip_address: "client-ip",
         signed_user_agent: navigator.userAgent
       });
 
       // Update Contract status
       await base44.entities.Contract.update(contract.id, {
         signing_status: "fully_signed",
-        client_signed_at: new Date().toISOString()
+        client_signed_at: new Date().toISOString(),
+        signed_by_client: true,
+        signed_date: new Date().toISOString().split('T')[0]
       });
-
-      // Generate final signed PDF
-      try {
-        await base44.functions.invoke("generateSignedPDF", {
-          contract_id: contract.id
-        });
-      } catch (pdfErr) {
-        console.error("PDF generation error:", pdfErr);
-      }
-
-      // Send notification emails
-      try {
-        await base44.functions.invoke("notifySignatureComplete", {
-          contract_id: contract.id
-        });
-      } catch (notifyErr) {
-        console.error("Notification error:", notifyErr);
-      }
 
       setSigned(true);
       toast.success("Contract signed successfully! A copy has been sent to your email.");
     } catch (err) {
+      console.error("Contract signing error:", err);
       toast.error(`Error signing contract: ${err.message}`);
     } finally {
       setSigning(false);

@@ -21,8 +21,8 @@ Deno.serve(async (req) => {
       contract_id: contractId 
     });
 
-    // For MVP: fully_signed when client has signed (can add MIO signature requirement later)
-    const clientSigned = signatures.some(s => s.signer_role === 'client' && s.typed_signature);
+    // For MVP: fully_signed when client has signed
+    const clientSigned = signatures.some(s => s.signer_role === 'client');
 
     if (!clientSigned) {
       return Response.json({ 
@@ -31,21 +31,108 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate final signed PDF
+    // Generate final signed PDF (inline to avoid double-invocation)
     try {
-      await base44.functions.invoke('generateSignedPDF', {
-        contract_id: contractId
+      const contracts = await base44.asServiceRole.entities.Contract.filter({ id: contractId });
+      const contract = contracts[0];
+      
+      const { jsPDF } = await import('npm:jspdf@4.0.0');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+
+      doc.setFontSize(14);
+      doc.text('MARKETING IO MASTER SERVICE AGREEMENT', margin, margin);
+      
+      doc.setFontSize(10);
+      doc.text(`Contract ID: ${contract.id}`, margin, margin + 10);
+      doc.text(`Client: ${contract.client_name}`, margin, margin + 16);
+      doc.text(`Package: ${contract.package}`, margin, margin + 22);
+      
+      doc.setFontSize(9);
+      let y = margin + 35;
+      doc.text(`Setup Fee: R${(contract.setup_fee || 0).toLocaleString()}`, margin, y);
+      y += 7;
+      doc.text(`Monthly Retainer: R${(contract.monthly_retainer || 0).toLocaleString()}`, margin, y);
+      y += 7;
+      doc.text(`Contract Start: ${contract.contract_start_date || 'N/A'}`, margin, y);
+      y += 7;
+      doc.text(`Contract End: ${contract.contract_end_date || 'N/A'}`, margin, y);
+
+      y = pageHeight - 100;
+      doc.setFontSize(10);
+      doc.text('SIGNATURES:', margin, y);
+      y += 10;
+
+      signatures.forEach((sig) => {
+        doc.setFontSize(8);
+        doc.text(`${sig.signer_role.replace(/_/g, ' ').toUpperCase()}:`, margin, y);
+        y += 5;
+        
+        if (sig.signature_method === 'typed') {
+          doc.setFontSize(14);
+          doc.setFont(undefined, 'italic');
+          doc.text(sig.typed_signature || sig.signer_full_name, margin, y);
+          doc.setFont(undefined, 'normal');
+        }
+        
+        y += 12;
+        doc.setFontSize(8);
+        doc.text(`Signed: ${sig.signed_date ? new Date(sig.signed_date).toLocaleDateString() : 'N/A'}`, margin, y);
+        y += 5;
+        doc.text(`Name: ${sig.signer_full_name}`, margin, y);
+        
+        if (sig.signer_id_number) {
+          y += 5;
+          doc.text(`ID: ${sig.signer_id_number}`, margin, y);
+        }
+        
+        y += 8;
       });
+
+      const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+      const uploadRes = await base44.integrations.Core.UploadFile({
+        file: pdfBuffer.toString('base64')
+      });
+
+      await base44.asServiceRole.entities.Contract.update(contractId, {
+        final_signed_pdf_url: uploadRes.file_url
+      });
+      
+      console.log('[onContractSigned] PDF generated and saved');
     } catch (pdfErr) {
       console.error('PDF generation error:', pdfErr.message);
-      // Continue with notifications even if PDF generation fails
     }
 
-    // Send notifications
+    // Send notifications (inline email send)
     try {
-      await base44.functions.invoke('notifySignatureComplete', {
-        contract_id: contractId
-      });
+      const { Resend } = await import('npm:resend@3.2.0');
+      const apiKey = Deno.env.get('RESEND_API_KEY');
+      if (apiKey) {
+        const resend = new Resend(apiKey);
+        const contracts = await base44.asServiceRole.entities.Contract.filter({ id: contractId });
+        const contract = contracts[0];
+        const clients = await base44.asServiceRole.entities.Client.filter({ id: contract.client_id });
+        const client = clients[0];
+        const clientSignature = signatures.find(s => s.signer_role === 'client');
+
+        const clientBodyHtml = `<p>Dear ${client.contact_person || client.business_name},</p>
+          <p>Your Master Service Agreement has been successfully signed and is now active.</p>
+          <p><strong>Package:</strong> ${contract.package}</p>
+          <p><strong>Setup Fee:</strong> R${(contract.setup_fee || 0).toLocaleString()}</p>
+          <p><strong>Monthly Retainer:</strong> R${(contract.monthly_retainer || 0).toLocaleString()}</p>
+          <p>Your onboarding will begin shortly. Questions? <a href="mailto:info@marketingio.co.za">info@marketingio.co.za</a></p>`;
+
+        await resend.emails.send({
+          from: 'Marketing iO Team <hello@marketingio.co.za>',
+          to: client.email,
+          subject: `Your Contract Has Been Signed - ${contract.package}`,
+          html: clientBodyHtml
+        });
+        
+        console.log('[onContractSigned] Client notification sent');
+      }
     } catch (notifyErr) {
       console.error('Notification error:', notifyErr.message);
     }
