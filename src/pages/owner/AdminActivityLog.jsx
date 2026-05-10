@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Search, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Search, Clock, ChevronDown } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 
 const EVENT_COLORS = {
@@ -21,11 +22,27 @@ function timeAgo(date) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function formatDate(date) {
+  const d = new Date(date);
+  return d.toLocaleDateString("en-ZA", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+}
+
+function groupByDate(events) {
+  const grouped = {};
+  events.forEach(ev => {
+    const dateKey = formatDate(ev.time);
+    if (!grouped[dateKey]) grouped[dateKey] = [];
+    grouped[dateKey].push(ev);
+  });
+  return Object.entries(grouped).reverse();
+}
+
 export default function AdminActivityLog() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [daysFilter, setDaysFilter] = useState(7);
+  const [expandedDate, setExpandedDate] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -86,6 +103,8 @@ export default function AdminActivityLog() {
     !search || e.label.toLowerCase().includes(search.toLowerCase()) || e.detail.toLowerCase().includes(search.toLowerCase())
   );
 
+  const grouped = groupByDate(filtered);
+
   return (
     <AppLayout title="Admin Activity" subtitle="Invoices, contracts, and administrative tasks">
       <div className="mb-6 space-y-4">
@@ -111,33 +130,47 @@ export default function AdminActivityLog() {
           <p style={{ color: "#a8a8c0" }}>No admin activity found</p>
         </div>
       ) : (
-        <div className="relative">
-          <div className="absolute left-5 top-0 bottom-0 w-px" style={{ background: "rgba(255,255,255,0.06)" }} />
-          <div className="space-y-1 pl-12">
-            {filtered.map((ev, i) => {
-              const col = EVENT_COLORS[ev.category] || EVENT_COLORS.default;
-              return (
-                <div key={ev.id + i} className="relative">
-                  <div className="absolute -left-7 top-3.5 w-3 h-3 rounded-full border-2" style={{ background: col.bg, borderColor: col.text }} />
-                  <div className="glass rounded-xl p-3.5 flex items-center gap-3 hover:border-white/15 transition-all">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: col.bg, border: `1px solid ${col.border}` }}>
-                      <Clock className="w-4 h-4" style={{ color: col.text }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: "#f4f4fa" }}>{ev.label}</p>
-                      <p className="text-xs" style={{ color: "#a8a8c0" }}>{ev.detail}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge className="text-[10px] px-2 py-0.5 border capitalize" style={{ background: col.bg, color: col.text, borderColor: col.border }}>
-                        {ev.category}
-                      </Badge>
-                      <span className="text-xs" style={{ color: "#6b6b85" }}>{timeAgo(ev.time)}</span>
-                    </div>
-                  </div>
+        <div className="space-y-2">
+          {grouped.map(([dateKey, dateEvents]) => (
+            <div key={dateKey}>
+              <Button
+                variant="ghost"
+                className="w-full justify-between px-4 py-3 h-auto text-left hover:bg-white/5"
+                onClick={() => setExpandedDate(expandedDate === dateKey ? null : dateKey)}
+              >
+                <span className="font-medium text-sm">{dateKey}</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[11px] border-border/50">{dateEvents.length} activities</Badge>
+                  <ChevronDown className="w-4 h-4 transition-transform" style={{ transform: expandedDate === dateKey ? "rotate(180deg)" : "rotate(0)" }} />
                 </div>
-              );
-            })}
-          </div>
+              </Button>
+
+              {expandedDate === dateKey && (
+                <div className="space-y-1 pl-4 mt-2 border-l border-border/50">
+                  {dateEvents.map((ev, i) => {
+                    const col = EVENT_COLORS[ev.category] || EVENT_COLORS.default;
+                    return (
+                      <div key={ev.id + i} className="glass rounded-lg p-3 flex items-center gap-3 hover:border-white/15 transition-all">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: col.bg, border: `1px solid ${col.border}` }}>
+                          <Clock className="w-3.5 h-3.5" style={{ color: col.text }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium" style={{ color: "#f4f4fa" }}>{ev.label}</p>
+                          <p className="text-xs" style={{ color: "#a8a8c0" }}>{ev.detail}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge className="text-[10px] px-2 py-0.5 border capitalize" style={{ background: col.bg, color: col.text, borderColor: col.border }}>
+                            {ev.category}
+                          </Badge>
+                          <span className="text-xs" style={{ color: "#6b6b85" }}>{timeAgo(ev.time)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </AppLayout>
