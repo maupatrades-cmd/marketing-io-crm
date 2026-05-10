@@ -78,10 +78,10 @@ export function wrapEmail(bodyHtml, options = {}) {
 
           <!-- HEADER -->
           <tr>
-            <td style="padding:0;margin:0;background:#080c1a;">
-              <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/6236093dc_header.jpg"
-                width="600" alt="Marketing iO"
-                style="display:block;width:100%;max-width:600px;height:auto;" />
+            <td align="center" style="padding: 28px 24px; background: linear-gradient(135deg, #080c1a 0%, #1a0a2e 100%);">
+              <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
+                height="48" alt="Marketing iO"
+                style="display:block;height:48px;width:auto;filter:invert(1) brightness(10);margin:0 auto;" />
             </td>
           </tr>
 
