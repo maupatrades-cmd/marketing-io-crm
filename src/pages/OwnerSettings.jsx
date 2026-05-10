@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Mail, Zap, Lock } from "lucide-react";
 import LaunchReadinessModal from "@/components/owner/LaunchReadinessModal";
+import BackButton from "@/components/BackButton";
 
 const TABS = ["users", "packages", "commissions", "emails", "integrations", "audit"];
 
@@ -31,6 +32,7 @@ export default function OwnerSettings() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
+        <BackButton to="/" />
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold gradient-text">Settings</h1>
           <LaunchReadinessModal />
