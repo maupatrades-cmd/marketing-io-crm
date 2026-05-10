@@ -34,12 +34,22 @@ export default function ContractSigningPublic() {
         }
 
         // Find contract by signing_token
-        const contracts = await base44.entities.Contract.filter({ signing_token: token });
-        if (!contracts || contracts.length === 0) {
-          setError("Contract signing link not found or has expired.");
-          setLoading(false);
-          return;
-        }
+         let contracts = [];
+         try {
+           contracts = await base44.entities.Contract.filter({ signing_token: token });
+         } catch (e) {
+           console.error("Filter error:", e);
+         }
+
+         if (!contracts || (Array.isArray(contracts) && contracts.length === 0)) {
+           setError("Contract signing link not found or has expired.");
+           setLoading(false);
+           return;
+         }
+
+         if (!Array.isArray(contracts)) {
+           contracts = [contracts];
+         }
 
         const contractData = contracts[0];
         

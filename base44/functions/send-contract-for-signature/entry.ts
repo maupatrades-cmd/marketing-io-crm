@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     const client = Array.isArray(clients) ? clients[0] : clients;
     if (!client) return Response.json({ error: 'Client not found' }, { status: 404 });
 
-    const signingUrl = `${APP_URL}/sign-contract?token=${contract.signing_token || contract.id}`;
+    const signingUrl = `${APP_URL}/sign-contract?token=${contract.signing_token}`;
     const packageLabel = (contract.package || 'service').replace(/_/g, ' ');
     const subject = `Sign your Marketing iO contract: ${packageLabel} — ${client.business_name}`;
 
@@ -109,10 +109,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Email failed', detail: err }, { status: 500 });
     }
 
-    // Update contract with last sent timestamp
-    await base44.asServiceRole.entities.Contract.update(contract_id, {
-      last_signature_email_sent_at: new Date().toISOString(),
-    });
+    // Update contract with last sent timestamp and signing status
+     await base44.asServiceRole.entities.Contract.update(contract_id, {
+       last_signature_email_sent_at: new Date().toISOString(),
+       signing_status: 'sent',
+     });
 
     // Activity log
     try {

@@ -119,6 +119,9 @@ Deno.serve(async (req) => {
   const setupFee       = Number(deal.setup_fee ?? 0);
   const monthlyRetainer = Number(deal.monthly_retainer ?? 0);
 
+  // Generate unique signing token for e-signature link
+  const signingToken = crypto.randomUUID();
+
   const contractPayload: Record<string, unknown> = {
     client_id:        deal.client_id || '',
     client_name:      clientName,
@@ -131,6 +134,9 @@ Deno.serve(async (req) => {
     signed_by_client: false,
     signed_by_mio:    false,
     popia_signed:     false,
+    signing_token:    signingToken,
+    signing_status:   'not_sent',
+    signing_link_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   };
   if (deal.add_on_name) contractPayload.add_on_name = String(deal.add_on_name);
   if (deal.initial_term_months) contractPayload.initial_term_months = Number(deal.initial_term_months);
