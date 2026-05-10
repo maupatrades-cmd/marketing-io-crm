@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Shield, Mail, Zap, Lock, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import LaunchReadinessModal from "@/components/owner/LaunchReadinessModal";
 import { useToast } from "@/components/ui/use-toast";
+import EmailFooter from "@/components/EmailFooter";
 
 const TABS = ["users", "packages", "commissions", "emails", "integrations", "audit"];
 
@@ -57,6 +58,17 @@ export default function OwnerSettings() {
           .map(u => ({ email: u.email, name: u.full_name }));
       }
 
+      // Build HTML email with footer
+      const htmlBody = `
+        <div style="font-family: 'Inter', sans-serif; color: #f4f4fa; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto;">
+            <div style="padding: 20px;">
+              ${emailForm.body.replace(/\n/g, "<br />")}
+            </div>
+          </div>
+        </div>
+      `;
+
       let successCount = 0;
       let failCount = 0;
 
@@ -65,7 +77,7 @@ export default function OwnerSettings() {
           await base44.integrations.Core.SendEmail({
             to: recipient.email,
             subject: emailForm.subject,
-            body: emailForm.body,
+            body: htmlBody,
             from_name: "Marketing iO"
           });
           successCount += 1;
