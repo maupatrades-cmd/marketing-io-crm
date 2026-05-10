@@ -78,13 +78,17 @@ export function wrapEmail(bodyHtml, options = {}) {
 
           <!-- HEADER -->
           <tr>
-            <td align="center"
-              style="background: linear-gradient(90deg, #a764e6 0%, #ec4899 100%); padding: 28px 24px 20px 24px;">
-              <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
-                height="40" alt="Marketing iO"
-                style="display:block;height:40px;width:auto;filter:invert(1) brightness(10);mix-blend-mode:screen;" />
-              <div style="margin-top:8px;font-size:12px;font-style:italic;letter-spacing:1px;color:rgba(255,255,255,0.9);">
-                Too good to stay hidden.
+            <td style="padding:0;margin:0;background:#080c1a;">
+              <div style="position:relative;display:block;line-height:0;">
+                <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/9ca95056f_header.jpg"
+                  width="600" alt="Marketing iO"
+                  style="display:block;width:100%;max-width:600px;height:auto;" />
+                <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(8,12,26,0.45);text-align:center;padding:20px;">
+                  <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
+                    height="40" alt="Marketing iO"
+                    style="height:40px;width:auto;display:inline-block;filter:brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,0.7));" />
+                  <div style="margin-top:8px;font-size:12px;font-style:italic;letter-spacing:1.5px;color:rgba(255,255,255,0.95);">Too good to stay hidden.</div>
+                </div>
               </div>
             </td>
           </tr>
