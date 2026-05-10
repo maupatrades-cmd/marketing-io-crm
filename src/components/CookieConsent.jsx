@@ -1,16 +1,21 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/AuthContext";
 import { X } from "lucide-react";
 
 export default function CookieConsent() {
   const [show, setShow] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
+    // Only show for non-authenticated users (public visitors/clients on checkout)
+    if (user) return;
+    
     const consent = localStorage.getItem("cookieConsent");
     if (!consent) {
       setShow(true);
     }
-  }, []);
+  }, [user]);
 
   const handleAccept = () => {
     localStorage.setItem("cookieConsent", "accepted");
