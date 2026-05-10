@@ -115,10 +115,12 @@ export function wrapEmail(bodyHtml, options = {}) {
             <td align="center" style="background-color:#0f172a; padding: 32px 24px;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="padding-bottom: 16px;">
-                    <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
-                      height="28" alt="Marketing iO"
-                      style="display:block;height:28px;width:auto;filter:invert(1) brightness(10);mix-blend-mode:screen;margin:0 auto;" />
+                  <td align="center" style="padding-bottom: 20px; padding-top: 8px;">
+                    <div style="display:inline-block;padding:10px 20px;border-radius:12px;box-shadow:0 0 18px 4px rgba(167,100,230,0.55), 0 0 40px 8px rgba(236,72,153,0.25);background:rgba(167,100,230,0.08);">
+                      <img src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
+                        height="32" alt="Marketing iO"
+                        style="display:block;height:32px;width:auto;filter:invert(1) brightness(10);mix-blend-mode:screen;margin:0 auto;" />
+                    </div>
                   </td>
                 </tr>
                 <tr>
