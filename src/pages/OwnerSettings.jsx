@@ -3,8 +3,14 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, Mail, Zap, Lock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Shield, Mail, Zap, Lock, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import LaunchReadinessModal from "@/components/owner/LaunchReadinessModal";
+import { useToast } from "@/components/ui/use-toast";
+import EmailFooter from "@/components/EmailFooter";
 
 const TABS = ["users", "packages", "commissions", "emails", "integrations", "audit"];
 
@@ -13,6 +19,11 @@ export default function OwnerSettings() {
   const [users, setUsers] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailForm, setEmailForm] = useState({ recipients: "clients", subject: "", body: "" });
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailResult, setEmailResult] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -25,6 +36,64 @@ export default function OwnerSettings() {
       setLoading(false);
     })();
   }, []);
+
+  const sendBulkEmail = async () => {
+    if (!emailForm.subject.trim() || !emailForm.body.trim()) {
+      toast({ title: "Missing fields", description: "Subject and body are required", variant: "destructive" });
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      let recipients = [];
+
+      if (emailForm.recipients === "clients") {
+        const clients = await base44.entities.Client.list();
+        recipients = (Array.isArray(clients) ? clients : clients ? [clients] : [])
+          .filter(c => c.email)
+          .map(c => ({ email: c.email, name: c.contact_person }));
+      } else if (emailForm.recipients === "staff") {
+        recipients = (Array.isArray(users) ? users : users ? [users] : [])
+          .filter(u => u.email)
+          .map(u => ({ email: u.email, name: u.full_name }));
+      }
+
+      // Build HTML email with footer
+      const htmlBody = `
+        <div style="font-family: 'Inter', sans-serif; color: #f4f4fa; line-height: 1.6;">
+          <div style="max-width: 600px; margin: 0 auto;">
+            <div style="padding: 20px;">
+              ${emailForm.body.replace(/\n/g, "<br />")}
+            </div>
+          </div>
+        </div>
+      `;
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const recipient of recipients) {
+        try {
+          await base44.integrations.Core.SendEmail({
+            to: recipient.email,
+            subject: emailForm.subject,
+            body: htmlBody,
+            from_name: "Marketing iO"
+          });
+          successCount += 1;
+        } catch (err) {
+          failCount += 1;
+        }
+      }
+
+      setEmailResult({ success: successCount, fail: failCount, total: recipients.length });
+      toast({ title: "Emails sent", description: `${successCount}/${recipients.length} emails delivered` });
+      setEmailForm({ recipients: "clients", subject: "", body: "" });
+    } catch (err) {
+      toast({ title: "Error sending emails", description: err.message, variant: "destructive" });
+    }
+    setSendingEmail(false);
+  };
 
   if (loading) return <LoadingSpinner />;
 
@@ -105,14 +174,28 @@ export default function OwnerSettings() {
 
         {/* TAB: Emails */}
         {activeTab === "emails" && (
-          <div className="glass rounded-xl p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">{templates.length} Templates Active</h3>
-              <Button asChild size="sm" variant="outline">
-                <a href="/email-templates">Manage Templates →</a>
-              </Button>
+          <div className="space-y-4">
+            <div className="glass rounded-xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">{templates.length} Templates Active</h3>
+                <Button asChild size="sm" variant="outline">
+                  <a href="/email-templates">Manage Templates →</a>
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">Transactional + nurture templates managed in Email Templates page</p>
             </div>
-            <p className="text-sm text-muted-foreground">Transactional + nurture templates managed in Email Templates page</p>
+
+            <div className="glass rounded-xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="font-semibold">Send Campaign</h3>
+                  <p className="text-xs text-muted-foreground">Fire emails to all clients or staff</p>
+                </div>
+                <Button onClick={() => setShowEmailDialog(true)} className="gap-2 gradient-bg text-white">
+                  <Send className="w-4 h-4" /> Fire Email
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -162,6 +245,115 @@ export default function OwnerSettings() {
           </div>
         )}
       </div>
+
+      {/* Email Campaign Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="bg-card border-border/50 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="gradient-text">Fire Email Campaign</DialogTitle>
+          </DialogHeader>
+
+          {emailResult ? (
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-4 bg-success/10 border border-success/30 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-sm">Emails Sent Successfully</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {emailResult.success} out of {emailResult.total} recipients received the email
+                  </p>
+                  {emailResult.fail > 0 && (
+                    <p className="text-xs text-destructive mt-1">{emailResult.fail} failed to deliver</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEmailResult(null);
+                    setShowEmailDialog(false);
+                  }}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => setEmailResult(null)}
+                  className="flex-1 gradient-bg text-white"
+                >
+                  Send Another
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Recipients</label>
+                <Select value={emailForm.recipients} onValueChange={(v) => setEmailForm({ ...emailForm, recipients: v })}>
+                  <SelectTrigger className="bg-secondary/50 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="clients">All Clients</SelectItem>
+                    <SelectItem value="staff">All Staff</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Subject</label>
+                <Input
+                  placeholder="Email subject line"
+                  value={emailForm.subject}
+                  onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+                  className="bg-secondary/50 border-border/50"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Body</label>
+                <Textarea
+                  placeholder="Email body text"
+                  value={emailForm.body}
+                  onChange={(e) => setEmailForm({ ...emailForm, body: e.target.value })}
+                  className="bg-secondary/50 border-border/50 min-h-32"
+                />
+              </div>
+
+              <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
+                <p className="text-xs text-warning flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  This will send to all {emailForm.recipients === "clients" ? "active clients" : "staff members"}
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowEmailDialog(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={sendBulkEmail}
+                  disabled={sendingEmail || !emailForm.subject.trim() || !emailForm.body.trim()}
+                  className="flex-1 gradient-bg text-white gap-2"
+                >
+                  {sendingEmail ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Fire Emails
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
