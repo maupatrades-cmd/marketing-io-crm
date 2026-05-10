@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { BarChart3, XCircle, ArrowLeft, Download } from "lucide-react";
-import BackButton from "@/components/BackButton";
 
 const REPORTS = [
   { id: 1, name: "Clients with no contact in 30 days", description: "Inactive accounts needing outreach" },
@@ -196,21 +195,17 @@ export default function OwnerReports() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Page-level back to the previous screen */}
-        <BackButton to="/" />
-        {/* In-page back: clear the current report selection if one is open */}
-        {selected && (
-          <button
-            onClick={() => {
-              setSelected(null);
-              setReportData(null);
-            }}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back to library</span>
-          </button>
-        )}
+        {/* Back button always visible */}
+        <button
+          onClick={() => {
+            setSelected(null);
+            setReportData(null);
+          }}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm">Back</span>
+        </button>
 
         <h1 className="text-3xl font-bold gradient-text mb-2">Report Library</h1>
         <p className="text-muted-foreground mb-8">Pre-built queries to answer common business questions</p>

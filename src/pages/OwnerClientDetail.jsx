@@ -14,7 +14,6 @@ import { useToast } from "@/components/ui/use-toast";
 import ActivityFeed from "@/components/activity/ActivityFeed";
 import DiscoveryTab from "@/components/clients/DiscoveryTab";
 import CancelReactivatePanel from "@/components/client/CancelReactivatePanel";
-import BackButton from "@/components/BackButton";
 import { getCurrentUser } from "@/lib/customAuth";
 import { logClientActivityFromBrowser } from "@/lib/activityLog";
 
@@ -248,7 +247,6 @@ export default function OwnerClientDetail() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
-        <BackButton label="Back to clients" to="/clients" />
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div>

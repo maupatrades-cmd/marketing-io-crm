@@ -147,11 +147,10 @@ export default function AppLayout({ children, title, subtitle }) {
       <div className="min-h-screen flex font-inter" style={{ background: "transparent" }}>
         <ClientSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} user={user} />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="px-4 lg:px-6 py-4 flex items-center gap-4"
+          {/* Back arrow now lives in <FloatingBackButton /> (mounted globally
+              in App.jsx). Header just carries the title to avoid two arrows. */}
+          <header className="px-4 lg:px-6 py-4 flex items-center gap-4 pl-14 lg:pl-6"
             style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(10,10,20,0.6)", backdropFilter: "blur(10px)" }}>
-            <button onClick={() => navigate(-1)} className="shrink-0 hover:text-white transition-colors" style={{ color: "#6b6b85" }} title="Go back">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
             <div>
               <h1 className="text-base font-bold" style={{ color: "#f4f4fa" }}>{title}</h1>
               {subtitle && <p className="text-xs" style={{ color: "#6b6b85" }}>{subtitle}</p>}
@@ -540,13 +539,12 @@ export default function AppLayout({ children, title, subtitle }) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="px-4 lg:px-6 py-4 flex items-center gap-4"
+        {/* Back arrow now lives in <FloatingBackButton /> (mounted globally
+            in App.jsx). Header padded-left so the floating button has room. */}
+        <header className="px-4 lg:px-6 py-4 flex items-center gap-4 pl-14 lg:pl-6"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(10,10,20,0.6)", backdropFilter: "blur(10px)" }}>
           <button className="lg:hidden hover:text-white transition-colors" style={{ color: "#6b6b85" }} onClick={() => setMobileOpen(o => !o)}>
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-          <button onClick={() => navigate(-1)} className="shrink-0 hover:text-white transition-colors" style={{ color: "#6b6b85" }} title="Go back">
-            <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <h1 className="text-base font-bold" style={{ color: "#f4f4fa" }}>{title}</h1>
