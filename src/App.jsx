@@ -48,6 +48,7 @@ import StaffMyClients from './pages/StaffMyClients';
 import StaffVerifyLeads from './pages/StaffVerifyLeads';
 import StaffCommunications from './pages/StaffCommunications';
 import RouteGuard from './components/RouteGuard';
+import CookieConsent from './components/CookieConsent';
 import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import VerifyOTP from './pages/VerifyOTP';
@@ -263,6 +264,7 @@ function App() {
           <AuthenticatedApp />
         </Router>
         <Toaster />
+        <CookieConsent />
       </QueryClientProvider>
     </AuthProvider>
   )
