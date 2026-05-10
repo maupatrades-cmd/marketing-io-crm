@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Download, Send, RefreshCw, Eye } from "lucide-react";
+import { Search, Download, Send, RefreshCw, Eye, BarChart3, TrendingUp, Users, CheckCircle2, Clock } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const STATUS_COLORS = {
   draft: "bg-warning/15 text-warning border-warning/30",
@@ -17,12 +18,14 @@ const STATUS_COLORS = {
 
 export default function MonthlyReports() {
   const [reports, setReports] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [monthFilter, setMonthFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selected, setSelected] = useState(null);
   const [sending, setSending] = useState(false);
+  const [showCharts, setShowCharts] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -33,10 +36,79 @@ export default function MonthlyReports() {
     try {
       const reps = await base44.entities.MonthlyReport.list("-created_date", 200);
       setReports(reps);
+      await generateAnalytics(reps);
       setLoading(false);
     } catch (err) {
       toast({ title: "Error loading reports", description: err.message, variant: "destructive" });
       setLoading(false);
+    }
+  };
+
+  const generateAnalytics = async (reps) => {
+    try {
+      const clients = await base44.entities.Client.list();
+      const deals = await base44.entities.Deal.filter({ stage: "closed_won" });
+      const deliverables = await base44.entities.Deliverable.list();
+
+      // Timeline: reports by month
+      const reportsByMonth = {};
+      reps.forEach(r => {
+        const month = r.report_month || new Date(r.created_date).toISOString().slice(0, 7);
+        reportsByMonth[month] = (reportsByMonth[month] || 0) + 1;
+      });
+
+      const timelineData = Object.entries(reportsByMonth)
+        .sort()
+        .map(([month, count]) => ({ month, reports: count }));
+
+      // Status breakdown
+      const statusBreakdown = {
+        draft: reps.filter(r => r.status === "draft").length,
+        reviewed: reps.filter(r => r.status === "reviewed").length,
+        sent: reps.filter(r => r.status === "sent").length
+      };
+
+      // Client performance metrics by month
+      const clientMetrics = {};
+      reps.forEach(r => {
+        const month = r.report_month || new Date(r.created_date).toISOString().slice(0, 7);
+        clientMetrics[month] = (clientMetrics[month] || { active: 0, total: 0 });
+        clientMetrics[month].total += 1;
+      });
+
+      const clientMetricsData = Object.entries(clientMetrics)
+        .sort()
+        .map(([month, data]) => ({ month, clients: data.total }));
+
+      // Deliverable completion by month
+      const deliveryMetrics = {};
+      deliverables.forEach(d => {
+        const month = d.month_year || new Date(d.created_date).toISOString().slice(0, 7);
+        deliveryMetrics[month] = (deliveryMetrics[month] || { total: 0, completed: 0 });
+        deliveryMetrics[month].total += 1;
+        if (d.status === "completed") deliveryMetrics[month].completed += 1;
+      });
+
+      const deliveryData = Object.entries(deliveryMetrics)
+        .sort()
+        .map(([month, data]) => ({
+          month,
+          completed: data.completed,
+          pending: data.total - data.completed
+        }));
+
+      setAnalytics({
+        timeline: timelineData,
+        statusBreakdown,
+        clientMetrics: clientMetricsData,
+        deliveryData,
+        totalReports: reps.length,
+        draftCount: statusBreakdown.draft,
+        sentCount: statusBreakdown.sent,
+        avgReportsPerMonth: Math.round(reps.length / (timelineData.length || 1))
+      });
+    } catch (err) {
+      console.error("Error generating analytics:", err);
     }
   };
 
@@ -110,8 +182,121 @@ Marketing iO Team`,
 
   const months = Array.from(new Set(reports.map(r => r.report_month))).sort().reverse();
 
+  const statusColors = { draft: "#f59e0b", reviewed: "#a764e6", sent: "#10b981" };
+
   return (
     <AppLayout title="Monthly Reports" subtitle={`${reports.filter(r => r.status === "draft").length} drafts pending`}>
+      {/* Quick Stats */}
+      {analytics && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="glass rounded-xl p-4 border border-border/30">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">Total Reports</p>
+              <BarChart3 className="w-4 h-4 text-primary" />
+            </div>
+            <p className="text-2xl font-bold">{analytics.totalReports}</p>
+            <p className="text-xs text-muted-foreground mt-1">Avg {analytics.avgReportsPerMonth}/month</p>
+          </div>
+
+          <div className="glass rounded-xl p-4 border border-border/30">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">Draft</p>
+              <Clock className="w-4 h-4 text-warning" />
+            </div>
+            <p className="text-2xl font-bold">{analytics.draftCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">Pending review</p>
+          </div>
+
+          <div className="glass rounded-xl p-4 border border-border/30">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">Sent</p>
+              <CheckCircle2 className="w-4 h-4 text-success" />
+            </div>
+            <p className="text-2xl font-bold">{analytics.sentCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">Delivered</p>
+          </div>
+
+          <div className="glass rounded-xl p-4 border border-border/30">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">Charts</p>
+              <TrendingUp className="w-4 h-4 text-primary" />
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCharts(!showCharts)}
+              className="text-xs gradient-text"
+            >
+              {showCharts ? "Hide" : "View"} Analytics
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Charts Section */}
+      {showCharts && analytics && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          {/* Reports Timeline */}
+          <div className="glass rounded-xl p-4 border border-border/30">
+            <p className="text-sm font-semibold mb-4">Reports Generated</p>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={analytics.timeline}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                <XAxis dataKey="month" stroke="#a8a8c0" style={{ fontSize: "12px" }} />
+                <YAxis stroke="#a8a8c0" style={{ fontSize: "12px" }} />
+                <Tooltip contentStyle={{ background: "#1c1c30", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }} />
+                <Line type="monotone" dataKey="reports" stroke="#a764e6" strokeWidth={2} dot={{ fill: "#a764e6", r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Status Distribution */}
+          <div className="glass rounded-xl p-4 border border-border/30">
+            <p className="text-sm font-semibold mb-4">Status Breakdown</p>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Draft", value: analytics.statusBreakdown.draft, fill: statusColors.draft },
+                    { name: "Reviewed", value: analytics.statusBreakdown.reviewed, fill: statusColors.reviewed },
+                    { name: "Sent", value: analytics.statusBreakdown.sent, fill: statusColors.sent }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name}: ${value}`}
+                  outerRadius={80}
+                  dataKey="value"
+                >
+                  {[statusColors.draft, statusColors.reviewed, statusColors.sent].map((color, idx) => (
+                    <Cell key={idx} fill={color} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ background: "#1c1c30", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Deliverables Completion */}
+          {analytics.deliveryData.length > 0 && (
+            <div className="glass rounded-xl p-4 border border-border/30 lg:col-span-2">
+              <p className="text-sm font-semibold mb-4">Deliverable Completion</p>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={analytics.deliveryData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="month" stroke="#a8a8c0" style={{ fontSize: "12px" }} />
+                  <YAxis stroke="#a8a8c0" style={{ fontSize: "12px" }} />
+                  <Tooltip contentStyle={{ background: "#1c1c30", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }} />
+                  <Legend />
+                  <Bar dataKey="completed" stackId="a" fill="#10b981" name="Completed" />
+                  <Bar dataKey="pending" stackId="a" fill="#f59e0b" name="Pending" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
