@@ -48,6 +48,7 @@ import StaffMyClients from './pages/StaffMyClients';
 import StaffVerifyLeads from './pages/StaffVerifyLeads';
 import StaffCommunications from './pages/StaffCommunications';
 import RouteGuard from './components/RouteGuard';
+import FloatingBackButton from './components/FloatingBackButton';
 import CookieConsent from './components/CookieConsent';
 import SignIn from './pages/SignIn';
 import Register from './pages/Register';
@@ -125,7 +126,9 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <Routes>
+    <>
+      <FloatingBackButton />
+      <Routes>
       {/* Public routes — no auth required */}
       <Route path="/onboarding-form" element={<StaffOnboardingForm />} />
       <Route path="/build-summary" element={<BuildSummary />} />
@@ -250,7 +253,8 @@ const AuthenticatedApp = () => {
       <Route path="/reset" element={<Navigate to="/forgot-password" replace />} />
 
       <Route path="*" element={<PageNotFound />} />
-    </Routes>
+      </Routes>
+    </>
   );
 };
 

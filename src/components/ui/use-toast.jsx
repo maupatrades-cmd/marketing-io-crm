@@ -2,7 +2,11 @@
 import { useState, useEffect } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+// Was 1000000ms (~16 minutes!) — meant the "open: false" flag set by dismiss()
+// took 16 minutes to actually purge the toast from state. Combined with a
+// Toaster that didn't filter on `open`, the X button looked broken because
+// the toast just kept rendering. 300ms ≈ slide-out animation length.
+const TOAST_REMOVE_DELAY = 300;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",

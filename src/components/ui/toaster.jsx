@@ -11,9 +11,14 @@ import {
 export function Toaster() {
   const { toasts, dismiss } = useToast();
 
+  // Filter out toasts whose `open` was flipped to false by dismiss(). Without
+  // this the toast keeps rendering until TOAST_REMOVE_DELAY purges it from
+  // state, which made the X button look unresponsive.
+  const visibleToasts = toasts.filter((t) => t.open !== false);
+
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+      {visibleToasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast
             key={id}
