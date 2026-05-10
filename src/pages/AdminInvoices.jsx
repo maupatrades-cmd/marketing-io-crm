@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, FileText, Mail, CheckCircle2, ExternalLink, Repeat, Loader2, AlertTriangle, RefreshCw, Clock, Plus, CalendarIcon } from "lucide-react";
+import { Search, FileText, Mail, CheckCircle2, ExternalLink, Repeat, Loader2, AlertTriangle, RefreshCw, Clock, Plus, CalendarIcon, XCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -112,6 +112,11 @@ export default function AdminInvoices() {
   const [batchSubmitting, setBatchSubmitting] = useState(false);
   const [sweepSubmitting, setSweepSubmitting] = useState(false);
   const [renewalSubmitting, setRenewalSubmitting] = useState(false);
+
+  // Cancel invoice modal
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
 
   // Create invoice modal
   const [createOpen, setCreateOpen] = useState(false);
@@ -337,6 +342,38 @@ export default function AdminInvoices() {
     }
   };
 
+  const openCancel = (inv) => {
+    setActiveInvoice(inv);
+    setCancelReason("");
+    setCancelOpen(true);
+  };
+
+  const submitCancel = async () => {
+    if (!activeInvoice || !cancelReason.trim()) return;
+    setCancelSubmitting(true);
+    try {
+      const token = getSessionToken();
+      const res = await base44.functions.invoke("cancel-invoice", {
+        invoice_id: activeInvoice.id,
+        reason: cancelReason.trim(),
+        session_token: token,
+        admin_cancel: true,
+      });
+      const payload = res?.data ?? res;
+      if (payload?.success) {
+        toast({ title: "Invoice cancelled", description: `${activeInvoice.invoice_number || activeInvoice.id.slice(0,8)} — client notified by email.` });
+        setCancelOpen(false);
+        await loadAll();
+      } else {
+        toast({ title: "Cancel failed", description: payload?.detail || payload?.error || "Unknown error", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Cancel failed", description: err.message, variant: "destructive" });
+    } finally {
+      setCancelSubmitting(false);
+    }
+  };
+
   const paymentsForInvoice = (invId) => payments.filter((p) => p.invoice_id === invId);
 
   const openCreate = () => {
@@ -537,6 +574,9 @@ export default function AdminInvoices() {
                             </Button>
                             <Button size="sm" variant="ghost" title="Mark paid (EFT)" onClick={() => openEft(inv)}>
                               <CheckCircle2 className="w-4 h-4" />
+                            </Button>
+                            <Button size="sm" variant="ghost" title="Cancel invoice" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => openCancel(inv)}>
+                              <XCircle className="w-4 h-4" />
                             </Button>
                           </>
                         )}
@@ -810,6 +850,46 @@ export default function AdminInvoices() {
             <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={createSubmitting}>Cancel</Button>
             <Button onClick={submitCreate} disabled={createSubmitting || !createForm.client_id || !createForm.amount}>
               {createSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating…</> : "Create Invoice"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Invoice modal */}
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="w-5 h-5" />
+              Cancel Invoice — {activeInvoice?.invoice_number || activeInvoice?.id?.slice(0, 8)}
+            </DialogTitle>
+          </DialogHeader>
+          {activeInvoice && (
+            <div className="space-y-4 text-sm">
+              <div className="rounded-md bg-destructive/10 border border-destructive/30 p-3 text-xs">
+                <div><strong>{activeInvoice.client_name}</strong></div>
+                <div className="text-muted-foreground">{fmtMoney(activeInvoice.total_amount || activeInvoice.amount)} · {activeInvoice.invoice_type?.replace(/_/g, " ")}</div>
+                <div className="mt-1 text-destructive font-medium">⚠ This will cancel the invoice and send a cancellation email to the client with an AI-generated image.</div>
+              </div>
+              <div>
+                <Label>Reason for cancellation *</Label>
+                <Textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. Client cannot afford at this time, duplicate invoice, service no longer required…"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={cancelSubmitting}>Back</Button>
+            <Button
+              variant="destructive"
+              onClick={submitCancel}
+              disabled={cancelSubmitting || !cancelReason.trim()}
+            >
+              {cancelSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Cancelling…</> : "Cancel Invoice"}
             </Button>
           </DialogFooter>
         </DialogContent>

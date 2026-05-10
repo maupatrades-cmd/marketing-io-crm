@@ -95,6 +95,7 @@ import PaymentCancelled from './pages/PaymentCancelled';
 import PayfastTest from './pages/PayfastTest';
 import Checkout from './pages/Checkout';
 import PortalCheckout from './pages/PortalCheckout';
+import CancelledContracts from './pages/CancelledContracts';
 
 
 
@@ -169,6 +170,7 @@ const AuthenticatedApp = () => {
       <Route path="/owner/reports" element={<OwnerReports />} />
       <Route path="/admin/service-orders" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/"><AdminServiceOrders /></RouteGuard>} />
       <Route path="/admin/invoices" element={<RouteGuard allowedRoles={["admin", "owner"]} fallbackPath="/"><AdminInvoices /></RouteGuard>} />
+      <Route path="/cancelled-contracts" element={<RouteGuard allowedRoles={["owner", "admin", "field_agent", "cpc"]} fallbackPath="/"><CancelledContracts /></RouteGuard>} />
       <Route path="/staff-productivity" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><StaffProductivity /></RouteGuard>} />
       <Route path="/deliverable-quality" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><DeliverableQuality /></RouteGuard>} />
       <Route path="/lead-scoring" element={<RouteGuard allowedRoles={["owner", "admin", "field_agent", "cpc"]} fallbackPath="/"><LeadScoring /></RouteGuard>} />

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone, UserPlus, Search, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, Zap, DollarSign, FileText, BarChart2, Menu, X, MessageSquare, Receipt, Calendar, ClipboardList, Mail, UserCircle, Package, UserCog, PlusCircle, ListChecks, CheckSquare, Eye, File, FormInput, LineChart, Mail as MailIcon, BookOpen, Clock, Send, Briefcase, CheckCircle2, LogOut, Settings, Timer, Star, Target, Megaphone, UserPlus, Search, ArrowLeft, XCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
@@ -11,6 +11,7 @@ const STAFF_NAV = {
   field_agent: [
     { path: "/staff", label: "My Day", icon: Clock },
     { path: "/staff/pipeline", label: "My Pipeline", icon: TrendingUp },
+    { path: "/cancelled-contracts", label: "Cancelled Invoices", icon: XCircle },
     { path: "/staff/clients", label: "My Clients", icon: Users },
     { path: "/leads", label: "Add Lead", icon: PlusCircle },
     { path: "/lead-scoring", label: "Lead Scoring", icon: Target },
@@ -24,6 +25,7 @@ const STAFF_NAV = {
   cpc: [
     { path: "/staff", label: "My Day", icon: Clock },
     { path: "/staff/pipeline", label: "My Pipeline", icon: TrendingUp },
+    { path: "/cancelled-contracts", label: "Cancelled Invoices", icon: XCircle },
     { path: "/leads", label: "My Leads", icon: Zap },
     { path: "/lead-scoring", label: "Lead Scoring", icon: Target },
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
@@ -36,6 +38,7 @@ const STAFF_NAV = {
   admin: [
     { path: "/staff", label: "My Day", icon: Clock },
     { path: "/admin/invoices", label: "Invoice Chase", icon: FileText },
+    { path: "/cancelled-contracts", label: "Cancelled Invoices", icon: XCircle },
     { path: "/onboarding-submissions", label: "Onboarding Queue", icon: ListChecks },
     { path: "/staff/verify-leads", label: "Verify Leads", icon: CheckCircle2 },
     { path: "/owner/staff-activity", label: "Verified Leads", icon: Star },
@@ -80,6 +83,7 @@ const OWNER_NAV = [
   { path: "/lead-scoring", label: "Lead Scoring", icon: Target },
   { path: "/commissions", label: "Commissions", icon: DollarSign },
   { path: "/owner/commissions", label: "Commission Engine", icon: DollarSign },
+  { path: "/cancelled-contracts", label: "Cancelled Invoices", icon: XCircle },
   { path: "/invoices", label: "Invoices", icon: FileText },
   { path: "/receipts", label: "Receipts", icon: Receipt },
   { path: "/contracts", label: "Contracts", icon: File },
