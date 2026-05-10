@@ -2,174 +2,188 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import AppLayout from "@/components/AppLayout";
 import { format } from "date-fns";
-import { Loader2, Filter, Users } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Users, UserCircle, ChevronRight } from "lucide-react";
 
-const STAFF_TYPES = {
-  cpc: ["CPC 1", "CPC 2", "CPC 3"],
-  field_agent: ["Field Agent 1", "Field Agent 2", "Field Agent 3"],
+const ROLE_COLORS = {
+  cpc: { bg: "rgba(167,100,230,0.12)", border: "rgba(167,100,230,0.35)", text: "#a764e6", label: "CPC" },
+  field_agent: { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.35)", text: "#3b82f6", label: "Field Agent" },
+  admin: { bg: "rgba(236,72,153,0.12)", border: "rgba(236,72,153,0.35)", text: "#ec4899", label: "Admin" },
+  head_of_tech: { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.35)", text: "#10b981", label: "Head of Tech" },
+  driver: { bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.35)", text: "#f59e0b", label: "Driver" },
+};
+
+const ROLE_ORDER = ["cpc", "field_agent", "admin", "head_of_tech", "driver"];
+
+const EVENT_ICONS = {
+  auth: "🔐", profile: "👤", payment: "💳", invoice: "📄",
+  lead: "📍", communication: "💬", support: "🆘", deal: "🎯", account: "🏢", document: "📋",
 };
 
 export default function StaffActivityLog() {
   const [allActivities, setAllActivities] = useState([]);
   const [staffUsers, setStaffUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState("cpc");
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     const loadData = async () => {
-      try {
-        const [activities, users] = await Promise.all([
-          base44.entities.ClientActivityLog.list("-created_date", 300),
-          base44.entities.AppUser.filter({ role: { $in: ["cpc", "field_agent"] } }, "-created_date", 100),
-        ]);
-        
-        if (!cancelled) {
-          setAllActivities(Array.isArray(activities) ? activities : []);
-          setStaffUsers(Array.isArray(users) ? users : []);
+      const [activities, users] = await Promise.all([
+        base44.entities.ClientActivityLog.list("-created_date", 500),
+        base44.entities.AppUser.filter({ role: { $in: ["cpc", "field_agent", "admin", "head_of_tech", "driver"] } }, "-created_date", 200),
+      ]);
+      if (!cancelled) {
+        setAllActivities(Array.isArray(activities) ? activities : []);
+        const userList = Array.isArray(users) ? users : [];
+        setStaffUsers(userList);
+        if (!selectedUserId && userList.length > 0) {
+          // Pre-select first CPC, or first user
+          const firstCpc = userList.find(u => u.role === "cpc");
+          setSelectedUserId((firstCpc || userList[0]).id);
         }
-      } catch (error) {
-        console.error("Error loading data:", error);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
-
     loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+    const interval = setInterval(loadData, 8000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  const getEventIcon = (category) => {
-    const icons = {
-      auth: "🔐",
-      profile: "👤",
-      payment: "💳",
-      invoice: "📄",
-      lead: "📍",
-      communication: "💬",
-      support: "🆘",
-      deal: "🎯",
-    };
-    return icons[category] || "•";
-  };
+  // Group users by role in display order
+  const groupedUsers = ROLE_ORDER.reduce((acc, role) => {
+    const inRole = staffUsers.filter(u => u.role === role);
+    if (inRole.length > 0) acc.push({ role, users: inRole });
+    return acc;
+  }, []);
 
-  const ActivityCard = ({ activity }) => (
-    <div className="glass rounded-lg p-4 border-l-4 border-accent/30">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">{getEventIcon(activity.event_category)}</span>
-            <h3 className="font-semibold text-foreground">{activity.event_summary}</h3>
-          </div>
-          <p className="text-xs text-muted-foreground mb-2">{activity.logged_by_name}</p>
-          {activity.client_name && (
-            <p className="text-sm text-foreground/70">Client: {activity.client_name}</p>
-          )}
-        </div>
-        <div className="text-right shrink-0">
-          <p className="text-xs text-muted-foreground whitespace-nowrap">
-            {format(new Date(activity.created_date), "MMM dd, yyyy")}
-          </p>
-          <p className="text-xs font-medium text-foreground">
-            {format(new Date(activity.created_date), "HH:mm:ss")}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+  const selectedUser = staffUsers.find(u => u.id === selectedUserId);
+  const userActivities = selectedUserId
+    ? allActivities.filter(a => a.logged_by === selectedUserId || a.actor_id === selectedUserId)
+    : [];
 
-  const CPCActivities = () => {
-    const cpcUsers = staffUsers.filter(u => u.role === "cpc");
-    return (
-      <div className="space-y-6">
-        {cpcUsers.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No CPC users found</p>
-        ) : (
-          cpcUsers.map((user) => {
-            const userActivities = allActivities.filter(a => a.logged_by === user.id);
-            return (
-              <div key={user.id} className="space-y-3">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  {user.full_name}
-                </h3>
-                <div className="space-y-2 ml-4">
-                  {userActivities.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No activities</p>
-                  ) : (
-                    userActivities.map(activity => (
-                      <ActivityCard key={activity.id} activity={activity} />
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    );
-  };
-
-  const FieldAgentActivities = () => {
-    const fieldUsers = staffUsers.filter(u => u.role === "field_agent");
-    return (
-      <div className="space-y-6">
-        {fieldUsers.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No field agents found</p>
-        ) : (
-          fieldUsers.map((user) => {
-            const userActivities = allActivities.filter(a => a.logged_by === user.id);
-            return (
-              <div key={user.id} className="space-y-3">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  {user.full_name}
-                </h3>
-                <div className="space-y-2 ml-4">
-                  {userActivities.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No activities</p>
-                  ) : (
-                    userActivities.map(activity => (
-                      <ActivityCard key={activity.id} activity={activity} />
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    );
-  };
+  const roleStyle = selectedUser ? (ROLE_COLORS[selectedUser.role] || ROLE_COLORS.cpc) : ROLE_COLORS.cpc;
 
   return (
-    <AppLayout title="Staff Activity Log" subtitle="Track CPC and Field Agent actions in real-time">
+    <AppLayout title="Staff Activity Log" subtitle="Individual activity feeds per staff member">
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </div>
       ) : (
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="bg-secondary/50 border border-border/50">
-            <TabsTrigger value="cpc">CPC Activity</TabsTrigger>
-            <TabsTrigger value="field_agent">Field Agents Activity</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="cpc" className="mt-6 space-y-4">
-            <CPCActivities />
-          </TabsContent>
-          
-          <TabsContent value="field_agent" className="mt-6 space-y-4">
-            <FieldAgentActivities />
-          </TabsContent>
-        </Tabs>
+        <div className="flex gap-4 h-full">
+          {/* Left sidebar — staff folders */}
+          <div className="w-56 shrink-0 space-y-4">
+            {groupedUsers.map(({ role, users }) => {
+              const col = ROLE_COLORS[role] || ROLE_COLORS.cpc;
+              return (
+                <div key={role}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-2 px-1"
+                    style={{ color: col.text }}>{col.label}s</p>
+                  <div className="space-y-1">
+                    {users.map(u => {
+                      const isActive = selectedUserId === u.id;
+                      const count = allActivities.filter(a => a.logged_by === u.id || a.actor_id === u.id).length;
+                      return (
+                        <button
+                          key={u.id}
+                          onClick={() => setSelectedUserId(u.id)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
+                          style={{
+                            background: isActive ? col.bg : "transparent",
+                            border: isActive ? `1px solid ${col.border}` : "1px solid transparent",
+                            color: isActive ? col.text : "#a8a8c0",
+                          }}
+                        >
+                          <UserCircle className="w-4 h-4 shrink-0" />
+                          <span className="flex-1 truncate">{u.full_name || u.email}</span>
+                          {count > 0 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                              style={{ background: isActive ? col.border : "rgba(255,255,255,0.08)", color: isActive ? "#fff" : "#6b6b85" }}>
+                              {count > 99 ? "99+" : count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {staffUsers.length === 0 && (
+              <p className="text-xs text-muted-foreground px-2">No staff users found</p>
+            )}
+          </div>
+
+          {/* Right — activity feed for selected user */}
+          <div className="flex-1 min-w-0">
+            {!selectedUser ? (
+              <div className="glass rounded-xl p-12 text-center">
+                <Users className="w-10 h-10 mx-auto mb-3" style={{ color: "#6b6b85" }} />
+                <p style={{ color: "#a8a8c0" }}>Select a staff member to view their activity</p>
+              </div>
+            ) : (
+              <>
+                {/* Header */}
+                <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+                    style={{ background: roleStyle.bg, border: `1px solid ${roleStyle.border}`, color: roleStyle.text }}>
+                    {(selectedUser.full_name || selectedUser.email || "?")[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold" style={{ color: "#f4f4fa" }}>{selectedUser.full_name || selectedUser.email}</p>
+                    <p className="text-xs" style={{ color: "#6b6b85" }}>{roleStyle.label} · {userActivities.length} events</p>
+                  </div>
+                  <span className="text-xs px-2.5 py-1 rounded-full font-medium"
+                    style={{ background: roleStyle.bg, border: `1px solid ${roleStyle.border}`, color: roleStyle.text }}>
+                    {roleStyle.label}
+                  </span>
+                </div>
+
+                {/* Feed */}
+                {userActivities.length === 0 ? (
+                  <div className="glass rounded-xl p-12 text-center">
+                    <p style={{ color: "#a8a8c0" }}>No activity recorded for {selectedUser.full_name || "this user"}</p>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="absolute left-5 top-0 bottom-0 w-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+                    <div className="space-y-1.5 pl-12">
+                      {userActivities.map((a, i) => {
+                        const icon = EVENT_ICONS[a.event_category] || "•";
+                        return (
+                          <div key={a.id + i} className="relative">
+                            <div className="absolute -left-7 top-4 w-2.5 h-2.5 rounded-full"
+                              style={{ background: roleStyle.bg, border: `2px solid ${roleStyle.text}` }} />
+                            <div className="glass rounded-xl p-3.5 flex items-start gap-3 hover:border-white/15 transition-all">
+                              <span className="text-base mt-0.5 shrink-0">{icon}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium leading-snug" style={{ color: "#f4f4fa" }}>
+                                  {a.event_summary || a.title || a.event_type}
+                                </p>
+                                {a.client_name && (
+                                  <p className="text-xs mt-0.5" style={{ color: "#a8a8c0" }}>Client: {a.client_name}</p>
+                                )}
+                              </div>
+                              <div className="text-right shrink-0 ml-2">
+                                <p className="text-xs" style={{ color: "#a8a8c0" }}>
+                                  {format(new Date(a.created_date), "dd MMM yyyy")}
+                                </p>
+                                <p className="text-[11px]" style={{ color: "#6b6b85" }}>
+                                  {format(new Date(a.created_date), "HH:mm")}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       )}
     </AppLayout>
   );
