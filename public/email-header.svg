@@ -122,17 +122,12 @@
   <!-- LOGO GLOW HALO -->
   <ellipse cx="512" cy="70" rx="110" ry="55" fill="url(#logoGlow)"/>
 
-  <!-- LOGO: Marketing iO text-based representation -->
-  <!-- Using embedded image reference via data or a text fallback -->
-  <!-- Text logo fallback in brand style -->
-  <text x="512" y="62" 
-    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
-    font-size="28" font-weight="800" fill="white" text-anchor="middle"
-    letter-spacing="2" opacity="0.95">Marketing</text>
-  <text x="512" y="92"
-    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
-    font-size="22" font-weight="700" fill="#a764e6" text-anchor="middle"
-    letter-spacing="6" opacity="0.95">iO</text>
+  <!-- LOGO: actual Marketing iO brand mark, embedded via the public CDN URL.
+       Centred on the halo. Width 160px keeps the wordmark legible at email
+       sizes; halo above gives it the "white glow" pop against the dark sky. -->
+  <image href="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
+         x="432" y="20" width="160" height="100"
+         preserveAspectRatio="xMidYMid meet"/>
 
   <!-- BOTTOM ACCENT STRIP -->
   <rect x="0" y="312" width="1024" height="8" fill="url(#accentGrad)"/>
