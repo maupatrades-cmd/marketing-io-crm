@@ -1,135 +1,139 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 320" width="1024" height="320" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Marketing iO synthwave email header">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="320" viewBox="0 0 1024 320">
   <defs>
-    <!-- Background: deep purple → midnight → near-black -->
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+    <!-- Background gradient -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#1a0533"/>
       <stop offset="50%" stop-color="#0a0a2e"/>
       <stop offset="100%" stop-color="#000010"/>
     </linearGradient>
 
-    <!-- Sun: yellow → pink → purple -->
-    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+    <!-- Sun radial gradient -->
+    <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="55%" stop-color="#ec4899"/>
+      <stop offset="45%" stop-color="#ec4899"/>
       <stop offset="100%" stop-color="#7c3aed"/>
     </radialGradient>
 
-    <!-- Pink glow that fades down from the horizon -->
+    <!-- Pink glow under horizon -->
     <linearGradient id="horizonGlow" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ec4899" stop-opacity="0.55"/>
+      <stop offset="0%" stop-color="#ec4899" stop-opacity="0.35"/>
       <stop offset="100%" stop-color="#ec4899" stop-opacity="0"/>
     </linearGradient>
 
-    <!-- Bottom accent strip: red → pink → yellow -->
-    <linearGradient id="bottomAccent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"  stop-color="#dc2626"/>
+    <!-- Logo glow radial -->
+    <radialGradient id="logoGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Grid glow blur filter -->
+    <filter id="gridGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Bottom accent gradient -->
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#dc2626"/>
       <stop offset="50%" stop-color="#ec4899"/>
       <stop offset="100%" stop-color="#fbbf24"/>
     </linearGradient>
 
-    <!-- White radial halo behind the logo -->
-    <radialGradient id="logoHalo" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.85"/>
-      <stop offset="55%" stop-color="#ffffff" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Subtle Gaussian glow for the perspective grid -->
-    <filter id="gridGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="0.6"/>
-    </filter>
-
-    <!-- Mask that punches the synthwave slice cuts out of the bottom half
-         of the sun. Slices get shorter (narrower) as they approach the
-         centre line, so the silhouette reads as classic '80s sun. -->
-    <mask id="sunSlices">
-      <circle cx="512" cy="180" r="90" fill="white"/>
-      <!-- Slice y positions cover the bottom half of the sun (180–270).
-           Width tapers from wide near the bottom up to narrow near the
-           centre — read top-to-bottom. -->
-      <rect x="430" y="192" width="164" height="3" fill="black"/>
-      <rect x="442" y="206" width="140" height="4" fill="black"/>
-      <rect x="455" y="222" width="114" height="4" fill="black"/>
-      <rect x="470" y="240" width="84"  height="5" fill="black"/>
-      <rect x="486" y="258" width="52"  height="6" fill="black"/>
-    </mask>
+    <!-- Clip to bottom half of sun for slices -->
+    <clipPath id="sunBottom">
+      <rect x="422" y="180" width="180" height="90"/>
+    </clipPath>
   </defs>
 
-  <!-- Sky / background -->
-  <rect width="1024" height="320" fill="url(#bg)"/>
+  <!-- BACKGROUND -->
+  <rect width="1024" height="320" fill="url(#bgGrad)"/>
 
-  <!-- Stars in the upper third (y < ~107) -->
-  <g fill="#ffffff">
-    <circle cx="78"  cy="28"  r="1.2" opacity="0.85"/>
-    <circle cx="172" cy="58"  r="1.0" opacity="0.6"/>
-    <circle cx="256" cy="20"  r="1.5" opacity="0.9"/>
-    <circle cx="342" cy="82"  r="1.0" opacity="0.7"/>
-    <circle cx="448" cy="36"  r="1.2" opacity="0.8"/>
-    <circle cx="592" cy="50"  r="1.0" opacity="0.6"/>
-    <circle cx="700" cy="24"  r="1.5" opacity="0.9"/>
-    <circle cx="804" cy="72"  r="1.2" opacity="0.7"/>
-    <circle cx="892" cy="42"  r="1.0" opacity="0.85"/>
-    <circle cx="966" cy="92"  r="1.3" opacity="0.65"/>
+  <!-- STARS -->
+  <circle cx="80"  cy="28"  r="1.2" fill="white" opacity="0.8"/>
+  <circle cx="195" cy="52"  r="1.0" fill="white" opacity="0.65"/>
+  <circle cx="310" cy="18"  r="1.4" fill="white" opacity="0.9"/>
+  <circle cx="430" cy="40"  r="1.1" fill="white" opacity="0.7"/>
+  <circle cx="560" cy="22"  r="1.3" fill="white" opacity="0.85"/>
+  <circle cx="650" cy="55"  r="1.0" fill="white" opacity="0.6"/>
+  <circle cx="740" cy="15"  r="1.2" fill="white" opacity="0.75"/>
+  <circle cx="840" cy="45"  r="1.4" fill="white" opacity="0.9"/>
+  <circle cx="920" cy="30"  r="1.1" fill="white" opacity="0.7"/>
+  <circle cx="980" cy="58"  r="1.0" fill="white" opacity="0.65"/>
+  <circle cx="145" cy="75"  r="0.9" fill="white" opacity="0.6"/>
+  <circle cx="875" cy="72"  r="1.0" fill="white" opacity="0.7"/>
+
+  <!-- SUN -->
+  <circle cx="512" cy="180" r="90" fill="url(#sunGrad)"/>
+
+  <!-- SYNTHWAVE HORIZONTAL SLICES over bottom half of sun (background color cuts) -->
+  <g clip-path="url(#sunBottom)">
+    <rect x="432" y="195" width="160" height="8"  fill="#0a0a2e"/>
+    <rect x="446" y="211" width="132" height="7"  fill="#0a0a2e"/>
+    <rect x="460" y="226" width="104" height="6"  fill="#0a0a2e"/>
+    <rect x="474" y="240" width="76"  height="6"  fill="#0a0a2e"/>
+    <rect x="490" y="254" width="44"  height="5"  fill="#0a0a2e"/>
   </g>
 
-  <!-- Sun, with synthwave slices punched out -->
-  <circle cx="512" cy="180" r="90" fill="url(#sun)" mask="url(#sunSlices)"/>
+  <!-- HORIZON GLOW (soft pink band below horizon) -->
+  <rect x="0" y="180" width="1024" height="60" fill="url(#horizonGlow)"/>
 
-  <!-- Soft pink glow under the horizon -->
-  <rect x="0" y="180" width="1024" height="80" fill="url(#horizonGlow)"/>
+  <!-- HORIZON LINE -->
+  <line x1="0" y1="180" x2="1024" y2="180" stroke="#ec4899" stroke-width="1.5" opacity="0.9"/>
 
-  <!-- Horizon line -->
-  <line x1="0" y1="180" x2="1024" y2="180" stroke="#ec4899" stroke-width="1.5"/>
-
-  <!-- Mountain silhouettes sitting on the horizon -->
-  <g opacity="0.65">
-    <!-- Left: purple / magenta -->
-    <polygon points="40,180 110,138 178,180"  fill="#7c3aed"/>
-    <polygon points="140,180 208,128 274,180" fill="#a855f7"/>
-    <!-- Right: cyan / purple -->
-    <polygon points="752,180 820,142 884,180" fill="#06b6d4"/>
-    <polygon points="864,180 938,130 1010,180" fill="#7c3aed"/>
+  <!-- PERSPECTIVE GRID - horizontal pink lines -->
+  <g filter="url(#gridGlow)" opacity="0.75">
+    <line x1="0" y1="196" x2="1024" y2="196" stroke="#ec4899" stroke-width="0.8"/>
+    <line x1="0" y1="215" x2="1024" y2="215" stroke="#ec4899" stroke-width="0.9"/>
+    <line x1="0" y1="238" x2="1024" y2="238" stroke="#ec4899" stroke-width="1.0"/>
+    <line x1="0" y1="266" x2="1024" y2="266" stroke="#ec4899" stroke-width="1.1"/>
+    <line x1="0" y1="288" x2="1024" y2="288" stroke="#ec4899" stroke-width="1.2"/>
+    <line x1="0" y1="308" x2="1024" y2="308" stroke="#ec4899" stroke-width="1.3"/>
   </g>
 
-  <!-- Perspective grid (blurred for that neon glow read) -->
-  <g filter="url(#gridGlow)">
-    <!-- Six horizontal pink lines below the horizon, gaps grow with distance -->
-    <g stroke="#ec4899" stroke-width="1" fill="none" opacity="0.85">
-      <line x1="0" y1="192" x2="1024" y2="192"/>
-      <line x1="0" y1="206" x2="1024" y2="206"/>
-      <line x1="0" y1="225" x2="1024" y2="225"/>
-      <line x1="0" y1="250" x2="1024" y2="250"/>
-      <line x1="0" y1="282" x2="1024" y2="282"/>
-      <line x1="0" y1="318" x2="1024" y2="318"/>
-    </g>
-    <!-- Eleven cyan radial lines from (512,180) to evenly spaced points
-         along the bottom edge -->
-    <g stroke="#06b6d4" stroke-width="1" fill="none" opacity="0.85">
-      <line x1="512" y1="180" x2="0"    y2="320"/>
-      <line x1="512" y1="180" x2="102"  y2="320"/>
-      <line x1="512" y1="180" x2="205"  y2="320"/>
-      <line x1="512" y1="180" x2="307"  y2="320"/>
-      <line x1="512" y1="180" x2="410"  y2="320"/>
-      <line x1="512" y1="180" x2="512"  y2="320"/>
-      <line x1="512" y1="180" x2="614"  y2="320"/>
-      <line x1="512" y1="180" x2="717"  y2="320"/>
-      <line x1="512" y1="180" x2="819"  y2="320"/>
-      <line x1="512" y1="180" x2="922"  y2="320"/>
-      <line x1="512" y1="180" x2="1024" y2="320"/>
-    </g>
+  <!-- PERSPECTIVE GRID - vertical cyan radiating lines -->
+  <g filter="url(#gridGlow)" opacity="0.65">
+    <line x1="512" y1="180" x2="0"    y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="93"   y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="186"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="279"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="372"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="465"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="512"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="558"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="651"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="744"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="837"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="930"  y2="320" stroke="#06b6d4" stroke-width="0.8"/>
+    <line x1="512" y1="180" x2="1024" y2="320" stroke="#06b6d4" stroke-width="0.8"/>
   </g>
 
-  <!-- Logo halo: white radial glow centred at (512, 70) -->
-  <circle cx="512" cy="70" r="80" fill="url(#logoHalo)"/>
+  <!-- MOUNTAINS LEFT (purple/magenta) -->
+  <polygon points="60,180 180,110 300,180"  fill="#7c3aed" opacity="0.65"/>
+  <polygon points="150,180 240,130 330,180" fill="#a855f7" opacity="0.6"/>
 
-  <!-- Logo wordmark — rendered as text so the SVG stays self-contained.
-       Swap to <image href="..."/> if you want the bitmap brand mark. -->
-  <g text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
-    <text x="512" y="68" font-size="30" font-weight="800" fill="#1e40af" letter-spacing="3">MARKETING</text>
-    <text x="512" y="96" font-size="22" font-weight="700" fill="#1e40af" letter-spacing="6">i O</text>
-  </g>
+  <!-- MOUNTAINS RIGHT (cyan/purple) -->
+  <polygon points="694,180 784,120 874,180" fill="#06b6d4" opacity="0.55"/>
+  <polygon points="780,180 880,125 980,180" fill="#7c3aed" opacity="0.6"/>
 
-  <!-- Bottom accent strip -->
-  <rect x="0" y="312" width="1024" height="8" fill="url(#bottomAccent)"/>
+  <!-- LOGO GLOW HALO -->
+  <ellipse cx="512" cy="70" rx="110" ry="55" fill="url(#logoGlow)"/>
+
+  <!-- LOGO: Marketing iO text-based representation -->
+  <!-- Using embedded image reference via data or a text fallback -->
+  <!-- Text logo fallback in brand style -->
+  <text x="512" y="62" 
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
+    font-size="28" font-weight="800" fill="white" text-anchor="middle"
+    letter-spacing="2" opacity="0.95">Marketing</text>
+  <text x="512" y="92"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
+    font-size="22" font-weight="700" fill="#a764e6" text-anchor="middle"
+    letter-spacing="6" opacity="0.95">iO</text>
+
+  <!-- BOTTOM ACCENT STRIP -->
+  <rect x="0" y="312" width="1024" height="8" fill="url(#accentGrad)"/>
 </svg>

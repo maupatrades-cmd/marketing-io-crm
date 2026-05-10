@@ -11,8 +11,8 @@ function wrapEmail(bodyHtml, ctaButton) {
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;padding:20px 0;"><tr><td align="center">
 <table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;">
-<tr><td style="background:#0f172a;padding:28px 24px;text-align:center;">
-  <img src="${LOGO_URL}" alt="Marketing iO" width="240" style="width:240px;height:auto;display:block;margin:0 auto;" />
+<tr><td style="padding:0;margin:0;background:#1a0533;font-size:0;line-height:0;">
+  <img src="https://app.marketingio.co.za/email-header.svg" width="600" alt="Marketing iO" style="display:block;width:100%;max-width:600px;height:auto;" />
 </td></tr>
 <tr><td style="background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);padding:5px 0;font-size:0;line-height:0;">&nbsp;</td></tr>
 <tr><td style="padding:32px 24px;background:#ffffff;font-size:16px;line-height:1.6;color:#1e293b;">
