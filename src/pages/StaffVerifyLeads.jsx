@@ -300,29 +300,18 @@ export default function StaffVerifyLeads() {
 
               {/* Qualification Form Inline */}
               <LeadQualificationForm
+                key={lead.id}
                 initialData={lead}
                 onSave={async (qualificationData) => {
-                  try {
-                    setSubmitting(true);
-                    await base44.entities.Lead.update(lead.id, {
-                      ...qualificationData,
-                      qualified_by: user?.id,
-                      qualification_complete: 
-                        Object.values(qualificationData.warm_lead_criteria_v2 || {}).filter(c => c.answer !== null).length === 7 &&
-                        qualificationData.qualification_extras?.lead_temperature !== null,
-                    });
-                    
-                    // Update local state
-                    setLeads(prev => prev.map(l => 
-                      l.id === lead.id 
-                        ? { ...l, ...qualificationData, qualified_by: user?.id }
-                        : l
-                    ));
-                  } catch (error) {
-                    console.error("Error saving qualification:", error);
-                  } finally {
-                    setSubmitting(false);
-                  }
+                  const allAnswered = Object.values(qualificationData.warm_lead_criteria_v2 || {}).filter(c => c.answer !== null).length === 7;
+                  const hasTemp = !!qualificationData.qualification_extras?.lead_temperature;
+                  await base44.entities.Lead.update(lead.id, {
+                    warm_lead_criteria_v2: qualificationData.warm_lead_criteria_v2,
+                    qualification_extras: qualificationData.qualification_extras,
+                    qualified_at: qualificationData.qualified_at,
+                    qualified_by: user?.id,
+                    qualification_complete: allAnswered && hasTemp,
+                  });
                 }}
               />
 
@@ -399,11 +388,11 @@ export default function StaffVerifyLeads() {
                 {lead.status === "verified" && (
                   <Button
                     onClick={() => handleMarkUrgent(lead)}
-                    disabled={submitting}
-                    className="gap-2 bg-rose-500 hover:bg-rose-600"
+                    disabled={submitting || lead.urgency === "urgent"}
+                    className={`gap-2 font-bold text-white shadow-[0_0_16px_rgba(239,68,68,0.5)] ${lead.urgency === "urgent" ? "bg-rose-700 cursor-not-allowed opacity-80" : "bg-rose-600 hover:bg-rose-700"}`}
                   >
-                    <Star className="w-4 h-4" />
-                    Mark Urgent
+                    <span className={`w-3 h-3 rounded-full bg-white ${lead.urgency !== "urgent" ? "animate-pulse" : ""} shrink-0`} />
+                    {lead.urgency === "urgent" ? "⚠ URGENT" : "Mark Urgent"}
                   </Button>
                 )}
               </div>

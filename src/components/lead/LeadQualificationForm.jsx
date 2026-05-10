@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -121,7 +121,11 @@ export default function LeadQualificationForm({ initialData = {}, onSave }) {
   const isFullyQualified =
     completedCriteria === totalCriteria && extras.lead_temperature !== null;
 
+  const savingRef = useRef(false);
+
   const handleSave = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSubmitting(true);
     try {
       await onSave({
@@ -130,12 +134,21 @@ export default function LeadQualificationForm({ initialData = {}, onSave }) {
         qualified_at: new Date().toISOString(),
       });
     } finally {
+      savingRef.current = false;
       setSubmitting(false);
     }
   };
 
   return (
     <div className="glass rounded-xl border border-border/50">
+      {/* Go Ahead Banner */}
+      {isFullyQualified && (
+        <div className="mx-4 mt-4 flex items-center gap-3 bg-success/15 border border-success/40 rounded-xl px-5 py-3">
+          <span className="w-4 h-4 rounded-full bg-success shadow-[0_0_10px_rgba(16,185,129,0.8)] shrink-0 animate-pulse" />
+          <p className="font-bold text-success text-base tracking-wide">GO AHEAD — Lead Fully Qualified</p>
+        </div>
+      )}
+
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -149,8 +162,8 @@ export default function LeadQualificationForm({ initialData = {}, onSave }) {
               {extras.lead_temperature && ` • Temperature: ${extras.lead_temperature}`}
             </p>
           </div>
-          {isFullyQualified && (
-            <Badge className="ml-2 bg-success/20 text-success border-0">Fully Qualified</Badge>
+          {!isFullyQualified && completedCriteria > 0 && (
+            <Badge className="ml-2 bg-warning/20 text-warning border-0">In Progress</Badge>
           )}
         </div>
         {expanded ? (
@@ -436,10 +449,15 @@ export default function LeadQualificationForm({ initialData = {}, onSave }) {
           <div className="flex justify-end gap-2 pt-4 border-t border-border/50">
             <Button
               onClick={handleSave}
-              disabled={submitting || (!completedCriteria && !extras.lead_temperature)}
-              className="gap-2"
+              disabled={submitting || (completedCriteria === 0 && !extras.lead_temperature)}
+              className={`gap-2 ${isFullyQualified ? "bg-success hover:bg-success/90 text-white shadow-[0_0_16px_rgba(16,185,129,0.4)]" : ""}`}
             >
-              {isFullyQualified ? (
+              {submitting ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : isFullyQualified ? (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
                   Save Qualification
