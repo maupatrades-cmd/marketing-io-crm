@@ -83,8 +83,32 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
+      {/* Ambient glows */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #a764e6, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
+        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #ec4899, transparent 70%)', transform: 'translate(30%, 30%)' }} />
+      </div>
+
+      {/* Animated mascot — bottom right */}
+      <div className="fixed bottom-6 right-6 z-10 hidden lg:block" style={{ animation: 'mascotFloat 3s ease-in-out infinite' }}>
+        <div style={{ filter: 'drop-shadow(0 0 18px rgba(167,100,230,0.5))' }}>
+          <img
+            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/064a31584_io_astronaut_transparent.png"
+            alt="Marketing iO Mascot"
+            className="w-40 h-auto select-none"
+          />
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes mascotFloat {
+          0%, 100% { transform: translateY(0px) rotate(-1deg); }
+          50% { transform: translateY(-14px) rotate(1deg); }
+        }
+      `}</style>
+
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <img
             src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
@@ -166,6 +190,16 @@ export default function SignIn() {
           Need help?{' '}
           <a href="mailto:support@marketingio.co.za" className="text-slate-500 hover:text-slate-400">support@marketingio.co.za</a>
         </p>
+
+        {/* Mobile mascot — shown below form on small screens */}
+        <div className="flex justify-center mt-6 lg:hidden" style={{ animation: 'mascotFloat 3s ease-in-out infinite' }}>
+          <img
+            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/064a31584_io_astronaut_transparent.png"
+            alt="Marketing iO Mascot"
+            className="w-24 h-auto select-none"
+            style={{ filter: 'drop-shadow(0 0 10px rgba(167,100,230,0.5))' }}
+          />
+        </div>
       </div>
     </div>
   );
