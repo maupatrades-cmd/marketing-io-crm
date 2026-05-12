@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
+import Mascot from '@/components/Mascot';
 
 function makeCaptcha() {
   const a = Math.floor(Math.random() * 10) + 1;
@@ -9,19 +11,41 @@ function makeCaptcha() {
   return { question: `${a} + ${b}`, answer: a + b };
 }
 
+// Strict whitelist for ?next= — only the portal checkout flow is allowed,
+// blocking open-redirect attacks via crafted login links.
 const SAFE_NEXT_RE = /^\/portal\/checkout\/[a-z0-9][a-z0-9-]{0,49}$/;
 function safeNext(raw) {
   const v = String(raw || '').trim();
   return SAFE_NEXT_RE.test(v) ? v : '';
 }
 
-const WELCOME_TEXT = "Welcome back";
-const BUBBLE_TEXT = "Done hiding your business? Same here. Let's market it.";
+function useTypewriter(text, { speed = 110, startDelay = 0, enabled = true } = {}) {
+  const [out, setOut] = useState('');
+  useEffect(() => {
+    if (!enabled) return;
+    setOut('');
+    let i = 0;
+    let interval;
+    const start = setTimeout(() => {
+      interval = setInterval(() => {
+        i += 1;
+        setOut(text.slice(0, i));
+        if (i >= text.length) clearInterval(interval);
+      }, speed);
+    }, startDelay);
+    return () => {
+      clearTimeout(start);
+      clearInterval(interval);
+    };
+  }, [text, speed, startDelay, enabled]);
+  return out;
+}
 
 export default function SignIn() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const next = safeNext(searchParams.get('next'));
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -30,47 +54,70 @@ export default function SignIn() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Animation states
-  const [typedWelcome, setTypedWelcome] = useState('');
-  const [mascotVisible, setMascotVisible] = useState(false);
-  const [showBubble, setShowBubble] = useState(false);
-  const [typedBubble, setTypedBubble] = useState('');
-  const [formVisible, setFormVisible] = useState(false);
+  // Mascot + bubble sequencing
+  const mascotControls = useAnimation();
+  const [mascotLanded, setMascotLanded] = useState(false);
+  const [bubble, setBubble] = useState(null); // 'tagline' | 'cta' | null
+  const welcome = useTypewriter('Welcome', {
+    speed: 130,
+    startDelay: 300,
+    enabled: mascotLanded,
+  });
 
   useEffect(() => {
-    // Step 1: mascot drops in from top
-    const t1 = setTimeout(() => setMascotVisible(true), 400);
+    let cancelled = false;
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-    // Step 2: speech bubble pops up
-    const t2 = setTimeout(() => {
-      setShowBubble(true);
-      let i = 0;
-      const iv = setInterval(() => {
-        i++;
-        setTypedBubble(BUBBLE_TEXT.slice(0, i));
-        if (i >= BUBBLE_TEXT.length) clearInterval(iv);
-      }, 30);
-    }, 1100);
+    async function runMascotSequence() {
+      // 1. Slide in from left to off-center "waving spot"
+      await mascotControls.start({
+        x: '-22%',
+        opacity: 1,
+        transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] },
+      });
+      if (cancelled) return;
 
-    // Step 3: form fades in
-    const t3 = setTimeout(() => setFormVisible(true), 900);
+      // 2. Show tagline bubble + wave the hand: tilt right, hold, tilt left, hold, return
+      setBubble('tagline');
+      await mascotControls.start({
+        rotate: [0, 16, 16, -16, -16, 0],
+        transition: {
+          duration: 4.2,
+          ease: 'easeInOut',
+          times: [0, 0.2, 0.45, 0.65, 0.9, 1],
+        },
+      });
+      if (cancelled) return;
 
-    // Step 4: type "Welcome back"
-    const t4 = setTimeout(() => {
-      let j = 0;
-      const iv2 = setInterval(() => {
-        j++;
-        setTypedWelcome(WELCOME_TEXT.slice(0, j));
-        if (j >= WELCOME_TEXT.length) clearInterval(iv2);
-      }, 90);
-    }, 1000);
+      // 3. Let the bubble linger a moment before moving
+      await wait(1300);
+      if (cancelled) return;
 
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
-  }, []);
+      // 4. Glide to centered "holding the card" position
+      setBubble(null);
+      await mascotControls.start({
+        x: '0%',
+        transition: { duration: 0.9, ease: 'easeOut' },
+      });
+      if (cancelled) return;
+
+      // 5. Settled — kick off Welcome typing, then second bubble
+      setMascotLanded(true);
+      await wait(900);
+      if (cancelled) return;
+      setBubble('cta');
+    }
+
+    runMascotSequence();
+    return () => {
+      cancelled = true;
+    };
+  }, [mascotControls]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
     if (parseInt(captchaInput) !== captcha.answer) {
       setError('Incorrect answer to the security question.');
       return;
@@ -79,13 +126,15 @@ export default function SignIn() {
       setError('Please enter a valid email address.');
       return;
     }
+
     setLoading(true);
     try {
       const res = await base44.functions.invoke('auth-login', {
         email: email.toLowerCase().trim(),
-        password
+        password,
       });
       const data = res.data;
+
       const nextParam = next ? `&next=${encodeURIComponent(next)}` : '';
       if (data.needs_verification) {
         navigate(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=signup_verification${nextParam}`);
@@ -106,7 +155,7 @@ export default function SignIn() {
       const status = err?.response?.status;
       const detail = err?.response?.data?.error;
       if (status === 423) {
-        setError('Account temporarily locked. Please try again later or reset your password.');
+        setError('Account temporarily locked due to multiple failed attempts. Please try again later or reset your password.');
       } else if (status === 401 && detail?.includes('not found')) {
         setError('No account found with this email. Please sign up first.');
       } else {
@@ -118,207 +167,194 @@ export default function SignIn() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 py-16 relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #0a0a14 0%, #12102a 50%, #0a0a14 100%)' }}
-    >
-      <style>{`
-        @keyframes mascotDrop {
-          0% { transform: translateY(-120px); opacity: 0; }
-          60% { transform: translateY(10px); opacity: 1; }
-          80% { transform: translateY(-4px); }
-          100% { transform: translateY(0px); opacity: 1; }
-        }
-        @keyframes bob {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-8px); }
-        }
-        @keyframes bubblePop {
-          0% { transform: scale(0.5); opacity: 0; }
-          70% { transform: scale(1.05); opacity: 1; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes formFade {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes glowPulse {
-          0%, 100% { box-shadow: 0 0 30px rgba(167,100,230,0.3); }
-          50% { box-shadow: 0 0 50px rgba(167,100,230,0.55), 0 0 80px rgba(236,72,153,0.2); }
-        }
-        .mascot-drop {
-          animation: mascotDrop 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards;
-        }
-        .mascot-bob {
-          animation: bob 3s ease-in-out infinite;
-        }
-        .bubble-pop {
-          animation: bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
-        }
-        .form-fade {
-          animation: formFade 0.5s ease forwards;
-        }
-        .card-glow {
-          animation: glowPulse 3s ease-in-out infinite;
-        }
-        .cursor-blink::after {
-          content: '|';
-          color: #a764e6;
-          animation: blink 0.7s step-end infinite;
-        }
-        @keyframes blink {
-          0%,100% { opacity: 1; } 50% { opacity: 0; }
-        }
-      `}</style>
-
-      {/* Ambient glows */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #a764e6, transparent 70%)', transform: 'translateY(-50%)' }} />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #ec4899, transparent 70%)', transform: 'translateY(50%)' }} />
+    <div className="min-h-screen relative overflow-hidden bg-[#0A0F1C] flex flex-col items-center justify-start px-4 pt-8 pb-12">
+      {/* Ambient gradient glow */}
+      <div className="pointer-events-none absolute inset-0">
+        <div
+          className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full opacity-30 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #7729FF 0%, #FF2994 45%, transparent 70%)' }}
+        />
+        <div
+          className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full opacity-20 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #00CCFF 0%, transparent 70%)' }}
+        />
       </div>
 
-      <div className="w-full max-w-sm relative z-10">
+      <div className="relative w-full max-w-md flex flex-col items-center">
+        {/* Logo — glowing, big */}
+        <motion.img
+          initial={{ opacity: 0, y: -20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
+          alt="Marketing iO"
+          className="h-64 sm:h-72 object-contain animate-mio-glow"
+          style={{
+            filter:
+              'drop-shadow(0 0 18px rgba(119,41,255,0.75)) drop-shadow(0 0 36px rgba(255,41,148,0.55)) brightness(1.08)',
+          }}
+        />
 
-        {/* Mascot peeking from top */}
-        <div className="flex flex-col items-center" style={{ marginBottom: '-2px' }}>
+        {/* Mascot + typing "Welcome" + speech bubble — overlap the top of the card */}
+        <div className="relative w-full h-56 -mb-10">
+          {/* "Welcome" typewriter — above mascot head */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 whitespace-nowrap pointer-events-none">
+            <span
+              className="text-4xl sm:text-5xl font-extrabold tracking-tight"
+              style={{
+                background: 'linear-gradient(135deg, #7729FF 0%, #FF2994 100%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              {welcome || ' '}
+            </span>
+            {mascotLanded && welcome.length < 'Welcome'.length && (
+              <span className="text-4xl sm:text-5xl font-extrabold text-[#FF2994] animate-pulse">|</span>
+            )}
+          </div>
 
-          {/* Speech bubble — appears above mascot */}
-          {showBubble && (
-            <div className="bubble-pop mb-3 relative max-w-xs">
-              <div className="bg-white rounded-2xl px-4 py-3 shadow-2xl text-center">
-                <p className="text-slate-800 text-sm font-medium leading-snug">
-                  {typedBubble}
-                  {typedBubble.length < BUBBLE_TEXT.length && (
-                    <span className="inline-block w-0.5 h-3.5 bg-slate-700 ml-0.5 align-middle animate-pulse" />
+          {/* Mascot — slides in from left, waves, then glides to centered "holding" pose */}
+          <motion.div
+            initial={{ x: '-160%', opacity: 0, rotate: 0 }}
+            animate={mascotControls}
+            style={{ originX: 0.5, originY: 1 }}
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[360px] sm:w-[420px] z-20 pointer-events-none"
+          >
+            <Mascot />
+          </motion.div>
+
+          {/* Speech bubble */}
+          <AnimatePresence mode="wait">
+            {bubble && (
+              <motion.div
+                key={bubble}
+                initial={{ opacity: 0, y: 8, scale: 0.85 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.85 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="absolute right-0 sm:right-[-10px] top-10 z-30"
+              >
+                <div className="relative bg-white text-[#0A0F1C] text-sm font-semibold px-4 py-2 rounded-2xl shadow-2xl max-w-[240px] leading-snug">
+                  {bubble === 'tagline' ? (
+                    <>
+                      Done hiding your business?<br />
+                      Same here.<br />
+                      <span className="bg-gradient-to-r from-[#7729FF] to-[#FF2994] bg-clip-text text-transparent font-bold">Let's market it.</span>
+                    </>
+                  ) : (
+                    'Sign in now ✨'
                   )}
-                </p>
-              </div>
-              {/* Tail pointing down toward mascot */}
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0"
-                style={{ borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: '10px solid white' }} />
+                  <span className="absolute -bottom-1.5 left-6 w-3 h-3 bg-white rotate-45" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Sign in card */}
+        <motion.form
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.6 }}
+          onSubmit={handleSubmit}
+          className="relative w-full bg-[#111827]/85 backdrop-blur-xl border border-[#7729FF]/30 rounded-2xl p-6 sm:p-7 space-y-4 z-10"
+          style={{ boxShadow: '0 25px 60px -15px rgba(119,41,255,0.45), 0 0 0 1px rgba(255,41,148,0.08) inset' }}
+        >
+          {error && (
+            <div className="bg-[#EF4444]/10 border border-[#EF4444]/40 text-[#EF4444] text-sm rounded-lg px-4 py-3">
+              {error}
             </div>
           )}
 
-          {/* Mascot image — top half peeking over card */}
-          <div
-            className={mascotVisible ? (showBubble ? 'mascot-bob' : 'mascot-drop') : ''}
-            style={{ opacity: mascotVisible ? 1 : 0 }}
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">Email address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF] focus:border-transparent"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">Password</label>
+            <div className="relative">
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF] focus:border-transparent"
+                placeholder="Your password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200"
+              >
+                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <div className="text-right mt-1">
+              <Link to="/forgot-password" className="text-xs text-[#FF2994] hover:text-[#7729FF] transition-colors">
+                Forgot password?
+              </Link>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">
+              Security check: {captcha.question} = ?
+            </label>
+            <input
+              type="number"
+              value={captchaInput}
+              onChange={(e) => setCaptchaInput(e.target.value)}
+              required
+              className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF] focus:border-transparent"
+              placeholder="Answer"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60 hover:brightness-110"
+            style={{
+              background: 'linear-gradient(135deg, #7729FF 0%, #FF2994 100%)',
+              boxShadow: '0 10px 30px -10px rgba(119,41,255,0.6)',
+            }}
           >
-            <img
-              src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/064a31584_io_astronaut_transparent.png"
-              alt="Marketing iO Mascot"
-              style={{
-                width: '180px',
-                height: '200px',
-                objectFit: 'cover',
-                objectPosition: 'top center',
-                filter: 'drop-shadow(0 8px 24px rgba(167,100,230,0.5))',
-                display: 'block',
-              }}
-            />
-          </div>
-        </div>
+            {loading ? 'Signing in…' : 'Sign In'}
+          </button>
 
-        {/* Login card */}
-        <div
-          className={`rounded-2xl border border-white/10 px-7 py-8 card-glow ${formVisible ? 'form-fade' : 'opacity-0'}`}
-          style={{ background: 'rgba(20,18,40,0.92)', backdropFilter: 'blur(16px)' }}
-        >
-          {/* Logo */}
-          <div className="flex justify-center mb-4">
-            <img
-              src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
-              alt="Marketing iO"
-              className="h-10 object-contain"
-              style={{ filter: "drop-shadow(0 0 3px white) brightness(1.1)" }}
-            />
-          </div>
+          <p className="text-center text-sm text-slate-400">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-[#FF2994] hover:text-[#7729FF] transition-colors font-medium">
+              Sign up
+            </Link>
+          </p>
+        </motion.form>
 
-          {/* Typed heading */}
-          <div className="text-center mb-1">
-            <h1
-              className={`text-2xl font-bold text-white ${typedWelcome.length < WELCOME_TEXT.length ? 'cursor-blink' : ''}`}
-              style={{ minHeight: '2rem' }}
-            >
-              {typedWelcome}
-            </h1>
-          </div>
-          <p className="text-center text-slate-400 text-sm mb-6">Sign in to your Marketing iO account</p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-lg px-3 py-2">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Email address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="w-full border text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)' }}
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Password</label>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  className="w-full border text-white rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)' }}
-                  placeholder="Your password"
-                />
-                <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <div className="text-right mt-1">
-                <Link to="/forgot-password" className="text-xs text-purple-400 hover:text-purple-300">Forgot password?</Link>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Security: {captcha.question} = ?</label>
-              <input
-                type="number"
-                value={captchaInput}
-                onChange={e => setCaptchaInput(e.target.value)}
-                required
-                className="w-full border text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)' }}
-                placeholder="Answer"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition-all disabled:opacity-60 hover:opacity-90 active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
-            >
-              {loading ? 'Signing in…' : 'Sign In'}
-            </button>
-
-            <p className="text-center text-sm text-slate-500">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-purple-400 hover:text-purple-300 font-medium">Sign up</Link>
-            </p>
-          </form>
-        </div>
-
-        <p className="text-center text-xs text-slate-700 mt-4">
-          support@marketingio.co.za
+        <p className="text-center text-xs text-slate-600 mt-6">
+          Need help?{' '}
+          <a href="mailto:support@marketingio.co.za" className="text-slate-500 hover:text-slate-400">
+            support@marketingio.co.za
+          </a>
         </p>
       </div>
+
+      <style>{`
+        @keyframes mio-logo-glow {
+          0%, 100% { filter: drop-shadow(0 0 18px rgba(119,41,255,0.75)) drop-shadow(0 0 36px rgba(255,41,148,0.55)) brightness(1.08); }
+          50%      { filter: drop-shadow(0 0 28px rgba(119,41,255,0.95)) drop-shadow(0 0 56px rgba(255,41,148,0.75)) brightness(1.15); }
+        }
+        .animate-mio-glow { animation: mio-logo-glow 3.2s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 }
