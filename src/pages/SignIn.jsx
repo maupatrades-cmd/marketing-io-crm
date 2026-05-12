@@ -20,9 +20,15 @@ function safeNext(raw) {
 function BotSVG() {
   return (
     <img
-      src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/38ed78325_bot_running_clean1.svg"
+      src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/b4ce65a87_0001-1100507142766860381.png"
       alt="Bot mascot"
-      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+        mixBlendMode: 'lighten',
+        filter: 'drop-shadow(0 0 18px rgba(167,100,230,0.5))',
+      }}
     />
   );
 }
@@ -132,14 +138,13 @@ export default function SignIn() {
           onAnimationComplete={() => setMascotDone(true)}
           style={{
             position: 'absolute',
-            top: '-110px',
+            top: '-150px',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '220px',
-            height: '140px',
+            width: '260px',
+            height: '180px',
             zIndex: 20,
-            // clip bottom half so the bot appears to be "behind" / holding the card
-            clipPath: 'inset(0 0 30px 0)',
+            clipPath: 'inset(0 0 40px 0)',
           }}
         >
           <BotSVG />
@@ -152,13 +157,13 @@ export default function SignIn() {
             transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               position: 'absolute',
-              top: '-110px',
+              top: '-150px',
               left: '50%',
               transform: 'translateX(-50%)',
-              width: '220px',
-              height: '140px',
+              width: '260px',
+              height: '180px',
               zIndex: 20,
-              clipPath: 'inset(0 0 30px 0)',
+              clipPath: 'inset(0 0 40px 0)',
             }}
           >
             <BotSVG />
