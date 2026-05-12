@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { isActivePackage } from "@/config/payfastPackages";
+import Celebration from "@/components/Celebration";
 
 // ProductCatalog ids use underscores (`street_pulse`, `ai_chatbot`, …) but
 // the PayFast package catalogue uses hyphens (`street-pulse`, `ai-chatbot`).
@@ -24,13 +25,31 @@ function buyButtonLabel(product) {
 }
 
 export default function ProductCard({ product, isActive, onEnquire, onContact, client, imageUrl }) {
+  const navigate = useNavigate();
   const [hovering, setHovering] = useState(false);
   const [imageLoading, setImageLoading] = useState(!!imageUrl);
   const [imageError, setImageError] = useState(false);
+  const [celebrating, setCelebrating] = useState(null); // payfast id we're heading to
 
   const totalValue = product.setup_price + (product.monthly_price * (product.term_months || 0));
 
+  const startCheckout = (payfastId) => {
+    setCelebrating(payfastId);
+  };
+
   return (
+    <>
+      <Celebration
+        open={!!celebrating}
+        message="Great choice!"
+        subMessage="Taking you to secure checkout…"
+        duration={2400}
+        onDone={() => {
+          const target = celebrating;
+          setCelebrating(null);
+          if (target) navigate(`/portal/checkout/${target}`);
+        }}
+      />
     <div
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
@@ -125,14 +144,16 @@ export default function ProductCard({ product, isActive, onEnquire, onContact, c
           isActive,
           client,
           onEnquire,
-          onContact
+          onContact,
+          startCheckout
         })}
       </div>
     </div>
+    </>
   );
 }
 
-function renderCTA({ product, isActive, client, onEnquire, onContact }) {
+function renderCTA({ product, isActive, client, onEnquire, onContact, startCheckout }) {
   // Active plan view — unchanged.
   if (isActive) {
     return (
@@ -159,12 +180,11 @@ function renderCTA({ product, isActive, client, onEnquire, onContact }) {
   if (!client) {
     if (payfastId) {
       return (
-        <Button asChild
+        <Button
+          onClick={() => startCheckout(payfastId)}
           className="w-full mt-4 gradient-bg text-white hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200 scale-100 hover:scale-[1.02]"
         >
-          <Link to={`/portal/checkout/${payfastId}`}>
-            {product.cta_text || buyButtonLabel(product) || 'Get Started'}
-          </Link>
+          {product.cta_text || buyButtonLabel(product) || 'Get Started'}
         </Button>
       );
     }
@@ -200,12 +220,13 @@ function renderCTA({ product, isActive, client, onEnquire, onContact }) {
   // sales team can take it from there.
   if (payfastId) {
     return (
-      <Link
-        to={`/portal/checkout/${payfastId}`}
+      <button
+        type="button"
+        onClick={() => startCheckout(payfastId)}
         className="w-full mt-4 inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-white gradient-bg hover:shadow-lg hover:shadow-purple-500/30 transition"
       >
         {buyButtonLabel(product)}
-      </Link>
+      </button>
     );
   }
 

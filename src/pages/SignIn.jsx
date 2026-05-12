@@ -4,6 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import Mascot from '@/components/Mascot';
+import LoadingDots from '@/components/LoadingDots';
 
 function makeCaptcha() {
   const a = Math.floor(Math.random() * 10) + 1;
@@ -323,13 +324,20 @@ export default function SignIn() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60 hover:brightness-110"
+            className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-80 hover:brightness-110 flex items-center justify-center gap-3"
             style={{
               background: 'linear-gradient(135deg, #7729FF 0%, #FF2994 100%)',
               boxShadow: '0 10px 30px -10px rgba(119,41,255,0.6)',
             }}
           >
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? (
+              <>
+                <span>Signing in</span>
+                <LoadingDots size={8} gap={8} />
+              </>
+            ) : (
+              'Sign In'
+            )}
           </button>
 
           <p className="text-center text-sm text-slate-400">
