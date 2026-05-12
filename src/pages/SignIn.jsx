@@ -222,17 +222,17 @@ export default function SignIn() {
           onAnimationComplete={() => setMascotLanded(true)}
           style={{
             position: 'absolute',
-            top: '-90px',
+            top: '-55px',
             left: '50%',
-            marginLeft: '-80px',
-            width: '160px',
-            height: '160px',
+            marginLeft: '-60px',
+            width: '120px',
+            height: '120px',
             zIndex: 30,
             pointerEvents: 'none',
             background: 'transparent',
           }}
         >
-          <Mascot size={160} style={{ background: 'transparent' }} />
+          <Mascot size={120} style={{ background: 'transparent' }} />
         </motion.div>
 
         {/* Speech bubble — sits NEXT TO the mascot, tail pointing left at its mouth.
@@ -254,8 +254,8 @@ export default function SignIn() {
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               style={{
                 position: 'absolute',
-                top: '-60px',
-                left: 'calc(50% + 80px)',
+                top: '-40px',
+                left: 'calc(50% + 60px)',
                 width: '240px',
                 maxWidth: '60vw',
                 background: '#ffffff',
