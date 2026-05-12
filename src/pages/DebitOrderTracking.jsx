@@ -67,6 +67,14 @@ export default function DebitOrderTracking() {
   const [failNote, setFailNote] = useState("");
   const [failSaving, setFailSaving] = useState(false);
 
+  // Create mandate modal
+  const [createClient, setCreateClient] = useState(null);
+  const [createSaving, setCreateSaving] = useState(false);
+
+  // Cancel mandate modal
+  const [cancelClient, setCancelClient] = useState(null);
+  const [cancelSaving, setCancelSaving] = useState(false);
+
   const load = async () => {
     setLoading(true);
     const [cls, invs] = await Promise.all([
@@ -156,6 +164,26 @@ export default function DebitOrderTracking() {
   const clearFail = async (c) => {
     await base44.entities.Client.update(c.id, { failed_debits_count: 0, acceleration_triggered: false });
     toast({ title: "Cleared", description: `${c.business_name} failed debit count reset.` });
+    await load();
+  };
+
+  const openCreateMandate = (c) => { setCreateClient(c); };
+  const createMandate = async () => {
+    setCreateSaving(true);
+    await base44.entities.Client.update(createClient.id, { debit_mandate_signed: true });
+    toast({ title: "Mandate Created", description: `${createClient.business_name} debit mandate marked as signed.` });
+    setCreateClient(null);
+    setCreateSaving(false);
+    await load();
+  };
+
+  const openCancelMandate = (c) => { setCancelClient(c); };
+  const cancelMandate = async () => {
+    setCancelSaving(true);
+    await base44.entities.Client.update(cancelClient.id, { debit_mandate_signed: false });
+    toast({ title: "Mandate Cancelled", description: `${cancelClient.business_name} debit mandate cancelled.` });
+    setCancelClient(null);
+    setCancelSaving(false);
     await load();
   };
 
@@ -264,8 +292,18 @@ export default function DebitOrderTracking() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       {c.debit_mandate_signed
-                        ? <span className="inline-flex items-center gap-1 text-success text-xs font-medium"><CheckCircle2 className="w-3.5 h-3.5" /> Signed</span>
-                        : <span className="inline-flex items-center gap-1 text-warning text-xs font-medium"><Clock className="w-3.5 h-3.5" /> Pending</span>}
+                        ? (
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 text-success text-xs font-medium"><CheckCircle2 className="w-3.5 h-3.5" /> Signed</span>
+                            <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => openCancelMandate(c)}>Cancel Mandate</Button>
+                          </div>
+                        )
+                        : (
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 text-warning text-xs font-medium"><Clock className="w-3.5 h-3.5" /> Pending</span>
+                            <Button size="sm" variant="ghost" className="h-6 text-xs text-primary hover:text-primary hover:bg-primary/10" onClick={() => openCreateMandate(c)}>Create Mandate</Button>
+                          </div>
+                        )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Badge className={`text-xs border ${RUN_STATUS_STYLE[runStatus]}`}>
@@ -364,6 +402,54 @@ export default function DebitOrderTracking() {
             <Button variant="outline" onClick={() => setEditClient(null)} disabled={editSaving}>Cancel</Button>
             <Button onClick={saveEdit} disabled={editSaving}>
               {editSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</> : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Mandate Modal */}
+      <Dialog open={!!createClient} onOpenChange={() => setCreateClient(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Create Mandate</DialogTitle>
+          </DialogHeader>
+          {createClient && (
+            <div className="space-y-4 text-sm">
+              <div className="rounded-md bg-primary/10 border border-primary/30 p-3 text-xs space-y-1">
+                <div className="font-semibold">{createClient.business_name}</div>
+                <div className="text-muted-foreground">{fmtMoney(createClient.monthly_retainer)}/month · {createClient.debit_order_date} run</div>
+                <div className="text-primary">This will mark the debit mandate as signed.</div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateClient(null)} disabled={createSaving}>Cancel</Button>
+            <Button onClick={createMandate} disabled={createSaving}>
+              {createSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating…</> : "Create Mandate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Mandate Modal */}
+      <Dialog open={!!cancelClient} onOpenChange={() => setCancelClient(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive"><XCircle className="w-4 h-4" /> Cancel Mandate</DialogTitle>
+          </DialogHeader>
+          {cancelClient && (
+            <div className="space-y-4 text-sm">
+              <div className="rounded-md bg-destructive/10 border border-destructive/30 p-3 text-xs space-y-1">
+                <div className="font-semibold">{cancelClient.business_name}</div>
+                <div className="text-muted-foreground">{fmtMoney(cancelClient.monthly_retainer)}/month · {cancelClient.debit_order_date} run</div>
+                <div className="text-destructive">This will mark the debit mandate as NOT signed.</div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelClient(null)} disabled={cancelSaving}>Cancel</Button>
+            <Button variant="destructive" onClick={cancelMandate} disabled={cancelSaving}>
+              {cancelSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Cancelling…</> : "Cancel Mandate"}
             </Button>
           </DialogFooter>
         </DialogContent>
