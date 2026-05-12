@@ -145,7 +145,7 @@ export default function SignIn() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden"
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-6 relative overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, #0A0F1C 0%, #1a0a2e 40%, #0d1a3a 100%)',
       }}
@@ -163,12 +163,12 @@ export default function SignIn() {
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
-        className="relative z-10 flex flex-col items-center mb-3"
+        className="relative z-10 flex flex-col items-center mb-2"
       >
         <img
           src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
           alt="Marketing iO"
-          className="h-52 sm:h-64 object-contain"
+          className="h-32 sm:h-40 object-contain"
           style={{
             filter: 'drop-shadow(0 0 14px rgba(119,41,255,0.7)) drop-shadow(0 0 28px rgba(255,41,148,0.5)) brightness(1.1)',
           }}
@@ -188,9 +188,9 @@ export default function SignIn() {
 
         {/* Welcome back — typewriter */}
         <div
-          className="text-white font-bold select-none mt-4"
+          className="text-white font-bold select-none mt-2"
           style={{
-            fontSize: '28px',
+            fontSize: '24px',
             letterSpacing: '0.5px',
             textShadow: '0 2px 14px rgba(119,41,255,0.45)',
             minHeight: '38px',
