@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import AnimatedBot from '@/components/auth/AnimatedBot';
+import { useState, useEffect } from 'react';
+import Mascot from '@/components/Mascot';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -31,7 +31,18 @@ export default function SignIn() {
   const [captchaInput, setCaptchaInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mascotDone, setMascotDone] = useState(false);
+  const [welcomeText, setWelcomeText] = useState('');
+
+  useEffect(() => {
+    const full = 'Welcome back';
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      setWelcomeText(full.slice(0, i));
+      if (i >= full.length) clearInterval(id);
+    }, 55);
+    return () => clearInterval(id);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -100,48 +111,111 @@ export default function SignIn() {
           style={{ background: 'radial-gradient(circle, #00CCFF 0%, transparent 70%)' }} />
       </div>
 
-      {/* Logo */}
+      {/* Logo — larger */}
       <motion.img
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
         src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
         alt="Marketing iO"
-        className="h-20 object-contain mb-1 relative z-10"
+        className="h-32 sm:h-40 object-contain mb-3 relative z-10"
         style={{
           filter: 'drop-shadow(0 0 14px rgba(119,41,255,0.7)) drop-shadow(0 0 28px rgba(255,41,148,0.5)) brightness(1.1)',
         }}
       />
 
+      {/* Welcome back — typewriter */}
+      <div
+        className="relative z-10 text-white font-bold mb-8 select-none"
+        style={{
+          fontSize: '32px',
+          letterSpacing: '0.5px',
+          textShadow: '0 2px 14px rgba(119,41,255,0.45)',
+          minHeight: '42px',
+        }}
+        aria-label="Welcome back"
+      >
+        {welcomeText}
+        <span className="mio-caret" aria-hidden="true">|</span>
+        <style>{`
+          @keyframes mio-caret-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+          .mio-caret {
+            display: inline-block;
+            margin-left: 2px;
+            color: #FF2994;
+            animation: mio-caret-blink 0.9s steps(1) infinite;
+          }
+        `}</style>
+      </div>
+
       {/* Card + mascot wrapper */}
       <div className="relative w-full max-w-sm z-10">
 
-        {/* Mascot wrapper — centered, overlapping the top of the card */}
-        <div style={{
-          position: 'absolute',
-          top: '-170px',
-          left: '0',
-          right: '0',
-          display: 'flex',
-          justifyContent: 'center',
-          zIndex: 20,
-          pointerEvents: 'none',
-          height: '200px',
-        }}>
-          {!mascotDone ? (
-            <motion.div
-              initial={{ x: '-110vw' }}
-              animate={{ x: 0 }}
-              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-              onAnimationComplete={() => setMascotDone(true)}
-              style={{ width: '220px', height: '220px', flexShrink: 0 }}
-            >
-              <AnimatedBot style={{ width: '100%', height: '100%' }} />
-            </motion.div>
-          ) : (
-            <AnimatedBot style={{ width: '220px', height: '220px' }} />
-          )}
-        </div>
+        {/* Mascot — rolls in from the left, lands centered above the card */}
+        <motion.div
+          initial={{ x: '-120vw', rotate: -720, opacity: 0 }}
+          animate={{ x: 0, rotate: 0, opacity: 1 }}
+          transition={{ delay: 0.7, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            position: 'absolute',
+            top: '-200px',
+            left: '50%',
+            marginLeft: '-110px',
+            width: '220px',
+            height: '220px',
+            zIndex: 30,
+            pointerEvents: 'none',
+            background: 'transparent',
+          }}
+        >
+          <Mascot size={220} style={{ background: 'transparent' }} />
+        </motion.div>
+
+        {/* Speech bubble — pops after mascot lands; lines hit 2.0/2.4/2.8s absolute */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 1.8, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            position: 'absolute',
+            top: '-230px',
+            right: '-24px',
+            maxWidth: '280px',
+            background: '#ffffff',
+            borderRadius: '28px 28px 28px 6px',
+            padding: '18px 22px',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+            zIndex: 35,
+            pointerEvents: 'none',
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.0, duration: 0.35, ease: 'easeOut' }}
+            style={{ color: '#0A1F44', fontWeight: 700, fontSize: '22px', lineHeight: 1.15 }}
+          >
+            Done hiding your business?
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.4, duration: 0.35, ease: 'easeOut' }}
+            style={{ color: '#6B7280', fontWeight: 500, fontSize: '18px', lineHeight: 1.2, marginTop: '6px' }}
+          >
+            Same here.
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.8, duration: 0.35, ease: 'easeOut' }}
+            style={{ color: '#E63946', fontWeight: 700, fontSize: '24px', lineHeight: 1.15, marginTop: '8px' }}
+          >
+            Let&apos;s market it.
+          </motion.div>
+        </motion.div>
 
         {/* Login card */}
         <motion.form
@@ -149,16 +223,15 @@ export default function SignIn() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
           onSubmit={handleSubmit}
-          className="relative w-full rounded-2xl p-6 pt-14 space-y-4"
+          className="relative w-full rounded-2xl p-6 pt-10 space-y-4"
           style={{
-            background: 'rgba(17, 24, 39, 0.88)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(119,41,255,0.35)',
-            boxShadow: '0 30px 70px -15px rgba(119,41,255,0.5), 0 0 0 1px rgba(255,41,148,0.07) inset',
+            background:
+              'linear-gradient(135deg, rgba(119,41,255,0.92) 0%, rgba(255,41,148,0.88) 55%, rgba(0,204,255,0.80) 130%)',
+            border: '1px solid rgba(255,255,255,0.22)',
+            boxShadow:
+              '0 30px 70px -15px rgba(119,41,255,0.55), 0 0 0 1px rgba(255,255,255,0.08) inset',
           }}
         >
-          <h2 className="text-center text-xl font-bold text-white">Welcome back 👋</h2>
-
           {error && (
             <div className="bg-red-500/10 border border-red-500/40 text-red-400 text-sm rounded-lg px-4 py-3">
               {error}
@@ -166,7 +239,7 @@ export default function SignIn() {
           )}
 
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Email address</label>
+            <label className="block text-sm text-white/90 mb-1">Email address</label>
             <input
               type="email"
               value={email}
@@ -178,7 +251,7 @@ export default function SignIn() {
           </div>
 
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Password</label>
+            <label className="block text-sm text-white/90 mb-1">Password</label>
             <div className="relative">
               <input
                 type={showPw ? 'text' : 'password'}
@@ -194,14 +267,14 @@ export default function SignIn() {
               </button>
             </div>
             <div className="text-right mt-1">
-              <Link to="/forgot-password" className="text-xs text-[#FF2994] hover:text-[#7729FF] transition-colors">
+              <Link to="/forgot-password" className="text-xs text-white/90 hover:text-white underline transition-colors">
                 Forgot password?
               </Link>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm text-slate-300 mb-1">
+            <label className="block text-sm text-white/90 mb-1">
               Security check: {captcha.question} = ?
             </label>
             <input
@@ -219,16 +292,16 @@ export default function SignIn() {
             disabled={loading}
             className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60 hover:brightness-110"
             style={{
-              background: 'linear-gradient(135deg, #7729FF 0%, #FF2994 100%)',
-              boxShadow: '0 10px 30px -10px rgba(119,41,255,0.6)',
+              background: '#0A1F44',
+              boxShadow: '0 10px 30px -10px rgba(10,31,68,0.7), 0 0 0 1px rgba(255,255,255,0.15) inset',
             }}
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
 
-          <p className="text-center text-sm text-slate-400">
+          <p className="text-center text-sm text-white/80">
             Don't have an account?{' '}
-            <Link to="/register" className="text-[#FF2994] hover:text-[#7729FF] transition-colors font-medium">
+            <Link to="/register" className="text-white underline hover:text-white/90 transition-colors font-semibold">
               Sign up
             </Link>
           </p>
