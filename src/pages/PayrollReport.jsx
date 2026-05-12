@@ -21,11 +21,13 @@ function getMonthOptions() {
 
 function groupByStaff(commissions, users) {
   const map = {};
-  users.forEach(u => {
+  users.forEach((u, idx) => {
     if (!calcPackage(u.role)) return;
     map[u.id] = {
       staff_id: u.id,
+      employee_number: `EMP${String(idx + 1).padStart(3, "0")}`,
       staff_name: u.full_name || u.email,
+      staff_email: u.email,
       staff_role: u.role,
       items: [],
       commission_total: 0,
@@ -37,7 +39,9 @@ function groupByStaff(commissions, users) {
     if (!map[key]) {
       map[key] = {
         staff_id: c.staff_id,
+        employee_number: "EMP???",
         staff_name: c.staff_name || "Unknown",
+        staff_email: "",
         staff_role: c.staff_role || "—",
         items: [],
         commission_total: 0,
@@ -51,22 +55,29 @@ function groupByStaff(commissions, users) {
 }
 
 function exportCSV(groups, month) {
-  const rows = [["Staff Name", "Role", "Commission Type", "Client", "Base Amount", "Rate %", "Commission (R)", "Qualifying Event", "Status"]];
+  const rows = [["Emp No.", "Staff Name", "Email", "Role", "Salary (Nett)", "Commission Type", "Client", "Base Amount", "Rate %", "Commission (R)", "Qualifying Event", "Total Pay"]];
   groups.forEach(g => {
-    g.items.forEach(c => {
-      rows.push([
-        g.staff_name,
-        g.staff_role,
-        c.commission_type?.replace(/_/g, " ") || "",
-        c.client_name || "",
-        c.base_amount || "",
-        c.rate_percent || "",
-        c.commission_amount || 0,
-        c.qualifying_event || "",
-        c.status,
-      ]);
-    });
-    rows.push([`TOTAL: ${g.staff_name}`, "", "", "", "", "", g.total, "", ""]);
+    const pkg = g.salary_pkg;
+    if (g.items.length === 0) {
+      rows.push([g.employee_number, g.staff_name, g.staff_email, g.staff_role, pkg?.nett || 0, "—", "—", "—", "—", 0, "—", (pkg?.nett || 0)]);
+    } else {
+      g.items.forEach((c, i) => {
+        rows.push([
+          i === 0 ? g.employee_number : "",
+          i === 0 ? g.staff_name : "",
+          i === 0 ? g.staff_email : "",
+          i === 0 ? g.staff_role : "",
+          i === 0 ? (pkg?.nett || 0) : "",
+          c.commission_type?.replace(/_/g, " ") || "",
+          c.client_name || "",
+          c.base_amount || "",
+          c.rate_percent || "",
+          c.commission_amount || 0,
+          c.qualifying_event || "",
+          i === 0 ? ((pkg?.nett || 0) + g.commission_total) : "",
+        ]);
+      });
+    }
     rows.push([]);
   });
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -84,20 +95,30 @@ function exportPDF(groups, month, grandTotal) {
   lines.push(`MARKETING iO — PAYROLL REPORT`);
   lines.push(`Month: ${month}`);
   lines.push(`Generated: ${new Date().toLocaleDateString("en-ZA")}`);
-  lines.push(`${"─".repeat(60)}`);
+  lines.push(`${"─".repeat(70)}`);
   groups.forEach(g => {
-    lines.push(`\nCONSULTANT: ${g.staff_name.toUpperCase()} (${g.staff_role.replace(/_/g, " ")})`);
-    lines.push(`${"─".repeat(40)}`);
-    g.items.forEach(c => {
-      lines.push(
-        `  ${(c.commission_type || "").replace(/_/g, " ").padEnd(28)} ${(c.client_name || "").padEnd(20)} R${(c.commission_amount || 0).toLocaleString()}`
-      );
-    });
-    lines.push(`  ${"SUBTOTAL".padEnd(50)} R${g.total.toLocaleString()}`);
+    const pkg = g.salary_pkg;
+    const grandPay = (pkg?.nett || 0) + g.commission_total;
+    lines.push(`\n[${g.employee_number}] ${g.staff_name.toUpperCase()} (${g.staff_role.replace(/_/g, " ")})`);
+    lines.push(`  Email: ${g.staff_email || "—"}`);
+    lines.push(`${"─".repeat(50)}`);
+    if (pkg) {
+      lines.push(`  Gross CTC:   R${pkg.gross.toLocaleString()}`);
+      lines.push(`  Nett Salary: R${pkg.nett.toLocaleString()}`);
+    }
+    if (g.items.length > 0) {
+      lines.push(`  Commission Lines:`);
+      g.items.forEach(c => {
+        lines.push(
+          `    ${(c.commission_type || "").replace(/_/g, " ").padEnd(28)} ${(c.client_name || "").padEnd(20)} R${(c.commission_amount || 0).toLocaleString()}`
+        );
+      });
+    }
+    lines.push(`  ${"TOTAL PAYOUT".padEnd(50)} R${grandPay.toLocaleString()}`);
   });
-  lines.push(`\n${"═".repeat(60)}`);
-  lines.push(`  ${"GRAND TOTAL".padEnd(50)} R${grandTotal.toLocaleString()}`);
-  lines.push(`${"═".repeat(60)}`);
+  lines.push(`\n${"═".repeat(70)}`);
+  lines.push(`  ${"GRAND TOTAL PAYROLL".padEnd(50)} R${grandTotal.toLocaleString()}`);
+  lines.push(`${"═".repeat(70)}`);
 
   const text = lines.join("\n");
   const blob = new Blob([text], { type: "text/plain" });
@@ -211,7 +232,10 @@ export default function PayrollReport() {
                     <span className="text-white font-bold text-sm">{g.staff_name?.charAt(0)}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground">{g.staff_name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-foreground">{g.staff_name}</p>
+                      <span className="text-xs text-muted-foreground font-mono">{g.employee_number}</span>
+                    </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge className={`border text-xs capitalize ${ROLE_COLORS[g.staff_role] || ROLE_COLORS.other}`}>
                         {g.staff_role?.replace(/_/g, " ")}

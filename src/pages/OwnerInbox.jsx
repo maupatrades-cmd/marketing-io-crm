@@ -117,19 +117,23 @@ export default function OwnerInbox() {
   const [error, setError] = useState('');
   const scrollRef = useRef(null);
 
-  // Load current user + thread list.
+  // Load current user + thread list — load ALL threads (active + any status)
+  const loadThreads = async () => {
+    try {
+      const all = await base44.entities.ClientThread.list('-last_message_at', 200);
+      setThreads(Array.isArray(all) ? all : (all ? [all] : []));
+    } catch (err) {
+      console.error('[OwnerInbox] thread list failed:', err);
+      setError('Failed to load inbox. Please refresh.');
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const me = await getCurrentUser();
       if (!me) { window.location.href = '/login'; return; }
       setUser(me);
-      try {
-        const all = await base44.entities.ClientThread.filter({ status: 'active' }, '-last_message_at', 100);
-        setThreads(Array.isArray(all) ? all : (all ? [all] : []));
-      } catch (err) {
-        console.error('[OwnerInbox] thread list failed:', err);
-        setError('Failed to load inbox.');
-      }
+      await loadThreads();
       setLoading(false);
     })();
   }, []);
@@ -137,12 +141,7 @@ export default function OwnerInbox() {
   // Poll thread list every 20s (not actively selected) so badges stay fresh.
   useEffect(() => {
     if (selected) return;
-    const t = setInterval(async () => {
-      try {
-        const all = await base44.entities.ClientThread.filter({ status: 'active' }, '-last_message_at', 100);
-        setThreads(Array.isArray(all) ? all : (all ? [all] : []));
-      } catch (_) {}
-    }, 20000);
+    const t = setInterval(loadThreads, 20000);
     return () => clearInterval(t);
   }, [selected]);
 

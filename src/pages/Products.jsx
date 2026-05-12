@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ChevronDown, ChevronUp, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, ChevronDown, ChevronUp, Package, PlusCircle, Users } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 const PRODUCTS = [
   // ── CORE PACKAGES ──────────────────────────────────────────────
@@ -690,12 +693,25 @@ const BUCKET_LABELS = {
 };
 
 export default function Products() {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState({});
   const [filter, setFilter] = useState("all");
+  const [clients, setClients] = useState([]);
+  const [showClientSearch, setShowClientSearch] = useState(null); // product id
+  const [clientSearch, setClientSearch] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  useEffect(() => {
+    base44.entities.Client.filter({ status: "active" }, "-created_date", 200).then(r => setClients(Array.isArray(r) ? r : [])).catch(() => {});
+  }, []);
 
   const toggle = (id) => setExpanded(e => ({ ...e, [id]: !e[id] }));
   const types = ["all", "Core Package", "Pulse Package", "Add-On"];
   const filtered = filter === "all" ? PRODUCTS : PRODUCTS.filter(p => p.type === filter);
+
+  const filteredClients = clients.filter(c =>
+    !clientSearch || c.business_name?.toLowerCase().includes(clientSearch.toLowerCase())
+  );
 
   return (
     <AppLayout title="Products & Workflows" subtitle="All packages, add-ons, pricing and delivery checklists">
@@ -773,6 +789,16 @@ export default function Products() {
                 <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
+                <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                  <Button size="sm" variant="outline" className="text-xs h-7 px-2 gap-1"
+                    onClick={() => navigate(`/leads?product=${p.id}`)}>
+                    <PlusCircle className="w-3 h-3" /> Add Lead
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs h-7 px-2 gap-1"
+                    onClick={() => { setShowClientSearch(p.id); setSelectedProduct(p); setClientSearch(""); }}>
+                    <Users className="w-3 h-3" /> Find Client
+                  </Button>
+                </div>
                 <div className="text-right">
                   <p className={`text-sm font-bold ${p.color}`}>{p.setup}</p>
                   <p className="text-xs text-muted-foreground">{p.monthly}</p>
@@ -803,6 +829,33 @@ export default function Products() {
           </div>
         ))}
       </div>
+      {/* Client search modal */}
+      {showClientSearch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowClientSearch(null)}>
+          <div className="glass rounded-2xl p-6 w-96 max-w-[95vw]" onClick={e => e.stopPropagation()}>
+            <p className="font-semibold mb-1">Find Client for {selectedProduct?.name}</p>
+            <p className="text-xs text-muted-foreground mb-4">Select an active client to navigate to their profile.</p>
+            <input
+              autoFocus
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+              placeholder="Search business name…"
+              className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground mb-3 focus:outline-none focus:ring-2 focus:ring-primary/60"
+            />
+            <div className="space-y-1 max-h-64 overflow-y-auto">
+              {filteredClients.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No active clients found.</p>}
+              {filteredClients.map(c => (
+                <button key={c.id} onClick={() => { navigate(`/clients/${c.id}`); setShowClientSearch(null); }}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 transition-all text-sm">
+                  <p className="font-medium text-foreground">{c.business_name}</p>
+                  <p className="text-xs text-muted-foreground">{c.contact_person} · {c.package || "no package"}</p>
+                </button>
+              ))}
+            </div>
+            <Button variant="ghost" onClick={() => setShowClientSearch(null)} className="w-full mt-3">Cancel</Button>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

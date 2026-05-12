@@ -225,7 +225,22 @@ export default function Contracts() {
                   <p className="text-sm text-foreground">{selectedContract.notes}</p>
                 </div>
               )}
-              <div className="flex gap-2 pt-4">
+              {/* Signing link preview */}
+              {selectedContract.signing_token && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Signing Link</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="text-xs bg-muted/30 rounded px-2 py-1 flex-1 truncate">
+                      {`${window.location.origin}/sign-contract?token=${selectedContract.signing_token}`}
+                    </code>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/sign-contract?token=${selectedContract.signing_token}`);
+                      toast({ title: "Link copied!" });
+                    }}>Copy</Button>
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2 pt-4 flex-wrap">
                 {selectedContract.status === "draft" && (
                   <Button 
                     onClick={() => handleSendForSignature(selectedContract)} 
@@ -236,13 +251,22 @@ export default function Contracts() {
                   </Button>
                 )}
                 {selectedContract.status === "sent" && (
-                  <Button 
-                    onClick={() => handleMarkSigned(selectedContract)} 
-                    disabled={updating}
-                    className="gradient-bg text-white hover:opacity-90"
-                  >
-                    Mark as Signed
-                  </Button>
+                  <>
+                    <Button 
+                      onClick={() => handleSendForSignature(selectedContract)} 
+                      disabled={updating}
+                      variant="outline"
+                    >
+                      Resend Signature Email
+                    </Button>
+                    <Button 
+                      onClick={() => handleMarkSigned(selectedContract)} 
+                      disabled={updating}
+                      className="gradient-bg text-white hover:opacity-90"
+                    >
+                      Mark as Signed
+                    </Button>
+                  </>
                 )}
                 <Button variant="ghost" onClick={() => setShowDetail(false)}>Close</Button>
               </div>

@@ -24,7 +24,8 @@ export default function InternalMail() {
 
   useEffect(() => {
     getCurrentUser().then(u => { if (!u) { window.location.href = '/login'; return; } setMe(u); });
-    base44.entities.User.list().then(setUsers);
+    // Load ALL users (staff + any role) so internal mail reaches everyone
+    base44.entities.User.list("-created_date", 200).then(all => setUsers(Array.isArray(all) ? all : []));
   }, []);
 
   useEffect(() => {

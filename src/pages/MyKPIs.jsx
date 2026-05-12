@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { TrendingUp, TrendingDown, CheckCircle2, AlertCircle, Plus, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, CheckCircle2, AlertCircle, Plus, X, RefreshCw } from 'lucide-react';
 import { calculateMetricValue, getKPIStatus, getProgressPercentage } from '@/lib/kpiCalculator';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -21,7 +21,45 @@ export default function MyKPIs() {
   const [period, setPeriod] = useState('monthly');
   const [showDialog, setShowDialog] = useState(false);
   const [newKPI, setNewKPI] = useState({ name: '', target: '', period: 'monthly' });
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
   const { toast } = useToast();
+
+  const loadData = async (currentUser) => {
+    const roleTargets = await base44.entities.KPITarget.filter({
+      role: currentUser.role || 'field_agent',
+      is_active: true
+    });
+    setTargets(roleTargets || []);
+
+    const metricsData = await Promise.all(
+      (roleTargets || []).map(async (target) => ({
+        ...target,
+        actual: await calculateMetricValue(target.metric_code, currentUser.id, target.target_period),
+        calculated_at: new Date().toISOString()
+      }))
+    );
+    setMetrics(metricsData);
+    setLastRefreshed(new Date());
+
+    const personal = await base44.entities.KPITarget.filter({
+      created_by: currentUser.email,
+      is_personal: true
+    });
+    setPersonalKPIs(Array.isArray(personal) ? personal : personal ? [personal] : []);
+  };
+
+  const handleRefresh = async () => {
+    if (!user) return;
+    setRefreshing(true);
+    try {
+      await loadData(user);
+      toast({ title: "KPIs refreshed", description: "Live data recalculated." });
+    } catch (e) {
+      toast({ title: "Refresh failed", variant: "destructive" });
+    }
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     (async () => {
@@ -29,31 +67,7 @@ export default function MyKPIs() {
         const currentUser = await getCurrentUser();
         if (!currentUser) { window.location.href = '/login'; return; }
         setUser(currentUser);
-
-        // Fetch targets for this user's role
-        const roleTargets = await base44.entities.KPITarget.filter({
-          role: currentUser.role || 'field_agent',
-          is_active: true
-        });
-        setTargets(roleTargets || []);
-
-        // Calculate all metrics
-        const metricsData = await Promise.all(
-          (roleTargets || []).map(async (target) => ({
-            ...target,
-            actual: await calculateMetricValue(target.metric_code, currentUser.id, target.target_period),
-            calculated_at: new Date().toISOString()
-          }))
-        );
-        setMetrics(metricsData);
-
-        // Load personal KPIs
-        const personal = await base44.entities.KPITarget.filter({
-          created_by: currentUser.email,
-          is_personal: true
-        });
-        setPersonalKPIs(Array.isArray(personal) ? personal : personal ? [personal] : []);
-
+        await loadData(currentUser);
         setLoading(false);
       } catch (error) {
         console.error('Failed to load KPIs:', error);
@@ -142,14 +156,21 @@ export default function MyKPIs() {
               </SelectContent>
             </Select>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground">On Track</p>
-            <p className="text-3xl font-bold text-success">
-              {metrics.filter(m => {
-                const status = getKPIStatus(m.actual, m.target_value, m.direction);
-                return status.status === 'on_track';
-              }).length} / {metrics.length}
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">On Track</p>
+              <p className="text-3xl font-bold text-success">
+                {metrics.filter(m => {
+                  const status = getKPIStatus(m.actual, m.target_value, m.direction);
+                  return status.status === 'on_track';
+                }).length} / {metrics.length}
+              </p>
+              {lastRefreshed && <p className="text-xs text-muted-foreground mt-0.5">Last: {lastRefreshed.toLocaleTimeString('en-ZA')}</p>}
+            </div>
+            <Button onClick={handleRefresh} disabled={refreshing} variant="outline" size="sm" className="gap-1">
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </Button>
           </div>
         </div>
 
