@@ -50,58 +50,78 @@ const LEAD_SCORE_BADGES = {
   unqualified: { label: "Unqualified", emoji: "—",  className: "bg-muted/30 text-muted-foreground/70 border-border/30" }
 };
 
+// Per-field labels. Keys like "5_to_10" collide across years_in_business and
+// new_customers_target (the previous flat map silently dropped the years
+// version), so each Register-multi-step field now owns its own sub-map.
 const HUMAN_LABELS = {
-  // industry
-  retail: "Retail / Shop", services: "Services", construction: "Construction / Trades",
-  hospitality: "Hospitality / Food", beauty: "Beauty / Salon", health: "Health / Wellness",
-  professional: "Professional Services", education: "Education / Training", other: "Other",
-  // years_in_business
-  starting: "Just starting out", less_than_1: "Less than 1 year", "1_to_3": "1 – 3 years",
-  "3_to_5": "3 – 5 years", "5_to_10": "5 – 10 years", "10_plus": "10+ years",
-  // employees
-  just_me: "Just me", "2_to_5": "2 – 5", "6_to_15": "6 – 15", "16_to_50": "16 – 50", "50_plus": "50+",
-  // provinces
-  gauteng: "Gauteng", western_cape: "Western Cape", kwazulu_natal: "KwaZulu-Natal",
-  eastern_cape: "Eastern Cape", free_state: "Free State", limpopo: "Limpopo",
-  mpumalanga: "Mpumalanga", north_west: "North West", northern_cape: "Northern Cape",
-  // goals
-  same_steady: "Stay where I am — steady and stable", double_revenue: "Double revenue",
-  five_x_growth: "5× growth", sell_business: "Sell the business", open_branches: "Open more branches",
-  // challenges
-  not_enough_leads: "Not getting enough leads", customers_dont_return: "Customers don't return",
-  cant_compete: "Can't compete with bigger players", dont_know_marketing: "Doesn't know marketing",
-  too_busy_doing_work: "Too busy to market", bad_reputation: "Online reputation hurting",
-  all_above: "All of the above",
-  // revenue
-  under_20k: "Under R20,000", "20k_to_50k": "R20,000 – R50,000", "50k_to_150k": "R50,000 – R150,000",
-  "150k_to_500k": "R150,000 – R500,000", "500k_plus": "R500,000+",
-  // new customers
-  "5_to_10": "5 – 10", "10_to_25": "10 – 25", "25_to_50": "25 – 50",
-  "50_to_100": "50 – 100", "100_plus": "100+",
-  // urgency
-  yesterday: "I needed it yesterday", within_1_month: "Within 1 month", within_3_months: "Within 3 months",
-  planning_ahead: "Planning ahead", no_rush: "No rush — just looking",
-  // budget
-  under_500: "Under R500", "500_to_1500": "R500 – R1,500", "1500_to_3000": "R1,500 – R3,000",
-  "3000_to_7000": "R3,000 – R7,000", "7000_plus": "R7,000+",
-  // assets
-  website: "Working website", whatsapp_automation: "WhatsApp automation",
-  active_social: "Active social media", gmb_claimed: "Google Business Profile claimed",
-  paid_ads: "Running paid ads", email_marketing: "Email marketing", crm: "CRM in use",
-  // agency
-  yes_didnt_work: "Yes — but it didn't work", yes_too_expensive: "Yes — but too expensive",
-  never: "Never used one", tried_diy: "Tried DIY",
-  // contact channels
-  phone: "Phone call", whatsapp: "WhatsApp", email: "Email", sms: "SMS",
-  // call times
-  morning: "Morning (08:00 – 12:00)", lunch: "Lunch (12:00 – 14:00)",
-  afternoon: "Afternoon (14:00 – 17:00)", evening: "Evening (17:00 – 20:00)",
-  weekend_only: "Weekends only"
+  industry: {
+    retail: "Retail / Shop", services: "Services", construction: "Construction / Trades",
+    hospitality: "Hospitality / Food", beauty: "Beauty / Salon", health: "Health / Wellness",
+    professional: "Professional Services", education: "Education / Training", other: "Other",
+  },
+  years_in_business: {
+    starting: "Just starting out", less_than_1: "Less than 1 year", "1_to_3": "1 – 3 years",
+    "3_to_5": "3 – 5 years", "5_to_10": "5 – 10 years", "10_plus": "10+ years",
+  },
+  number_of_employees: {
+    just_me: "Just me", "2_to_5": "2 – 5", "6_to_15": "6 – 15", "16_to_50": "16 – 50", "50_plus": "50+",
+  },
+  business_province: {
+    gauteng: "Gauteng", western_cape: "Western Cape", kwazulu_natal: "KwaZulu-Natal",
+    eastern_cape: "Eastern Cape", free_state: "Free State", limpopo: "Limpopo",
+    mpumalanga: "Mpumalanga", north_west: "North West", northern_cape: "Northern Cape",
+  },
+  twelve_month_goal: {
+    same_steady: "Stay where I am — steady and stable", double_revenue: "Double revenue",
+    five_x_growth: "5× growth", sell_business: "Sell the business", open_branches: "Open more branches",
+  },
+  biggest_challenge: {
+    not_enough_leads: "Not getting enough leads", customers_dont_return: "Customers don't return",
+    cant_compete: "Can't compete with bigger players", dont_know_marketing: "Doesn't know marketing",
+    too_busy_doing_work: "Too busy to market", bad_reputation: "Online reputation hurting",
+    all_above: "All of the above",
+  },
+  monthly_revenue_range: {
+    under_20k: "Under R20,000", "20k_to_50k": "R20,000 – R50,000", "50k_to_150k": "R50,000 – R150,000",
+    "150k_to_500k": "R150,000 – R500,000", "500k_plus": "R500,000+",
+  },
+  new_customers_target: {
+    "5_to_10": "5 – 10", "10_to_25": "10 – 25", "25_to_50": "25 – 50",
+    "50_to_100": "50 – 100", "100_plus": "100+",
+  },
+  urgency_level: {
+    yesterday: "I needed it yesterday", within_1_month: "Within 1 month", within_3_months: "Within 3 months",
+    planning_ahead: "Planning ahead", no_rush: "No rush — just looking",
+  },
+  monthly_marketing_budget: {
+    under_500: "Under R500", "500_to_1500": "R500 – R1,500", "1500_to_3000": "R1,500 – R3,000",
+    "3000_to_7000": "R3,000 – R7,000", "7000_plus": "R7,000+",
+  },
+  current_marketing_assets: {
+    website: "Working website", whatsapp_automation: "WhatsApp automation",
+    active_social: "Active social media", gmb_claimed: "Google Business Profile claimed",
+    paid_ads: "Running paid ads", email_marketing: "Email marketing", crm: "CRM in use",
+  },
+  agency_history: {
+    yes_didnt_work: "Yes — but it didn't work", yes_too_expensive: "Yes — but too expensive",
+    never: "Never used one", tried_diy: "Tried DIY",
+  },
+  preferred_contact_channels: {
+    phone: "Phone call", whatsapp: "WhatsApp", email: "Email", sms: "SMS",
+  },
+  best_call_time: {
+    morning: "Morning (08:00 – 12:00)", lunch: "Lunch (12:00 – 14:00)",
+    afternoon: "Afternoon (14:00 – 17:00)", evening: "Evening (17:00 – 20:00)",
+    weekend_only: "Weekends only",
+  },
 };
 
-const human = (v) => HUMAN_LABELS[v] || v;
-const humanList = (arr) => Array.isArray(arr) && arr.length ? arr.map(human).join(", ") : null;
-const fmt = (v) => (v === undefined || v === null || v === "") ? "—" : (typeof v === "string" ? human(v) : v);
+const human = (field, v) => HUMAN_LABELS[field]?.[v] ?? v;
+const humanList = (field, arr) =>
+  Array.isArray(arr) && arr.length ? arr.map((v) => human(field, v)).join(", ") : null;
+const fmt = (field, v) =>
+  v === undefined || v === null || v === "" ? "—"
+    : typeof v === "string" ? human(field, v) : v;
 
 export default function OwnerClientDetail() {
   const { id } = useParams();
