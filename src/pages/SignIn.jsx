@@ -77,16 +77,16 @@ export default function SignIn() {
       });
       if (cancelled) return;
 
-      // 2. Show tagline bubble + wave the hand (rotate wiggle around bottom origin)
+      // 2. Show tagline bubble + wave the hand (slower, fewer oscillations)
       setBubble('tagline');
       await mascotControls.start({
-        rotate: [0, -16, 14, -14, 12, -10, 8, -5, 0],
-        transition: { duration: 2.2, ease: 'easeInOut' },
+        rotate: [0, -14, 12, -12, 10, 0],
+        transition: { duration: 4.2, ease: 'easeInOut' },
       });
       if (cancelled) return;
 
       // 3. Let the bubble linger a moment before moving
-      await wait(1100);
+      await wait(1300);
       if (cancelled) return;
 
       // 4. Glide to centered "holding the card" position
