@@ -163,7 +163,7 @@ export default function SignIn() {
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
-        className="relative z-10 flex flex-col items-center mb-2"
+        className="relative z-10 flex flex-col items-center mb-10"
       >
         <img
           src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
@@ -222,17 +222,17 @@ export default function SignIn() {
           onAnimationComplete={() => setMascotLanded(true)}
           style={{
             position: 'absolute',
-            top: '-120px',
+            top: '-90px',
             left: '50%',
-            marginLeft: '-100px',
-            width: '200px',
-            height: '200px',
+            marginLeft: '-80px',
+            width: '160px',
+            height: '160px',
             zIndex: 30,
             pointerEvents: 'none',
             background: 'transparent',
           }}
         >
-          <Mascot size={200} style={{ background: 'transparent' }} />
+          <Mascot size={160} style={{ background: 'transparent' }} />
         </motion.div>
 
         {/* Speech bubble — sits NEXT TO the mascot, tail pointing left at its mouth.
@@ -254,8 +254,8 @@ export default function SignIn() {
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               style={{
                 position: 'absolute',
-                top: '-75px',
-                left: 'calc(50% + 100px)',
+                top: '-60px',
+                left: 'calc(50% + 80px)',
                 width: '240px',
                 maxWidth: '60vw',
                 background: '#ffffff',
