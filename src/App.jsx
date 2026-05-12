@@ -103,6 +103,7 @@ import PortalCheckout from './pages/PortalCheckout';
 import CancelledContracts from './pages/CancelledContracts';
 import StaffAddOnCatalog from './pages/StaffAddOnCatalog';
 import StaffMyEarnings from './pages/StaffMyEarnings';
+import DebitOrderTracking from './pages/DebitOrderTracking';
 
 
 
@@ -196,6 +197,7 @@ const AuthenticatedApp = () => {
       <Route path="/unsubscribe" element={<Unsubscribe />} />
       <Route path="/staff/add-ons" element={<RouteGuard allowedRoles={["field_agent","cpc","admin","owner"]} fallbackPath="/"><StaffAddOnCatalog /></RouteGuard>} />
       <Route path="/staff/earnings" element={<RouteGuard allowedRoles={["field_agent","cpc","admin","owner"]} fallbackPath="/"><StaffMyEarnings /></RouteGuard>} />
+      <Route path="/debit-orders" element={<RouteGuard allowedRoles={["owner","admin"]} fallbackPath="/"><DebitOrderTracking /></RouteGuard>} />
 
       {/* Staff Portal Routes */}
       <Route path="/staff" element={<RouteGuard allowedRoles={["admin", "owner", "field_agent", "cpc", "head_of_tech", "driver"]} fallbackPath="/"><StaffMyDay /></RouteGuard>} />
