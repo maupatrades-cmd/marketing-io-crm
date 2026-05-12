@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
-import Mascot from '@/components/Mascot';
 
 function makeCaptcha() {
   const a = Math.floor(Math.random() * 10) + 1;
@@ -11,34 +10,21 @@ function makeCaptcha() {
   return { question: `${a} + ${b}`, answer: a + b };
 }
 
-// Strict whitelist for ?next= — only the portal checkout flow is allowed,
-// blocking open-redirect attacks via crafted login links.
 const SAFE_NEXT_RE = /^\/portal\/checkout\/[a-z0-9][a-z0-9-]{0,49}$/;
 function safeNext(raw) {
   const v = String(raw || '').trim();
   return SAFE_NEXT_RE.test(v) ? v : '';
 }
 
-function useTypewriter(text, { speed = 110, startDelay = 0, enabled = true } = {}) {
-  const [out, setOut] = useState('');
-  useEffect(() => {
-    if (!enabled) return;
-    setOut('');
-    let i = 0;
-    let interval;
-    const start = setTimeout(() => {
-      interval = setInterval(() => {
-        i += 1;
-        setOut(text.slice(0, i));
-        if (i >= text.length) clearInterval(interval);
-      }, speed);
-    }, startDelay);
-    return () => {
-      clearTimeout(start);
-      clearInterval(interval);
-    };
-  }, [text, speed, startDelay, enabled]);
-  return out;
+// The bot SVG inlined so we can animate it and clip it behind the card top
+function BotSVG() {
+  return (
+    <img
+      src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/38ed78325_bot_running_clean1.svg"
+      alt="Bot mascot"
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
+  );
 }
 
 export default function SignIn() {
@@ -53,66 +39,7 @@ export default function SignIn() {
   const [captchaInput, setCaptchaInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // Mascot + bubble sequencing
-  const mascotControls = useAnimation();
-  const [mascotLanded, setMascotLanded] = useState(false);
-  const [bubble, setBubble] = useState(null); // 'tagline' | 'cta' | null
-  const welcome = useTypewriter('Welcome', {
-    speed: 130,
-    startDelay: 300,
-    enabled: mascotLanded,
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-
-    async function runMascotSequence() {
-      // 1. Slide in from left to off-center "waving spot"
-      await mascotControls.start({
-        x: '-22%',
-        opacity: 1,
-        transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] },
-      });
-      if (cancelled) return;
-
-      // 2. Show tagline bubble + wave the hand: tilt right, hold, tilt left, hold, return
-      setBubble('tagline');
-      await mascotControls.start({
-        rotate: [0, 16, 16, -16, -16, 0],
-        transition: {
-          duration: 4.2,
-          ease: 'easeInOut',
-          times: [0, 0.2, 0.45, 0.65, 0.9, 1],
-        },
-      });
-      if (cancelled) return;
-
-      // 3. Let the bubble linger a moment before moving
-      await wait(1300);
-      if (cancelled) return;
-
-      // 4. Glide to centered "holding the card" position
-      setBubble(null);
-      await mascotControls.start({
-        x: '0%',
-        transition: { duration: 0.9, ease: 'easeOut' },
-      });
-      if (cancelled) return;
-
-      // 5. Settled — kick off Welcome typing, then second bubble
-      setMascotLanded(true);
-      await wait(900);
-      if (cancelled) return;
-      setBubble('cta');
-    }
-
-    runMascotSequence();
-    return () => {
-      cancelled = true;
-    };
-  }, [mascotControls]);
+  const [mascotDone, setMascotDone] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -167,103 +94,95 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#0A0F1C] flex flex-col items-center justify-start px-4 pt-8 pb-12">
-      {/* Ambient gradient glow */}
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, #0A0F1C 0%, #1a0a2e 40%, #0d1a3a 100%)',
+      }}
+    >
+      {/* Ambient glows */}
       <div className="pointer-events-none absolute inset-0">
-        <div
-          className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full opacity-30 blur-3xl"
-          style={{ background: 'radial-gradient(circle, #7729FF 0%, #FF2994 45%, transparent 70%)' }}
-        />
-        <div
-          className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full opacity-20 blur-3xl"
-          style={{ background: 'radial-gradient(circle, #00CCFF 0%, transparent 70%)' }}
-        />
+        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full opacity-25 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #7729FF 0%, #FF2994 50%, transparent 70%)' }} />
+        <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-15 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #00CCFF 0%, transparent 70%)' }} />
       </div>
 
-      <div className="relative w-full max-w-md flex flex-col items-center">
-        {/* Logo — glowing, big */}
-        <motion.img
-          initial={{ opacity: 0, y: -20, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-          src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
-          alt="Marketing iO"
-          className="h-64 sm:h-72 object-contain animate-mio-glow"
+      {/* Logo */}
+      <motion.img
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7 }}
+        src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
+        alt="Marketing iO"
+        className="h-28 object-contain mb-2 relative z-10"
+        style={{
+          filter: 'drop-shadow(0 0 14px rgba(119,41,255,0.7)) drop-shadow(0 0 28px rgba(255,41,148,0.5)) brightness(1.1)',
+        }}
+      />
+
+      {/* Card + mascot wrapper */}
+      <div className="relative w-full max-w-sm z-10">
+
+        {/* Mascot — slides from left, settles peeking above the card */}
+        <motion.div
+          initial={{ x: '-120vw', y: 0 }}
+          animate={{ x: 0, y: 0 }}
+          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          onAnimationComplete={() => setMascotDone(true)}
           style={{
-            filter:
-              'drop-shadow(0 0 18px rgba(119,41,255,0.75)) drop-shadow(0 0 36px rgba(255,41,148,0.55)) brightness(1.08)',
+            position: 'absolute',
+            top: '-110px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '220px',
+            height: '140px',
+            zIndex: 20,
+            // clip bottom half so the bot appears to be "behind" / holding the card
+            clipPath: 'inset(0 0 30px 0)',
           }}
-        />
-
-        {/* Mascot + typing "Welcome" + speech bubble — overlap the top of the card */}
-        <div className="relative w-full h-56 -mb-10">
-          {/* "Welcome" typewriter — above mascot head */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 whitespace-nowrap pointer-events-none">
-            <span
-              className="text-4xl sm:text-5xl font-extrabold tracking-tight"
-              style={{
-                background: 'linear-gradient(135deg, #7729FF 0%, #FF2994 100%)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                color: 'transparent',
-              }}
-            >
-              {welcome || ' '}
-            </span>
-            {mascotLanded && welcome.length < 'Welcome'.length && (
-              <span className="text-4xl sm:text-5xl font-extrabold text-[#FF2994] animate-pulse">|</span>
-            )}
-          </div>
-
-          {/* Mascot — slides in from left, waves, then glides to centered "holding" pose */}
-          <motion.div
-            initial={{ x: '-160%', opacity: 0, rotate: 0 }}
-            animate={mascotControls}
-            style={{ originX: 0.5, originY: 1 }}
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[360px] sm:w-[420px] z-20 pointer-events-none"
-          >
-            <Mascot />
-          </motion.div>
-
-          {/* Speech bubble */}
-          <AnimatePresence mode="wait">
-            {bubble && (
-              <motion.div
-                key={bubble}
-                initial={{ opacity: 0, y: 8, scale: 0.85 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.85 }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
-                className="absolute right-0 sm:right-[-10px] top-10 z-30"
-              >
-                <div className="relative bg-white text-[#0A0F1C] text-sm font-semibold px-4 py-2 rounded-2xl shadow-2xl max-w-[240px] leading-snug">
-                  {bubble === 'tagline' ? (
-                    <>
-                      Done hiding your business?<br />
-                      Same here.<br />
-                      <span className="bg-gradient-to-r from-[#7729FF] to-[#FF2994] bg-clip-text text-transparent font-bold">Let's market it.</span>
-                    </>
-                  ) : (
-                    'Sign in now ✨'
-                  )}
-                  <span className="absolute -bottom-1.5 left-6 w-3 h-3 bg-white rotate-45" />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Sign in card */}
-        <motion.form
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.6 }}
-          onSubmit={handleSubmit}
-          className="relative w-full bg-[#111827]/85 backdrop-blur-xl border border-[#7729FF]/30 rounded-2xl p-6 sm:p-7 space-y-4 z-10"
-          style={{ boxShadow: '0 25px 60px -15px rgba(119,41,255,0.45), 0 0 0 1px rgba(255,41,148,0.08) inset' }}
         >
+          <BotSVG />
+        </motion.div>
+
+        {/* Idle bob after landing */}
+        {mascotDone && (
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              position: 'absolute',
+              top: '-110px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '220px',
+              height: '140px',
+              zIndex: 20,
+              clipPath: 'inset(0 0 30px 0)',
+            }}
+          >
+            <BotSVG />
+          </motion.div>
+        )}
+
+        {/* Login card */}
+        <motion.form
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+          onSubmit={handleSubmit}
+          className="relative w-full rounded-2xl p-6 pt-10 space-y-4"
+          style={{
+            background: 'rgba(17, 24, 39, 0.88)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(119,41,255,0.35)',
+            boxShadow: '0 30px 70px -15px rgba(119,41,255,0.5), 0 0 0 1px rgba(255,41,148,0.07) inset',
+          }}
+        >
+          <h2 className="text-center text-xl font-bold text-white">Welcome back 👋</h2>
+
           {error && (
-            <div className="bg-[#EF4444]/10 border border-[#EF4444]/40 text-[#EF4444] text-sm rounded-lg px-4 py-3">
+            <div className="bg-red-500/10 border border-red-500/40 text-red-400 text-sm rounded-lg px-4 py-3">
               {error}
             </div>
           )}
@@ -275,7 +194,7 @@ export default function SignIn() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF] focus:border-transparent"
+              className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF]"
               placeholder="you@example.com"
             />
           </div>
@@ -288,14 +207,11 @@ export default function SignIn() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF] focus:border-transparent"
+                className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF]"
                 placeholder="Your password"
               />
-              <button
-                type="button"
-                onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200"
-              >
+              <button type="button" onClick={() => setShowPw(v => !v)}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200">
                 {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
@@ -315,7 +231,7 @@ export default function SignIn() {
               value={captchaInput}
               onChange={(e) => setCaptchaInput(e.target.value)}
               required
-              className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF] focus:border-transparent"
+              className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF]"
               placeholder="Answer"
             />
           </div>
@@ -339,22 +255,14 @@ export default function SignIn() {
             </Link>
           </p>
         </motion.form>
-
-        <p className="text-center text-xs text-slate-600 mt-6">
-          Need help?{' '}
-          <a href="mailto:support@marketingio.co.za" className="text-slate-500 hover:text-slate-400">
-            support@marketingio.co.za
-          </a>
-        </p>
       </div>
 
-      <style>{`
-        @keyframes mio-logo-glow {
-          0%, 100% { filter: drop-shadow(0 0 18px rgba(119,41,255,0.75)) drop-shadow(0 0 36px rgba(255,41,148,0.55)) brightness(1.08); }
-          50%      { filter: drop-shadow(0 0 28px rgba(119,41,255,0.95)) drop-shadow(0 0 56px rgba(255,41,148,0.75)) brightness(1.15); }
-        }
-        .animate-mio-glow { animation: mio-logo-glow 3.2s ease-in-out infinite; }
-      `}</style>
+      <p className="text-center text-xs text-slate-600 mt-6 relative z-10">
+        Need help?{' '}
+        <a href="mailto:support@marketingio.co.za" className="text-slate-500 hover:text-slate-400">
+          support@marketingio.co.za
+        </a>
+      </p>
     </div>
   );
 }
