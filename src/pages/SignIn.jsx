@@ -26,8 +26,8 @@ function BotSVG() {
         width: '100%',
         height: '100%',
         objectFit: 'contain',
-        mixBlendMode: 'lighten',
-        filter: 'drop-shadow(0 0 18px rgba(167,100,230,0.5))',
+        mixBlendMode: 'screen',
+        filter: 'drop-shadow(0 0 20px rgba(167,100,230,0.6)) brightness(1.15)',
       }}
     />
   );
@@ -121,7 +121,7 @@ export default function SignIn() {
         transition={{ duration: 0.7 }}
         src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
         alt="Marketing iO"
-        className="h-28 object-contain mb-2 relative z-10"
+        className="h-20 object-contain mb-1 relative z-10"
         style={{
           filter: 'drop-shadow(0 0 14px rgba(119,41,255,0.7)) drop-shadow(0 0 28px rgba(255,41,148,0.5)) brightness(1.1)',
         }}
@@ -130,45 +130,38 @@ export default function SignIn() {
       {/* Card + mascot wrapper */}
       <div className="relative w-full max-w-sm z-10">
 
-        {/* Mascot — slides from left, settles peeking above the card */}
-        <motion.div
-          initial={{ x: '-120vw', y: 0 }}
-          animate={{ x: 0, y: 0 }}
-          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-          onAnimationComplete={() => setMascotDone(true)}
-          style={{
-            position: 'absolute',
-            top: '-150px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '260px',
-            height: '180px',
-            zIndex: 20,
-            clipPath: 'inset(0 0 40px 0)',
-          }}
-        >
-          <BotSVG />
-        </motion.div>
-
-        {/* Idle bob after landing */}
-        {mascotDone && (
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              position: 'absolute',
-              top: '-150px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '260px',
-              height: '180px',
-              zIndex: 20,
-              clipPath: 'inset(0 0 40px 0)',
-            }}
-          >
-            <BotSVG />
-          </motion.div>
-        )}
+        {/* Mascot wrapper — centered, overlapping the top of the card */}
+        <div style={{
+          position: 'absolute',
+          top: '-170px',
+          left: '0',
+          right: '0',
+          display: 'flex',
+          justifyContent: 'center',
+          zIndex: 20,
+          pointerEvents: 'none',
+          height: '200px',
+        }}>
+          {!mascotDone ? (
+            <motion.div
+              initial={{ x: '-110vw' }}
+              animate={{ x: 0 }}
+              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+              onAnimationComplete={() => setMascotDone(true)}
+              style={{ width: '220px', height: '220px', flexShrink: 0 }}
+            >
+              <BotSVG />
+            </motion.div>
+          ) : (
+            <motion.div
+              animate={{ y: [0, -7, 0] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ width: '220px', height: '220px', flexShrink: 0 }}
+            >
+              <BotSVG />
+            </motion.div>
+          )}
+        </div>
 
         {/* Login card */}
         <motion.form
@@ -176,7 +169,7 @@ export default function SignIn() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
           onSubmit={handleSubmit}
-          className="relative w-full rounded-2xl p-6 pt-10 space-y-4"
+          className="relative w-full rounded-2xl p-6 pt-14 space-y-4"
           style={{
             background: 'rgba(17, 24, 39, 0.88)',
             backdropFilter: 'blur(20px)',
