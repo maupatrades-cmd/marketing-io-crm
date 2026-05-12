@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import Mascot from './Mascot';
@@ -7,16 +7,23 @@ import Mascot from './Mascot';
  * Celebration — full-screen "Great choice!" interstitial with dancing
  * mascot and a confetti burst. Auto-dismisses after `duration`ms and
  * calls `onDone` (use it to navigate or unblock the next action).
+ * A "Continue →" skip button fades in at `skipAfter`ms for impatient users.
  */
 export default function Celebration({
   open,
   message = 'Great choice!',
   subMessage = 'Let’s get you set up.',
-  duration = 2500,
+  duration = 3500,
+  skipAfter = 2000,
   onDone,
 }) {
+  const [canSkip, setCanSkip] = useState(false);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setCanSkip(false);
+      return;
+    }
 
     const fire = (opts) =>
       confetti({
@@ -31,12 +38,14 @@ export default function Celebration({
     fire({ origin: { x: 0.8, y: 0.6 }, angle: 120 });
     const second = setTimeout(() => fire({ origin: { y: 0.4 }, spread: 120 }), 350);
 
+    const skip = setTimeout(() => setCanSkip(true), skipAfter);
     const done = setTimeout(() => onDone?.(), duration);
     return () => {
       clearTimeout(second);
+      clearTimeout(skip);
       clearTimeout(done);
     };
-  }, [open, duration, onDone]);
+  }, [open, duration, skipAfter, onDone]);
 
   return (
     <AnimatePresence>
@@ -104,6 +113,25 @@ export default function Celebration({
               {subMessage}
             </motion.p>
           )}
+
+          {/* Skip button — fades in after skipAfter ms */}
+          <AnimatePresence>
+            {canSkip && (
+              <motion.button
+                key="continue"
+                type="button"
+                onClick={() => onDone?.()}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="relative mt-8 inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold text-white border border-white/20 bg-white/5 backdrop-blur hover:bg-white/10 hover:border-white/40 transition"
+              >
+                Continue
+                <span aria-hidden="true">→</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>

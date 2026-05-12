@@ -43,7 +43,6 @@ export default function ProductCard({ product, isActive, onEnquire, onContact, c
         open={!!celebrating}
         message="Great choice!"
         subMessage="Taking you to secure checkout…"
-        duration={2400}
         onDone={() => {
           const target = celebrating;
           setCelebrating(null);
