@@ -77,11 +77,15 @@ export default function SignIn() {
       });
       if (cancelled) return;
 
-      // 2. Show tagline bubble + wave the hand (slower, fewer oscillations)
+      // 2. Show tagline bubble + wave the hand: tilt right, hold, tilt left, hold, return
       setBubble('tagline');
       await mascotControls.start({
-        rotate: [0, -14, 12, -12, 10, 0],
-        transition: { duration: 4.2, ease: 'easeInOut' },
+        rotate: [0, 16, 16, -16, -16, 0],
+        transition: {
+          duration: 4.2,
+          ease: 'easeInOut',
+          times: [0, 0.2, 0.45, 0.65, 0.9, 1],
+        },
       });
       if (cancelled) return;
 
