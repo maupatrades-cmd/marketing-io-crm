@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import AnimatedBot from '@/components/auth/AnimatedBot';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -16,22 +17,7 @@ function safeNext(raw) {
   return SAFE_NEXT_RE.test(v) ? v : '';
 }
 
-// The bot SVG inlined so we can animate it and clip it behind the card top
-function BotSVG() {
-  return (
-    <img
-      src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/b4ce65a87_0001-1100507142766860381.png"
-      alt="Bot mascot"
-      style={{
-        width: '100%',
-        height: '100%',
-        objectFit: 'contain',
-        mixBlendMode: 'screen',
-        filter: 'drop-shadow(0 0 20px rgba(167,100,230,0.6)) brightness(1.15)',
-      }}
-    />
-  );
-}
+
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -150,16 +136,10 @@ export default function SignIn() {
               onAnimationComplete={() => setMascotDone(true)}
               style={{ width: '220px', height: '220px', flexShrink: 0 }}
             >
-              <BotSVG />
+              <AnimatedBot style={{ width: '100%', height: '100%' }} />
             </motion.div>
           ) : (
-            <motion.div
-              animate={{ y: [0, -7, 0] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-              style={{ width: '220px', height: '220px', flexShrink: 0 }}
-            >
-              <BotSVG />
-            </motion.div>
+            <AnimatedBot style={{ width: '220px', height: '220px' }} />
           )}
         </div>
 
