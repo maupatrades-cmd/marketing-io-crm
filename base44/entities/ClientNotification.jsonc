@@ -3,12 +3,10 @@
   "type": "object",
   "properties": {
     "client_id": {
-      "type": "string",
-      "description": "Reference to Client \u2014 optional if recipient_user_id is set"
+      "type": "string"
     },
     "recipient_user_id": {
-      "type": "string",
-      "description": "If set, this notification is for a specific staff/admin user. If client_id is also set, it is about that client to that user."
+      "type": "string"
     },
     "notification_type": {
       "type": "string",
@@ -35,15 +33,13 @@
       "type": "string"
     },
     "related_entity_type": {
-      "type": "string",
-      "description": "Deal, Invoice, Deliverable, Contract, MonthlyReport, etc."
+      "type": "string"
     },
     "related_entity_id": {
       "type": "string"
     },
     "action_url": {
-      "type": "string",
-      "description": "Link to view detail"
+      "type": "string"
     },
     "is_read": {
       "type": "boolean",
@@ -58,5 +54,53 @@
     "notification_type",
     "title",
     "body"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "data.recipient_user_id": "{{user.id}}"
+        },
+        {
+          "data.client_id": "{{user.data.client_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.recipient_user_id": "{{user.id}}"
+        },
+        {
+          "data.client_id": "{{user.data.client_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
 }

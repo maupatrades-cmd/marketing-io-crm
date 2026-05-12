@@ -21,36 +21,27 @@
         "payment_ip_rejected",
         "payment_postback_invalid",
         "payment_amount_mismatch",
-        "payment_hash_mismatch",
-        "payment_summary_rate_limit",
-        "email_unsubscribed"
-      ],
-      "description": "Type of security event"
+        "payment_hash_mismatch"
+      ]
     },
     "user_id": {
-      "type": "string",
-      "description": "Reference to User"
+      "type": "string"
     },
     "email": {
-      "type": "string",
-      "description": "Email involved in event"
+      "type": "string"
     },
     "ip_address": {
-      "type": "string",
-      "description": "IP address from request"
+      "type": "string"
     },
     "user_agent": {
-      "type": "string",
-      "description": "Browser/device user agent string"
+      "type": "string"
     },
     "details": {
-      "type": "string",
-      "description": "JSON or freeform details about the event"
+      "type": "string"
     },
     "created_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Timestamp of event"
+      "format": "date-time"
     }
   },
   "required": [
@@ -58,9 +49,21 @@
     "email"
   ],
   "rls": {
-    "create": { "user_condition": { "role": "owner" } },
-    "read":   { "user_condition": { "role": "owner" } },
-    "update": { "user_condition": { "role": "owner" } },
-    "delete": { "user_condition": { "role": "owner" } }
+    "create": {},
+    "read": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
   }
 }

@@ -57,8 +57,7 @@
     },
     "follow_up_date": {
       "type": "string",
-      "format": "date",
-      "description": "Follow-up reminder date"
+      "format": "date"
     },
     "completed_at": {
       "type": "string",
@@ -73,7 +72,6 @@
     },
     "comments": {
       "type": "array",
-      "description": "Thread of comments on the task",
       "items": {
         "type": "object",
         "properties": {
@@ -100,5 +98,65 @@
   "required": [
     "title",
     "status"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "data.assigned_to": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        },
+        {
+          "data.client_id": "{{user.data.client_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.assigned_to": "{{user.id}}"
+        },
+        {
+          "data.created_by": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

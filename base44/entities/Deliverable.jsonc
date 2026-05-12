@@ -21,16 +21,13 @@
         "setup",
         "monthly_recurring",
         "once_off"
-      ],
-      "description": "Which phase this deliverable belongs to"
+      ]
     },
     "product": {
-      "type": "string",
-      "description": "Package or add-on this belongs to"
+      "type": "string"
     },
     "assigned_to": {
-      "type": "string",
-      "description": "User ID of staff member responsible"
+      "type": "string"
     },
     "assigned_to_name": {
       "type": "string"
@@ -69,16 +66,14 @@
     },
     "review_deadline": {
       "type": "string",
-      "format": "date",
-      "description": "5 business day window expires"
+      "format": "date"
     },
     "approved_date": {
       "type": "string",
       "format": "date"
     },
     "month_year": {
-      "type": "string",
-      "description": "YYYY-MM for recurring deliverables"
+      "type": "string"
     },
     "notes": {
       "type": "string"
@@ -87,8 +82,7 @@
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Uploaded deliverable files"
+      }
     }
   },
   "required": [
@@ -99,30 +93,79 @@
   "rls": {
     "create": {
       "$or": [
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "role": "head_of_tech" } }
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "head_of_tech"
+          }
+        }
       ]
     },
     "read": {
       "$or": [
-        { "data.client_id": "{{user.data.client_id}}" },
-        { "data.assigned_to": "{{user.id}}" },
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "role": "head_of_tech" } }
+        {
+          "data.client_id": "{{user.data.client_id}}"
+        },
+        {
+          "data.assigned_to": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "head_of_tech"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "field_agent"
+          }
+        }
       ]
     },
     "update": {
       "$or": [
-        { "data.assigned_to": "{{user.id}}" },
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "role": "head_of_tech" } }
+        {
+          "data.assigned_to": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "head_of_tech"
+          }
+        }
       ]
     },
     "delete": {
-      "user_condition": { "role": "owner" }
+      "user_condition": {
+        "role": "owner"
+      }
     }
   }
 }

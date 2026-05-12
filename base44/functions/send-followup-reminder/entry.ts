@@ -24,10 +24,32 @@ ${bodyHtml}
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const { contract_id, client_id, days_since_signing = 3 } = await req.json();
+  const body = await req.json();
+  const { contract_id, client_id, days_since_signing = 3 } = body;
 
+  // BATCH MODE — no specific contract/client provided (called by scheduled automation)
   if (!contract_id || !client_id) {
-    return Response.json({ error: 'Missing required fields' }, { status: 400 });
+    const targetDays = days_since_signing || 3;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - targetDays);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+
+    const contracts = await base44.asServiceRole.entities.Contract.filter({ status: 'signed' });
+    const targets = contracts.filter(ct => ct.signed_date === cutoffStr);
+
+    let sent = 0;
+    for (const ct of targets) {
+      if (!ct.client_id) continue;
+      try {
+        await base44.asServiceRole.functions.invoke('send-followup-reminder', {
+          contract_id: ct.id,
+          client_id: ct.client_id,
+          days_since_signing: targetDays,
+        });
+        sent++;
+      } catch (_) {}
+    }
+    return Response.json({ batch: true, days: targetDays, sent, total: targets.length });
   }
 
   try {

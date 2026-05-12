@@ -30,47 +30,8 @@
         "paid_ads_trickle",
         "admin_contract_load",
         "add_on_once_off",
-        "add_on_retainer",
-        "addon_setup_commission",
-        "addon_retainer_commission",
-        "addon_paid_ads_monthly",
-        "street_pulse_flat",
-        "township_pulse_flat",
-        "manual_adjustment"
+        "add_on_retainer"
       ]
-    },
-    "user_id": {
-      "type": "string",
-      "description": "Canonical staff identifier — mirrors staff_id for new records"
-    },
-    "user_name": {
-      "type": "string"
-    },
-    "user_role": {
-      "type": "string",
-      "description": "Role snapshot at calc time"
-    },
-    "type": {
-      "type": "string",
-      "enum": [
-        "setup_commission",
-        "retainer_commission",
-        "addon_setup_commission",
-        "addon_retainer_commission",
-        "addon_paid_ads_monthly",
-        "street_pulse_flat",
-        "township_pulse_flat",
-        "cpc_lead_fee",
-        "cpc_closure_bonus",
-        "admin_contract_load",
-        "fnc_referral",
-        "manual_adjustment"
-      ],
-      "description": "Canonical commission type — mirrors commission_type for new records"
-    },
-    "amount": {
-      "type": "number",
-      "description": "Canonical amount — mirrors commission_amount for new records"
     },
     "deal_id": {
       "type": "string",
@@ -110,73 +71,12 @@
       "type": "string",
       "enum": [
         "pending",
-        "pending_milestone",
-        "pending_payment",
         "approved",
         "paid",
         "withheld",
-        "clawback",
-        "clawed_back",
-        "cancelled"
+        "clawback"
       ],
       "default": "pending"
-    },
-    "payment_id": {
-      "type": "string",
-      "description": "PayFast Payment that triggered this commission"
-    },
-    "invoice_id": {
-      "type": "string"
-    },
-    "product_id": {
-      "type": "string"
-    },
-    "product_name": {
-      "type": "string"
-    },
-    "calc_breakdown": {
-      "type": "object",
-      "description": "Audit trail: { base, rate, formula }"
-    },
-    "qualifying_event_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "milestone_unlocked_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "approved_for_payout_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "scheduled_payout_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "paid_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "paid_via": {
-      "type": "string",
-      "enum": ["manual_eft", "payroll_batch", "void"]
-    },
-    "clawback_payment_id": {
-      "type": "string"
-    },
-    "reattributed_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Set when commission is reassigned from one user to another (e.g. owner → field_agent within 7-day allocation window)"
-    },
-    "reattributed_from": {
-      "type": "string",
-      "description": "Original user_id (typically owner) before reattribution"
-    },
-    "reattributed_by": {
-      "type": "string",
-      "description": "User.id of the owner/admin who triggered the reattribution"
     },
     "payroll_month": {
       "type": "string",
@@ -210,22 +110,53 @@
   "rls": {
     "create": {
       "$or": [
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } }
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "read": {
       "$or": [
-        { "data.user_id": "{{user.id}}" },
-        { "data.staff_id": "{{user.id}}" },
-        { "user_condition": { "role": "owner" } }
+        {
+          "data.staff_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "update": {
-      "user_condition": { "role": "owner" }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     },
     "delete": {
-      "user_condition": { "role": "owner" }
+      "user_condition": {
+        "role": "owner"
+      }
     }
   }
 }

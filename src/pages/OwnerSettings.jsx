@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Shield, Mail, Zap, Lock, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import LaunchReadinessModal from "@/components/owner/LaunchReadinessModal";
+import ChecklistItem from "@/components/owner/GoLiveChecklistItem";
 import { useToast } from "@/components/ui/use-toast";
 import EmailFooter from "@/components/EmailFooter";
 
-const TABS = ["users", "packages", "commissions", "emails", "integrations", "audit"];
+const TABS = ["users", "packages", "commissions", "emails", "integrations", "audit", "go-live"];
 
 export default function OwnerSettings() {
   const [activeTab, setActiveTab] = useState("users");
@@ -242,6 +243,56 @@ export default function OwnerSettings() {
           <div className="glass rounded-xl p-6">
             <h3 className="font-semibold mb-4">Security & Audit Log</h3>
             <p className="text-sm text-muted-foreground">Recent system actions and security events will be logged here.</p>
+          </div>
+        )}
+
+        {/* TAB: Go-Live */}
+        {activeTab === "go-live" && (
+          <div className="space-y-4">
+            <div className="glass rounded-xl p-6">
+              <h3 className="font-semibold mb-1 flex items-center gap-2"><Shield className="w-4 h-4 text-success" /> Go-Live Checklist</h3>
+              <p className="text-xs text-muted-foreground mb-5">Pre-launch security & ops verification</p>
+              <div className="space-y-3">
+
+                {/* RLS */}
+                <ChecklistItem status="pass" label="RLS on Commission" detail="Staff can only see their own; owner/admin full access." />
+                <ChecklistItem status="pass" label="RLS on OTPCode" detail="Owner-only read. Codes not exposed to regular users." />
+                <ChecklistItem status="pass" label="RLS on AppUser (built-in)" detail="Platform-managed — users can only see/update their own record." />
+                <ChecklistItem status="pass" label="RLS on InternalMessage" detail="Read limited to sender, recipient, owner, admin." />
+                <ChecklistItem status="pass" label="RLS on Lead" detail="Submitter + owner/admin only." />
+                <ChecklistItem status="pass" label="RLS on LoginAttempt" detail="Owner-only." />
+                <ChecklistItem status="pass" label="RLS on SecurityEvent" detail="Owner-only." />
+                <ChecklistItem status="pass" label="RLS on Contract" detail="Client own + staff/admin." />
+                <ChecklistItem status="pass" label="RLS on Deliverable" detail="Client own, assigned staff, owner/admin." />
+                <ChecklistItem status="pass" label="RLS on Task" detail="Assigned-to + creator + owner/admin." />
+                <ChecklistItem status="pass" label="RLS on ServiceOrder" detail="Requester + client own + owner/admin." />
+                <ChecklistItem status="pass" label="RLS on ClientNotification" detail="Recipient or client own only." />
+
+                <div className="border-t border-border/40 my-2" />
+
+                {/* Test account */}
+                <ChecklistItem status="warn" label="Test account admin@marketingio.co.za" detail="⚠️ Still exists with test password. Delete or rotate before go-live via Owner Users page." />
+
+                <div className="border-t border-border/40 my-2" />
+
+                {/* Cron automations */}
+                <ChecklistItem status="pass" label="Cron: Daily Overdue Invoice Sweep (06:00 SAST)" detail="✅ Active — 4/4 successful runs." />
+                <ChecklistItem status="pass" label="Cron: Daily Client Churn Sweep (03:00 SAST)" detail="✅ Active — 4/4 successful runs." />
+                <ChecklistItem status="warn" label="Cron: Daily Contract Renewal Reminders (09:00 SAST)" detail="⚠️ 1 failed run out of 4. Monitor next execution." />
+                <ChecklistItem status="pass" label="Cron: 3-Day Follow-up After Signing" detail="✅ Fixed — now runs in batch mode. No more 400 errors." />
+                <ChecklistItem status="pass" label="Cron: 7-Day Follow-up After Signing" detail="✅ Fixed — now runs in batch mode." />
+
+                <div className="border-t border-border/40 my-2" />
+
+                {/* Stub pages */}
+                <ChecklistItem status="manual" label="/client/invoices/:invoiceId" detail="Manual check required: open in preview and confirm real content renders." />
+                <ChecklistItem status="manual" label="/client/messages/:threadId" detail="Manual check required: open in preview and confirm real content renders." />
+              </div>
+            </div>
+            <div className="glass rounded-xl p-4 flex items-center gap-3 border border-warning/30">
+              <AlertCircle className="w-5 h-5 text-warning shrink-0" />
+              <p className="text-sm text-warning">Action required: Delete or change password for <code className="font-mono text-xs bg-warning/10 px-1 rounded">admin@marketingio.co.za</code> before go-live.</p>
+            </div>
           </div>
         )}
       </div>

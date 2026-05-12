@@ -3,12 +3,10 @@
   "type": "object",
   "properties": {
     "client_id": {
-      "type": "string",
-      "description": "Reference to Client entity"
+      "type": "string"
     },
     "requested_by_id": {
-      "type": "string",
-      "description": "Reference to User \u2014 the client themselves"
+      "type": "string"
     },
     "order_type": {
       "type": "string",
@@ -17,38 +15,30 @@
         "domain_registration",
         "business_email_setup",
         "package_upgrade"
-      ],
-      "description": "Type of service being ordered"
+      ]
     },
     "product_code": {
-      "type": "string",
-      "description": "For add-ons, matches FulfilmentTemplate.code"
+      "type": "string"
     },
     "product_name": {
-      "type": "string",
-      "description": "Display name of the service"
+      "type": "string"
     },
     "price_zar_setup": {
       "type": "number",
-      "default": 0,
-      "description": "Setup fee in ZAR"
+      "default": 0
     },
     "price_zar_recurring": {
       "type": "number",
-      "default": 0,
-      "description": "Monthly recurring price in ZAR"
+      "default": 0
     },
     "domain_requested": {
-      "type": "string",
-      "description": "For domain orders \u2014 the domain name with extensions"
+      "type": "string"
     },
     "email_addresses_requested": {
-      "type": "string",
-      "description": "For email orders \u2014 comma-separated list of email addresses"
+      "type": "string"
     },
     "additional_notes": {
-      "type": "string",
-      "description": "Client's free text notes"
+      "type": "string"
     },
     "status": {
       "type": "string",
@@ -61,34 +51,27 @@
         "fulfilment_started",
         "completed"
       ],
-      "default": "requested",
-      "description": "Order processing status"
+      "default": "requested"
     },
     "assigned_staff_id": {
-      "type": "string",
-      "description": "Reference to User \u2014 staff member handling the order"
+      "type": "string"
     },
     "requested_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "When order was requested"
+      "format": "date-time"
     },
     "reviewed_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "When order was reviewed"
+      "format": "date-time"
     },
     "contract_id": {
-      "type": "string",
-      "description": "Reference to Contract \u2014 if one was generated"
+      "type": "string"
     },
     "deal_id": {
-      "type": "string",
-      "description": "Reference to Deal \u2014 if added to pipeline"
+      "type": "string"
     },
     "decline_reason": {
-      "type": "string",
-      "description": "If rejected, reason for decline"
+      "type": "string"
     }
   },
   "required": [
@@ -97,28 +80,45 @@
     "order_type"
   ],
   "rls": {
-    "create": {
-      "$or": [
-        { "data.client_id": "{{user.data.client_id}}" },
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } }
-      ]
-    },
+    "create": {},
     "read": {
       "$or": [
-        { "data.client_id": "{{user.data.client_id}}" },
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } }
+        {
+          "data.requested_by_id": "{{user.id}}"
+        },
+        {
+          "data.client_id": "{{user.data.client_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "update": {
       "$or": [
-        { "user_condition": { "role": "owner" } },
-        { "user_condition": { "role": "admin" } }
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "delete": {
-      "user_condition": { "role": "owner" }
+      "user_condition": {
+        "role": "owner"
+      }
     }
   }
 }

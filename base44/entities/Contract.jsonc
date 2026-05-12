@@ -55,13 +55,11 @@
     },
     "last_renewal_reminder_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Timestamp of the last renewal reminder email sent \u2014 used for idempotency"
+      "format": "date-time"
     },
     "last_signature_email_sent_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Timestamp of the last signature request email sent \u2014 used for 24h idempotency"
+      "format": "date-time"
     },
     "status": {
       "type": "string",
@@ -150,5 +148,72 @@
     "client_id",
     "package",
     "status"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "field_agent"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.client_id": "{{user.data.client_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "field_agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "cpc"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
 }

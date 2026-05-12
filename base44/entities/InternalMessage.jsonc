@@ -93,13 +93,11 @@
     },
     "requires_escalation": {
       "type": "boolean",
-      "default": false,
-      "description": "If true, will be escalated if not resolved within SLA"
+      "default": false
     },
     "escalate_to_owner": {
       "type": "boolean",
-      "default": false,
-      "description": "True if this needs owner attention"
+      "default": false
     },
     "escalated_at": {
       "type": "string",
@@ -115,20 +113,45 @@
     "create": {},
     "read": {
       "$or": [
-        { "data.from_id": "{{user.id}}" },
-        { "data.to_id":   "{{user.id}}" },
-        { "user_condition": { "role": "owner" } }
+        {
+          "data.from_id": "{{user.id}}"
+        },
+        {
+          "data.to_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "update": {
       "$or": [
-        { "data.to_id":   "{{user.id}}" },
-        { "data.from_id": "{{user.id}}" },
-        { "user_condition": { "role": "owner" } }
+        {
+          "data.to_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "delete": {
-      "user_condition": { "role": "owner" }
+      "user_condition": {
+        "role": "owner"
+      }
     }
   }
 }

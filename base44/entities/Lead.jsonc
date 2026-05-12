@@ -46,8 +46,7 @@
         "normal",
         "urgent"
       ],
-      "default": "normal",
-      "description": "Lead urgency flag \u2014 urgent triggers immediate owner notification"
+      "default": "normal"
     },
     "status": {
       "type": "string",
@@ -62,8 +61,7 @@
       "default": "pending_verification"
     },
     "verified_by": {
-      "type": "string",
-      "description": "Admin user ID who verified"
+      "type": "string"
     },
     "verified_date": {
       "type": "string",
@@ -77,12 +75,10 @@
     },
     "cpc_r87_paid": {
       "type": "boolean",
-      "default": false,
-      "description": "R87 lead payment to CPC"
+      "default": false
     },
     "warm_lead_criteria": {
       "type": "object",
-      "description": "7 warm-lead qualification criteria (legacy v1, kept for backwards compat)",
       "properties": {
         "has_business_premises": {
           "type": "boolean",
@@ -116,7 +112,6 @@
     },
     "warm_lead_criteria_v2": {
       "type": "object",
-      "description": "7 warm-lead qualification criteria with rich context (v2 - replaces v1)",
       "properties": {
         "has_business_premises": {
           "type": "object",
@@ -227,7 +222,6 @@
     },
     "qualification_extras": {
       "type": "object",
-      "description": "Additional qualification context beyond the 7 criteria",
       "properties": {
         "monthly_revenue_band": {
           "type": "string",
@@ -280,15 +274,13 @@
           "type": "array",
           "items": {
             "type": "string"
-          },
-          "description": "Multi-select: no_marketing, diy_social, has_marketing_person, used_agency_before, has_website, has_logo, other"
+          }
         },
         "package_interest": {
           "type": "array",
           "items": {
             "type": "string"
-          },
-          "description": "Multi-select: ignite, accelerate, dominate, street_pulse, township_pulse, addons, not_sure"
+          }
         },
         "lead_temperature": {
           "type": "string",
@@ -296,44 +288,36 @@
             "cold",
             "warm",
             "hot"
-          ],
-          "description": "Qualifier's gut-feel rating: cold (researching), warm (interested), hot (ready to buy)"
+          ]
         },
         "best_followup_time": {
-          "type": "string",
-          "description": "HH:MM format time when best to reach the lead"
+          "type": "string"
         },
         "best_followup_days": {
           "type": "array",
           "items": {
             "type": "string"
-          },
-          "description": "Days of week: Monday, Tuesday, etc."
+          }
         },
         "qualifier_notes": {
-          "type": "string",
-          "description": "Free-text notes from the qualifier"
+          "type": "string"
         }
       }
     },
     "qualified_by": {
-      "type": "string",
-      "description": "User ID who completed the qualification"
+      "type": "string"
     },
     "qualified_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "When the lead was qualified"
+      "format": "date-time"
     },
     "qualification_complete": {
       "type": "boolean",
-      "default": false,
-      "description": "True if all 7 criteria + lead_temperature filled"
+      "default": false
     },
     "lead_score": {
       "type": "number",
-      "default": 0,
-      "description": "Computed engagement + qualification score (0\u2013100)"
+      "default": 0
     },
     "score_tier": {
       "type": "string",
@@ -343,26 +327,21 @@
         "hot",
         "high_value"
       ],
-      "default": "cold",
-      "description": "Score bucket used for outreach prioritization"
+      "default": "cold"
     },
     "outreach_flag": {
       "type": "boolean",
-      "default": false,
-      "description": "Flagged for personalized outreach by sales team"
+      "default": false
     },
     "outreach_assigned_to": {
-      "type": "string",
-      "description": "User ID assigned to do personalized outreach"
+      "type": "string"
     },
     "outreach_notes": {
-      "type": "string",
-      "description": "Notes on what outreach to run for this prospect"
+      "type": "string"
     },
     "last_scored_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "When the lead score was last computed"
+      "format": "date-time"
     },
     "notes": {
       "type": "string"
@@ -372,5 +351,47 @@
     "business_name",
     "contact_person",
     "phone"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "data.submitted_by": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.submitted_by": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
 }
