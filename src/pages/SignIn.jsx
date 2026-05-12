@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AnimatedBot from '@/components/auth/AnimatedBot';
+import Mascot from '@/components/Mascot';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -134,12 +134,12 @@ export default function SignIn() {
               animate={{ x: 0 }}
               transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
               onAnimationComplete={() => setMascotDone(true)}
-              style={{ width: '220px', height: '220px', flexShrink: 0 }}
+              style={{ width: '220px', height: '220px', flexShrink: 0, background: 'transparent' }}
             >
-              <AnimatedBot style={{ width: '100%', height: '100%' }} />
+              <Mascot size={220} style={{ background: 'transparent' }} />
             </motion.div>
           ) : (
-            <AnimatedBot style={{ width: '220px', height: '220px' }} />
+            <Mascot size={220} style={{ background: 'transparent' }} />
           )}
         </div>
 
