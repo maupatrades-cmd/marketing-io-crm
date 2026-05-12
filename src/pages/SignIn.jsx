@@ -31,7 +31,6 @@ export default function SignIn() {
   const [captchaInput, setCaptchaInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mascotDone, setMascotDone] = useState(false);
   const [welcomeText, setWelcomeText] = useState('');
 
   useEffect(() => {
@@ -41,7 +40,7 @@ export default function SignIn() {
       i += 1;
       setWelcomeText(full.slice(0, i));
       if (i >= full.length) clearInterval(id);
-    }, 95);
+    }, 55);
     return () => clearInterval(id);
   }, []);
 
@@ -156,8 +155,7 @@ export default function SignIn() {
         <motion.div
           initial={{ x: '-120vw', rotate: -720, opacity: 0 }}
           animate={{ x: 0, rotate: 0, opacity: 1 }}
-          transition={{ delay: 1.3, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-          onAnimationComplete={() => setMascotDone(true)}
+          transition={{ delay: 0.7, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
           style={{
             position: 'absolute',
             top: '-200px',
@@ -173,53 +171,51 @@ export default function SignIn() {
           <Mascot size={220} style={{ background: 'transparent' }} />
         </motion.div>
 
-        {/* Speech bubble — pops after mascot lands, three sequenced lines */}
-        {mascotDone && (
+        {/* Speech bubble — pops after mascot lands; lines hit 2.0/2.4/2.8s absolute */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 1.8, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            position: 'absolute',
+            top: '-230px',
+            right: '-24px',
+            maxWidth: '280px',
+            background: '#ffffff',
+            borderRadius: '28px 28px 28px 6px',
+            padding: '18px 22px',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+            zIndex: 35,
+            pointerEvents: 'none',
+          }}
+          role="status"
+          aria-live="polite"
+        >
           <motion.div
-            initial={{ opacity: 0, scale: 0.6, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              position: 'absolute',
-              top: '-230px',
-              right: '-24px',
-              maxWidth: '280px',
-              background: '#ffffff',
-              borderRadius: '28px 28px 28px 6px',
-              padding: '18px 22px',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
-              zIndex: 35,
-              pointerEvents: 'none',
-            }}
-            role="status"
-            aria-live="polite"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.0, duration: 0.35, ease: 'easeOut' }}
+            style={{ color: '#0A1F44', fontWeight: 700, fontSize: '22px', lineHeight: 1.15 }}
           >
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.4, ease: 'easeOut' }}
-              style={{ color: '#0A1F44', fontWeight: 700, fontSize: '22px', lineHeight: 1.15 }}
-            >
-              Done hiding your business?
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.0, duration: 0.4, ease: 'easeOut' }}
-              style={{ color: '#6B7280', fontWeight: 500, fontSize: '18px', lineHeight: 1.2, marginTop: '6px' }}
-            >
-              Same here.
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.4, duration: 0.4, ease: 'easeOut' }}
-              style={{ color: '#E63946', fontWeight: 700, fontSize: '24px', lineHeight: 1.15, marginTop: '8px' }}
-            >
-              Let&apos;s market it.
-            </motion.div>
+            Done hiding your business?
           </motion.div>
-        )}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.4, duration: 0.35, ease: 'easeOut' }}
+            style={{ color: '#6B7280', fontWeight: 500, fontSize: '18px', lineHeight: 1.2, marginTop: '6px' }}
+          >
+            Same here.
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.8, duration: 0.35, ease: 'easeOut' }}
+            style={{ color: '#E63946', fontWeight: 700, fontSize: '24px', lineHeight: 1.15, marginTop: '8px' }}
+          >
+            Let&apos;s market it.
+          </motion.div>
+        </motion.div>
 
         {/* Login card */}
         <motion.form
