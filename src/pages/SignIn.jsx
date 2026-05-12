@@ -158,27 +158,46 @@ export default function SignIn() {
           style={{ background: 'radial-gradient(circle, #00CCFF 0%, transparent 70%)' }} />
       </div>
 
-      {/* Logo — larger */}
-      <motion.img
+      {/* Logo — bigger */}
+      <motion.div
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
-        src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
-        alt="Marketing iO"
-        className="h-44 sm:h-56 object-contain mb-4 relative z-10"
-        style={{
-          filter: 'drop-shadow(0 0 14px rgba(119,41,255,0.7)) drop-shadow(0 0 28px rgba(255,41,148,0.5)) brightness(1.1)',
-        }}
-      />
+        className="relative z-10 flex flex-col items-center mb-3"
+      >
+        <img
+          src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
+          alt="Marketing iO"
+          className="h-52 sm:h-64 object-contain"
+          style={{
+            filter: 'drop-shadow(0 0 14px rgba(119,41,255,0.7)) drop-shadow(0 0 28px rgba(255,41,148,0.5)) brightness(1.1)',
+          }}
+        />
+        {/* Tagline */}
+        <p
+          className="text-center font-semibold tracking-widest uppercase select-none mt-1"
+          style={{
+            fontSize: '13px',
+            letterSpacing: '3px',
+            background: 'linear-gradient(90deg, #a764e6, #ec4899)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            textShadow: 'none',
+          }}
+        >
+          Too Good To Stay Hidden
+        </p>
+      </motion.div>
 
       {/* Welcome back — typewriter */}
       <div
         className="relative z-10 text-white font-bold mb-8 select-none"
         style={{
-          fontSize: '32px',
+          fontSize: '28px',
           letterSpacing: '0.5px',
           textShadow: '0 2px 14px rgba(119,41,255,0.45)',
-          minHeight: '42px',
+          minHeight: '38px',
         }}
         aria-label="Welcome back"
       >
