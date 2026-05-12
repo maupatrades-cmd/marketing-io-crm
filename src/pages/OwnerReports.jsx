@@ -3,9 +3,29 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { BarChart3, XCircle, ArrowLeft, Download } from "lucide-react";
+import { BarChart3, XCircle, ArrowLeft, Download, Lock } from "lucide-react";
 
-const REPORTS = [
+// Role-based report visibility:
+// owner       → all reports
+// admin       → all except "Top performing staff" and "Add-on attach rate"
+// cpc         → Lead captures by month, Cancelled Invoices only
+// field_agent → Lead captures by month, Cancelled Invoices only
+const REPORT_ACCESS = {
+  1:  ["owner", "admin"],                          // Clients with no contact in 30 days
+  2:  ["owner", "admin"],                          // Deals expected to close this month
+  3:  ["owner", "admin"],                          // Failed debit orders this quarter
+  4:  ["owner"],                                   // Top performing staff — owner only
+  5:  ["owner"],                                   // Add-on attach rate — owner only
+  6:  ["owner"],                                   // Avg days deal won to setup paid — owner only
+  7:  ["owner", "admin"],                          // Clients approaching renewal
+  8:  ["owner", "admin"],                          // Onboarding bottlenecks
+  9:  ["owner", "admin"],                          // Deliverable approval lag
+  10: ["owner", "admin", "cpc", "field_agent"],    // Lead captures by month
+  11: ["owner", "admin", "cpc", "field_agent"],    // Clients by month
+  12: ["owner", "admin", "cpc", "field_agent"],    // Cancelled invoices
+};
+
+const ALL_REPORTS = [
   { id: 1, name: "Clients with no contact in 30 days", description: "Inactive accounts needing outreach" },
   { id: 2, name: "Deals expected to close this month", description: "Pipeline forecast" },
   { id: 3, name: "Failed debit orders this quarter", description: "Payment issues to follow up" },
@@ -24,7 +44,14 @@ export default function OwnerReports() {
   const [selected, setSelected] = useState(null);
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [dealsForm, setDealsForm] = useState({ title: "", description: "", recipients: "all" });
+
+  useEffect(() => {
+    base44.auth.me().then(me => setUserRole(me?.role || "field_agent")).catch(() => setUserRole("field_agent"));
+  }, []);
+
+  const REPORTS = ALL_REPORTS.filter(r => REPORT_ACCESS[r.id]?.includes(userRole));
 
   const handleSelectReport = async (report) => {
     setSelected(report);
@@ -214,21 +241,30 @@ export default function OwnerReports() {
           {/* Sidebar: Report Library */}
           <div className="glass rounded-xl p-4 h-fit">
             <h3 className="font-semibold mb-4">Reports</h3>
-            <div className="space-y-2">
-              {REPORTS.map(report => (
-                <button
-                  key={report.id}
-                  onClick={() => handleSelectReport(report)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
-                    selected?.id === report.id
-                      ? "bg-primary/15 text-primary border-l-4 border-primary"
-                      : "hover:bg-secondary/40 text-muted-foreground"
-                  }`}
-                >
-                  {report.name}
-                </button>
-              ))}
-            </div>
+            {!userRole ? (
+              <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-8 bg-muted/20 rounded animate-pulse" />)}</div>
+            ) : REPORTS.length === 0 ? (
+              <div className="flex flex-col items-center py-6 text-center gap-2">
+                <Lock className="w-6 h-6 text-muted-foreground/40" />
+                <p className="text-xs text-muted-foreground">No reports available for your role.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {REPORTS.map(report => (
+                  <button
+                    key={report.id}
+                    onClick={() => handleSelectReport(report)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                      selected?.id === report.id
+                        ? "bg-primary/15 text-primary border-l-4 border-primary"
+                        : "hover:bg-secondary/40 text-muted-foreground"
+                    }`}
+                  >
+                    {report.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Main: Report Results */}
