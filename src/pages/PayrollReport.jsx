@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { jsPDF } from "jspdf";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -91,43 +92,116 @@ function exportCSV(groups, month) {
 }
 
 function exportPDF(groups, month, grandTotal) {
-  const lines = [];
-  lines.push(`MARKETING iO — PAYROLL REPORT`);
-  lines.push(`Month: ${month}`);
-  lines.push(`Generated: ${new Date().toLocaleDateString("en-ZA")}`);
-  lines.push(`${"─".repeat(70)}`);
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  let y = 18;
+
+  const checkPage = (needed = 8) => {
+    if (y + needed > 280) { doc.addPage(); y = 18; }
+  };
+
+  // Header
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("MARKETING iO — PAYROLL REPORT", margin, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100);
+  doc.text(`Month: ${month}     Generated: ${new Date().toLocaleDateString("en-ZA")}`, margin, y);
+  doc.setTextColor(0);
+  y += 5;
+  doc.setDrawColor(180);
+  doc.line(margin, y, pageW - margin, y);
+  y += 7;
+
   groups.forEach(g => {
     const pkg = g.salary_pkg;
-    const grandPay = (pkg?.nett || 0) + g.commission_total;
-    lines.push(`\n[${g.employee_number}] ${g.staff_name.toUpperCase()} (${g.staff_role.replace(/_/g, " ")})`);
-    lines.push(`  Email: ${g.staff_email || "—"}`);
-    lines.push(`${"─".repeat(50)}`);
+    const totalPay = (pkg?.nett || 0) + g.commission_total;
+
+    checkPage(20);
+
+    // Staff name row
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(`[${g.employee_number}]  ${g.staff_name.toUpperCase()}`, margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(g.staff_role.replace(/_/g, " "), margin + 60, y);
+    doc.setTextColor(0);
+    y += 5;
+
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Email: ${g.staff_email || "—"}`, margin + 4, y);
+    doc.setTextColor(0);
+    y += 5;
+
+    // Salary block
     if (pkg) {
-      lines.push(`  Gross CTC:   R${pkg.gross.toLocaleString()}`);
-      lines.push(`  Nett Salary: R${pkg.nett.toLocaleString()}`);
+      checkPage(14);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("Guaranteed Package", margin + 4, y);
+      doc.setFont("helvetica", "normal");
+      y += 4;
+      doc.text(`Gross CTC:`, margin + 8, y);
+      doc.text(`R${pkg.gross.toLocaleString()}`, pageW - margin, y, { align: "right" });
+      y += 4;
+      doc.text(`Nett Salary:`, margin + 8, y);
+      doc.text(`R${pkg.nett.toLocaleString()}`, pageW - margin, y, { align: "right" });
+      y += 4;
     }
+
+    // Commission lines
     if (g.items.length > 0) {
-      lines.push(`  Commission Lines:`);
+      checkPage(8);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("Commission Lines", margin + 4, y);
+      doc.setFont("helvetica", "normal");
+      y += 4;
       g.items.forEach(c => {
-        lines.push(
-          `    ${(c.commission_type || "").replace(/_/g, " ").padEnd(28)} ${(c.client_name || "").padEnd(20)} R${(c.commission_amount || 0).toLocaleString()}`
-        );
+        checkPage(5);
+        const label = (c.commission_type || "").replace(/_/g, " ");
+        const client = c.client_name || "—";
+        doc.text(`• ${label} — ${client}`, margin + 8, y);
+        doc.text(`R${(c.commission_amount || 0).toLocaleString()}`, pageW - margin, y, { align: "right" });
+        y += 5;
       });
     }
-    lines.push(`  ${"TOTAL PAYOUT".padEnd(50)} R${grandPay.toLocaleString()}`);
-  });
-  lines.push(`\n${"═".repeat(70)}`);
-  lines.push(`  ${"GRAND TOTAL PAYROLL".padEnd(50)} R${grandTotal.toLocaleString()}`);
-  lines.push(`${"═".repeat(70)}`);
 
-  const text = lines.join("\n");
-  const blob = new Blob([text], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `payroll-report-${month}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
+    // Total payout row
+    checkPage(8);
+    doc.setFillColor(230, 250, 235);
+    doc.rect(margin, y - 1, pageW - margin * 2, 7, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("TOTAL PAYOUT", margin + 4, y + 4);
+    doc.setTextColor(20, 150, 80);
+    doc.text(`R${totalPay.toLocaleString()}`, pageW - margin, y + 4, { align: "right" });
+    doc.setTextColor(0);
+    doc.setFont("helvetica", "normal");
+    y += 12;
+
+    doc.setDrawColor(220);
+    doc.line(margin, y, pageW - margin, y);
+    y += 5;
+  });
+
+  // Grand total
+  checkPage(14);
+  doc.setFillColor(167, 100, 230, 0.15);
+  doc.rect(margin, y, pageW - margin * 2, 10, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("GRAND TOTAL PAYROLL", margin + 4, y + 7);
+  doc.setTextColor(20, 150, 80);
+  doc.text(`R${grandTotal.toLocaleString()}`, pageW - margin, y + 7, { align: "right" });
+
+  doc.save(`payroll-report-${month}.pdf`);
 }
 
 const ROLE_COLORS = {
