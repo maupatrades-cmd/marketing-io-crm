@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import Mascot from '@/components/Mascot';
 
@@ -55,23 +55,60 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
 
   // Mascot + bubble sequencing
+  const mascotControls = useAnimation();
   const [mascotLanded, setMascotLanded] = useState(false);
   const [bubble, setBubble] = useState(null); // 'tagline' | 'cta' | null
   const welcome = useTypewriter('Welcome', {
     speed: 130,
-    startDelay: 400,
+    startDelay: 300,
     enabled: mascotLanded,
   });
 
   useEffect(() => {
-    if (!mascotLanded) return;
-    const t1 = setTimeout(() => setBubble('tagline'), 600);
-    const t2 = setTimeout(() => setBubble('cta'), 5200);
+    let cancelled = false;
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    async function runMascotSequence() {
+      // 1. Slide in from left to off-center "waving spot"
+      await mascotControls.start({
+        x: '-22%',
+        opacity: 1,
+        transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] },
+      });
+      if (cancelled) return;
+
+      // 2. Show tagline bubble + wave the hand (rotate wiggle around bottom origin)
+      setBubble('tagline');
+      await mascotControls.start({
+        rotate: [0, -16, 14, -14, 12, -10, 8, -5, 0],
+        transition: { duration: 2.2, ease: 'easeInOut' },
+      });
+      if (cancelled) return;
+
+      // 3. Let the bubble linger a moment before moving
+      await wait(1100);
+      if (cancelled) return;
+
+      // 4. Glide to centered "holding the card" position
+      setBubble(null);
+      await mascotControls.start({
+        x: '0%',
+        transition: { duration: 0.9, ease: 'easeOut' },
+      });
+      if (cancelled) return;
+
+      // 5. Settled — kick off Welcome typing, then second bubble
+      setMascotLanded(true);
+      await wait(900);
+      if (cancelled) return;
+      setBubble('cta');
+    }
+
+    runMascotSequence();
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      cancelled = true;
     };
-  }, [mascotLanded]);
+  }, [mascotControls]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -174,12 +211,11 @@ export default function SignIn() {
             )}
           </div>
 
-          {/* Mascot — slides in from left, lands centered above card */}
+          {/* Mascot — slides in from left, waves, then glides to centered "holding" pose */}
           <motion.div
-            initial={{ x: '-160%', opacity: 0 }}
-            animate={{ x: '0%', opacity: 1 }}
-            transition={{ duration: 1.3, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
-            onAnimationComplete={() => setMascotLanded(true)}
+            initial={{ x: '-160%', opacity: 0, rotate: 0 }}
+            animate={mascotControls}
+            style={{ originX: 0.5, originY: 1 }}
             className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[360px] sm:w-[420px] z-20 pointer-events-none"
           >
             <Mascot />
