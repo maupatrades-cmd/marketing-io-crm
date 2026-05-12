@@ -179,42 +179,39 @@ export default function SignIn() {
           style={{
             fontSize: '13px',
             letterSpacing: '3px',
-            background: 'linear-gradient(90deg, #a764e6, #ec4899)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            textShadow: 'none',
+            color: '#E63946',
+            textShadow: '0 0 12px rgba(230,57,70,0.5)',
           }}
         >
           Too Good To Stay Hidden
         </p>
+
+        {/* Welcome back — typewriter */}
+        <div
+          className="text-white font-bold select-none mt-4"
+          style={{
+            fontSize: '28px',
+            letterSpacing: '0.5px',
+            textShadow: '0 2px 14px rgba(119,41,255,0.45)',
+            minHeight: '38px',
+          }}
+          aria-label="Welcome back"
+        >
+          {welcomeText}
+          <span className="mio-caret" aria-hidden="true">|</span>
+          <style>{`
+            @keyframes mio-caret-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+            .mio-caret {
+              display: inline-block;
+              margin-left: 2px;
+              color: #FF2994;
+              animation: mio-caret-blink 0.9s steps(1) infinite;
+            }
+          `}</style>
+        </div>
       </motion.div>
 
-      {/* Welcome back — typewriter */}
-      <div
-        className="relative z-10 text-white font-bold mb-8 select-none"
-        style={{
-          fontSize: '28px',
-          letterSpacing: '0.5px',
-          textShadow: '0 2px 14px rgba(119,41,255,0.45)',
-          minHeight: '38px',
-        }}
-        aria-label="Welcome back"
-      >
-        {welcomeText}
-        <span className="mio-caret" aria-hidden="true">|</span>
-        <style>{`
-          @keyframes mio-caret-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
-          .mio-caret {
-            display: inline-block;
-            margin-left: 2px;
-            color: #FF2994;
-            animation: mio-caret-blink 0.9s steps(1) infinite;
-          }
-        `}</style>
-      </div>
-
-      {/* Card + mascot wrapper */}
+      {/* Card + mascot wrapper — mb reduced since welcome is now inside logo block */}
       <div className="relative w-full max-w-sm z-10">
 
         {/* Mascot — rolls in from the left, lands centered, sitting low (just above the email) */}
