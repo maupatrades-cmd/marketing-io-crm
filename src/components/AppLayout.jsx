@@ -94,7 +94,6 @@ const OWNER_NAV = [
   { path: "/activity", label: "Activity Log", icon: MessageSquare },
   { path: "/calendar", label: "Calendar", icon: Calendar },
   { path: "/payroll", label: "Payroll Report", icon: ClipboardList },
-  { path: "/debit-orders", label: "Debit Orders", icon: CreditCard },
   { path: "/owner/staff-hr", label: "Staff & HR", icon: UserCog },
   { path: "/owner/users", label: "Users", icon: UserPlus },
   { path: "/products", label: "Products", icon: Package },
@@ -310,6 +309,19 @@ export default function AppLayout({ children, title, subtitle }) {
               >
                 <Settings className="w-4 h-4 shrink-0" />
                 Settings
+              </Link>
+              <Link
+                to="/debit-orders"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  location.pathname === "/debit-orders"
+                    ? "gradient-bg text-white shadow-glow-purple"
+                    : "hover:bg-white/5"
+                }`}
+                style={location.pathname === "/debit-orders" ? {} : { color: "#a8a8c0" }}
+              >
+                <CreditCard className="w-4 h-4 shrink-0" />
+                Debit Orders
               </Link>
               <Link
                 to="/staff-productivity"
