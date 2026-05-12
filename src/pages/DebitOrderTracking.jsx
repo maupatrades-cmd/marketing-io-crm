@@ -347,7 +347,7 @@ export default function DebitOrderTracking() {
       </div>
 
       {/* Edit Mandate Modal */}
-      <Dialog open={!!editClient} onOpenChange={() => setEditClient(null)}>
+      <Dialog open={!!editClient} onOpenChange={(open) => { if (!open) setEditClient(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><CreditCard className="w-4 h-4" /> {editClient?.business_name}</DialogTitle>
@@ -408,7 +408,7 @@ export default function DebitOrderTracking() {
       </Dialog>
 
       {/* Create Mandate Modal */}
-      <Dialog open={!!createClient} onOpenChange={() => setCreateClient(null)}>
+      <Dialog open={!!createClient} onOpenChange={(open) => { if (!open) setCreateClient(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Create Mandate</DialogTitle>
@@ -432,7 +432,7 @@ export default function DebitOrderTracking() {
       </Dialog>
 
       {/* Cancel Mandate Modal */}
-      <Dialog open={!!cancelClient} onOpenChange={() => setCancelClient(null)}>
+      <Dialog open={!!cancelClient} onOpenChange={(open) => { if (!open) setCancelClient(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive"><XCircle className="w-4 h-4" /> Cancel Mandate</DialogTitle>
@@ -456,7 +456,7 @@ export default function DebitOrderTracking() {
       </Dialog>
 
       {/* Record Failed Debit Modal */}
-      <Dialog open={!!failClient} onOpenChange={() => setFailClient(null)}>
+      <Dialog open={!!failClient} onOpenChange={(open) => { if (!open) setFailClient(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive"><XCircle className="w-4 h-4" /> Record Failed Debit</DialogTitle>
