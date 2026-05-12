@@ -32,6 +32,9 @@ export default function SignIn() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [welcomeText, setWelcomeText] = useState('');
+  const [mascotLanded, setMascotLanded] = useState(false);
+  const [bubbleText, setBubbleText] = useState('');
+  const [bubblePhase, setBubblePhase] = useState(0); // 0 idle, 1 question, 2 reply
 
   useEffect(() => {
     const full = 'Welcome back';
@@ -40,9 +43,46 @@ export default function SignIn() {
       i += 1;
       setWelcomeText(full.slice(0, i));
       if (i >= full.length) clearInterval(id);
-    }, 55);
+    }, 115);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!mascotLanded) return undefined;
+
+    const LINE1 = 'Done hiding your business?';
+    const LINE2 = "Okay, great. Now let's market it!!";
+    const CHAR_MS = 75;
+    const HOLD_MS = 1200;
+    const START_MS = 250;
+
+    let timer;
+
+    const typeOut = (text, onDone) => {
+      let i = 0;
+      setBubbleText('');
+      const step = () => {
+        i += 1;
+        setBubbleText(text.slice(0, i));
+        if (i < text.length) {
+          timer = setTimeout(step, CHAR_MS);
+        } else {
+          timer = setTimeout(onDone, HOLD_MS);
+        }
+      };
+      timer = setTimeout(step, START_MS);
+    };
+
+    setBubblePhase(1);
+    typeOut(LINE1, () => {
+      setBubblePhase(2);
+      typeOut(LINE2, () => {});
+    });
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [mascotLanded]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -118,7 +158,7 @@ export default function SignIn() {
         transition={{ duration: 0.7 }}
         src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
         alt="Marketing iO"
-        className="h-32 sm:h-40 object-contain mb-3 relative z-10"
+        className="h-44 sm:h-56 object-contain mb-4 relative z-10"
         style={{
           filter: 'drop-shadow(0 0 14px rgba(119,41,255,0.7)) drop-shadow(0 0 28px rgba(255,41,148,0.5)) brightness(1.1)',
         }}
@@ -151,71 +191,90 @@ export default function SignIn() {
       {/* Card + mascot wrapper */}
       <div className="relative w-full max-w-sm z-10">
 
-        {/* Mascot — rolls in from the left, lands centered above the card */}
+        {/* Mascot — rolls in from the left, lands centered, sitting low (just above the email) */}
         <motion.div
           initial={{ x: '-120vw', rotate: -720, opacity: 0 }}
           animate={{ x: 0, rotate: 0, opacity: 1 }}
-          transition={{ delay: 0.7, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 1.5, duration: 1.9, ease: [0.22, 1, 0.36, 1] }}
+          onAnimationComplete={() => setMascotLanded(true)}
           style={{
             position: 'absolute',
-            top: '-200px',
+            top: '-120px',
             left: '50%',
-            marginLeft: '-110px',
-            width: '220px',
-            height: '220px',
+            marginLeft: '-100px',
+            width: '200px',
+            height: '200px',
             zIndex: 30,
             pointerEvents: 'none',
             background: 'transparent',
           }}
         >
-          <Mascot size={220} style={{ background: 'transparent' }} />
+          <Mascot size={200} style={{ background: 'transparent' }} />
         </motion.div>
 
-        {/* Speech bubble — pops after mascot lands; lines hit 2.0/2.4/2.8s absolute */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.6, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 1.8, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          style={{
-            position: 'absolute',
-            top: '-230px',
-            right: '-24px',
-            maxWidth: '280px',
-            background: '#ffffff',
-            borderRadius: '28px 28px 28px 6px',
-            padding: '18px 22px',
-            boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
-            zIndex: 35,
-            pointerEvents: 'none',
-          }}
-          role="status"
-          aria-live="polite"
-        >
+        {/* Speech bubble — emerges from the mascot's mouth once it lands; typewriter content */}
+        {mascotLanded && (
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 2.0, duration: 0.35, ease: 'easeOut' }}
-            style={{ color: '#0A1F44', fontWeight: 700, fontSize: '22px', lineHeight: 1.15 }}
+            initial={{ opacity: 0, scale: 0.55, y: 14 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: 'absolute',
+              top: '-260px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 'min(320px, 92%)',
+              background: '#ffffff',
+              borderRadius: '28px',
+              padding: '18px 22px',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+              zIndex: 35,
+              pointerEvents: 'none',
+            }}
+            role="status"
+            aria-live="polite"
           >
-            Done hiding your business?
+            <div
+              style={{
+                color: bubblePhase === 1 ? '#0A1F44' : '#E63946',
+                fontWeight: 700,
+                fontSize: bubblePhase === 1 ? '22px' : '24px',
+                lineHeight: 1.2,
+                minHeight: '54px',
+              }}
+            >
+              {bubbleText}
+              <span className="mio-bubble-caret" aria-hidden="true">|</span>
+            </div>
+
+            {/* tail — small triangle pointing DOWN at the mascot's mouth */}
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                bottom: '-13px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 0,
+                height: 0,
+                borderLeft: '14px solid transparent',
+                borderRight: '14px solid transparent',
+                borderTop: '14px solid #ffffff',
+                filter: 'drop-shadow(0 6px 4px rgba(0,0,0,0.15))',
+              }}
+            />
+
+            <style>{`
+              @keyframes mio-bubble-caret-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+              .mio-bubble-caret {
+                display: inline-block;
+                margin-left: 2px;
+                color: ${bubblePhase === 1 ? '#0A1F44' : '#E63946'};
+                animation: mio-bubble-caret-blink 0.85s steps(1) infinite;
+              }
+            `}</style>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 2.4, duration: 0.35, ease: 'easeOut' }}
-            style={{ color: '#6B7280', fontWeight: 500, fontSize: '18px', lineHeight: 1.2, marginTop: '6px' }}
-          >
-            Same here.
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 2.8, duration: 0.35, ease: 'easeOut' }}
-            style={{ color: '#E63946', fontWeight: 700, fontSize: '24px', lineHeight: 1.15, marginTop: '8px' }}
-          >
-            Let&apos;s market it.
-          </motion.div>
-        </motion.div>
+        )}
 
         {/* Login card */}
         <motion.form
