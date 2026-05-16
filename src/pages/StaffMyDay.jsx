@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AppLayout from "@/components/AppLayout";
-import { CheckCircle2, Clock, Target, TrendingUp, Plus, AlertTriangle, FileText, ListChecks, MapPin, CalendarClock, Send } from "lucide-react";
+import { CheckCircle2, Clock, Target, TrendingUp, Plus, AlertTriangle, FileText, ListChecks, MapPin, CalendarClock, Send, Phone } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "react-router-dom";
 import LogVisitModal from "@/components/staff/LogVisitModal";
 import ScheduleFollowUpModal from "@/components/staff/ScheduleFollowUpModal";
 import QuickUpdateModal from "@/components/staff/QuickUpdateModal";
+import LogCommunicationModal from "@/components/admin/LogCommunicationModal";
+import QuickLogCallModal from "@/components/cpc/QuickLogCallModal";
 
 const KPI_CONFIG = {
   field_agent: [
@@ -50,6 +52,8 @@ export default function StaffMyDay() {
   const [showVisitModal, setShowVisitModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [showQuickMsgModal, setShowQuickMsgModal] = useState(false);
+  const [showLogCommModal, setShowLogCommModal] = useState(false);
+  const [showLogCallModal, setShowLogCallModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,6 +120,48 @@ export default function StaffMyDay() {
         <div className="text-xl font-semibold text-foreground">
           Good {greeting}, {user?.full_name || "there"}
         </div>
+
+        {/* CPC Quick Actions */}
+        {user?.role === "cpc" && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Button className="h-14 flex-col gap-1 text-xs gradient-bg text-white shadow-glow-purple" onClick={() => setShowLogCallModal(true)}>
+              <Phone className="w-5 h-5" />
+              Log a Call
+            </Button>
+            <Link to="/leads" className="contents">
+              <Button variant="outline" className="h-14 flex-col gap-1 text-xs border-primary/40 text-primary hover:bg-primary/10 w-full">
+                <Plus className="w-5 h-5" />
+                Add a Lead
+              </Button>
+            </Link>
+            <Button variant="outline" className="h-14 flex-col gap-1 text-xs border-primary/40 text-primary hover:bg-primary/10" onClick={() => setShowFollowUpModal(true)}>
+              <CalendarClock className="w-5 h-5" />
+              Schedule Follow-up
+            </Button>
+          </div>
+        )}
+
+        {/* Admin Quick Actions */}
+        {user?.role === "admin" && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Button className="h-14 flex-col gap-1 text-xs gradient-bg text-white shadow-glow-purple" onClick={() => setShowLogCommModal(true)}>
+              <Send className="w-5 h-5" />
+              Log Communication
+            </Button>
+            <Link to="/admin/invoices" className="contents">
+              <Button variant="outline" className="h-14 flex-col gap-1 text-xs border-primary/40 text-primary hover:bg-primary/10 w-full">
+                <FileText className="w-5 h-5" />
+                Invoice Chase
+              </Button>
+            </Link>
+            <Link to="/tasks" className="contents">
+              <Button variant="outline" className="h-14 flex-col gap-1 text-xs border-primary/40 text-primary hover:bg-primary/10 w-full">
+                <CheckCircle2 className="w-5 h-5" />
+                Open Tasks
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* FA Quick Actions — field_agent only */}
         {user?.role === "field_agent" && (
@@ -358,6 +404,8 @@ export default function StaffMyDay() {
       {showVisitModal && <LogVisitModal user={user} onClose={() => setShowVisitModal(false)} />}
       {showFollowUpModal && <ScheduleFollowUpModal user={user} onClose={() => setShowFollowUpModal(false)} />}
       {showQuickMsgModal && <QuickUpdateModal user={user} onClose={() => setShowQuickMsgModal(false)} />}
+      {showLogCommModal && <LogCommunicationModal open={showLogCommModal} onClose={() => setShowLogCommModal(false)} currentUser={user} />}
+      {showLogCallModal && <QuickLogCallModal open={showLogCallModal} onClose={() => setShowLogCallModal(false)} user={user} />}
     </AppLayout>
   );
 }

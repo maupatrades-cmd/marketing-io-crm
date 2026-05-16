@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import AppLayout from '@/components/AppLayout';
 import RouteGuard from '@/components/RouteGuard';
-import { DollarSign, Users, ListChecks, AlertTriangle, Clock } from 'lucide-react';
+import { DollarSign, Users, ListChecks, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
+import ApproveCommissionsModal from '@/components/commissions/ApproveCommissionsModal';
+import MarkCommissionsPaidModal from '@/components/commissions/MarkCommissionsPaidModal';
 
 const TABS = [
   { id: 'overview',   label: 'Overview',       icon: DollarSign },
@@ -63,6 +65,8 @@ export default function CommissionDashboard() {
   const [trackers, setTrackers] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showApprove, setShowApprove] = useState(false);
+  const [showMarkPaid, setShowMarkPaid] = useState(false);
 
   // Filters for the Commission Log tab.
   const [logUserFilter, setLogUserFilter] = useState('all');
@@ -220,6 +224,26 @@ export default function CommissionDashboard() {
               );
             })}
           </div>
+
+          {/* Action buttons */}
+          {!loading && (
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={() => setShowApprove(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-all"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Approve Pending ({commissions.filter(c => c.status === 'pending').length})
+              </button>
+              <button
+                onClick={() => setShowMarkPaid(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all"
+              >
+                <DollarSign className="w-4 h-4" />
+                Mark as Paid ({commissions.filter(c => c.status === 'approved').length} approved)
+              </button>
+            </div>
+          )}
 
           {loading && <p className="text-slate-400">Loading commissions…</p>}
 
@@ -394,6 +418,25 @@ export default function CommissionDashboard() {
           )}
         </div>
       </AppLayout>
+
+      <ApproveCommissionsModal
+        open={showApprove}
+        onClose={() => setShowApprove(false)}
+        commissions={commissions}
+        onDone={async () => {
+          const comms = await base44.entities.Commission.filter({}, '-created_date', 1000).catch(() => []);
+          setCommissions(Array.isArray(comms) ? comms : []);
+        }}
+      />
+      <MarkCommissionsPaidModal
+        open={showMarkPaid}
+        onClose={() => setShowMarkPaid(false)}
+        commissions={commissions}
+        onDone={async () => {
+          const comms = await base44.entities.Commission.filter({}, '-created_date', 1000).catch(() => []);
+          setCommissions(Array.isArray(comms) ? comms : []);
+        }}
+      />
     </RouteGuard>
   );
 }

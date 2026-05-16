@@ -104,6 +104,7 @@ import CancelledContracts from './pages/CancelledContracts';
 import StaffAddOnCatalog from './pages/StaffAddOnCatalog';
 import StaffMyEarnings from './pages/StaffMyEarnings';
 import DebitOrderTracking from './pages/DebitOrderTracking';
+import KPITargetEditor from './pages/owner/KPITargetEditor';
 
 
 
@@ -198,6 +199,7 @@ const AuthenticatedApp = () => {
       <Route path="/staff/add-ons" element={<RouteGuard allowedRoles={["field_agent","cpc","admin","owner"]} fallbackPath="/"><StaffAddOnCatalog /></RouteGuard>} />
       <Route path="/staff/earnings" element={<RouteGuard allowedRoles={["field_agent","cpc","admin","owner"]} fallbackPath="/"><StaffMyEarnings /></RouteGuard>} />
       <Route path="/debit-orders" element={<RouteGuard allowedRoles={["owner","admin"]} fallbackPath="/"><DebitOrderTracking /></RouteGuard>} />
+      <Route path="/owner/kpi-targets" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><KPITargetEditor /></RouteGuard>} />
 
       {/* Staff Portal Routes */}
       <Route path="/staff" element={<RouteGuard allowedRoles={["admin", "owner", "field_agent", "cpc", "head_of_tech", "driver"]} fallbackPath="/"><StaffMyDay /></RouteGuard>} />

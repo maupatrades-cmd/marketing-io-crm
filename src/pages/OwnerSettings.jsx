@@ -184,13 +184,24 @@ export default function OwnerSettings() {
 
         {/* TAB: Commissions */}
         {activeTab === "commissions" && (
-          <div className="glass rounded-xl p-6">
-            <h3 className="font-semibold mb-4">Commission Rates</h3>
-            <p className="text-sm text-muted-foreground mb-4">These rates are locked per company policy. Contact founder to change.</p>
-            <div className="bg-secondary/30 rounded-lg p-4 text-xs space-y-1">
-              <p>Field Agent: Commission rates per package from compensationPackages.js</p>
-              <p>CPC: Rates per package based on deal value</p>
-              <p>All rates locked — no changes via UI</p>
+          <div className="space-y-4">
+            <div className="glass rounded-xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">KPI Targets</h3>
+                <Button asChild size="sm" variant="outline">
+                  <a href="/owner/kpi-targets">Manage KPI Targets →</a>
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">Set performance targets per role. Used by /my-kpis for all staff.</p>
+            </div>
+            <div className="glass rounded-xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Commission Engine</h3>
+                <Button asChild size="sm" variant="outline">
+                  <a href="/owner/commissions">Approve & Pay →</a>
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">Approve pending commissions and mark as paid from the Commission Engine.</p>
             </div>
           </div>
         )}
