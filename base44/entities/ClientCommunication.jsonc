@@ -10,37 +10,72 @@
       "type": "string",
       "description": "Denormalised client business name"
     },
-    "sender_id": {
-      "type": "string",
-      "description": "User ID of sender (client user)"
-    },
-    "sender_name": {
-      "type": "string",
-      "description": "Name of sender"
-    },
-    "sender_email": {
-      "type": "string",
-      "description": "Email of sender"
-    },
-    "message_type": {
+    "communication_type": {
       "type": "string",
       "enum": [
+        "phone",
+        "email",
+        "whatsapp",
+        "in_person",
+        "sms",
         "general_inquiry",
         "support_request",
         "feedback",
         "urgent_issue",
         "billing_inquiry"
       ],
-      "default": "general_inquiry",
-      "description": "Category of message"
+      "default": "phone",
+      "description": "Channel / type of communication"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "outbound",
+        "inbound"
+      ],
+      "default": "outbound",
+      "description": "Who initiated the communication"
     },
     "subject": {
       "type": "string",
       "description": "Message subject line"
     },
+    "body": {
+      "type": "string",
+      "description": "Full message / notes content"
+    },
     "message": {
       "type": "string",
-      "description": "Full message content"
+      "description": "Legacy alias for body \u2014 kept for back-compat"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the communication took place"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Duration of call or meeting in minutes"
+    },
+    "logged_by_id": {
+      "type": "string",
+      "description": "User ID of staff who logged this entry"
+    },
+    "logged_by_name": {
+      "type": "string",
+      "description": "Name of staff who logged this entry"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "User ID of sender (client user) \u2014 legacy field"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Name of sender \u2014 legacy field"
+    },
+    "sender_email": {
+      "type": "string",
+      "description": "Email of sender \u2014 legacy field"
     },
     "status": {
       "type": "string",
@@ -51,33 +86,7 @@
         "resolved",
         "closed"
       ],
-      "default": "new",
-      "description": "Communication status"
-    },
-    "assigned_to_id": {
-      "type": "string",
-      "description": "User ID of staff member assigned to handle"
-    },
-    "assigned_to_name": {
-      "type": "string",
-      "description": "Name of assigned staff"
-    },
-    "response_message": {
-      "type": "string",
-      "description": "Response from owner/admin"
-    },
-    "responded_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When response was sent"
-    },
-    "responded_by_id": {
-      "type": "string",
-      "description": "User ID of responder"
-    },
-    "responded_by_name": {
-      "type": "string",
-      "description": "Name of responder"
+      "default": "new"
     },
     "priority": {
       "type": "string",
@@ -89,24 +98,36 @@
       ],
       "default": "normal"
     },
+    "assigned_to_id": {
+      "type": "string"
+    },
+    "assigned_to_name": {
+      "type": "string"
+    },
+    "response_message": {
+      "type": "string"
+    },
+    "responded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "responded_by_id": {
+      "type": "string"
+    },
+    "responded_by_name": {
+      "type": "string"
+    },
     "is_read": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether owner/admin has read the message"
+      "default": false
     },
     "read_at": {
       "type": "string",
       "format": "date-time"
-    },
-    "metadata": {
-      "type": "string",
-      "description": "JSON string of structured metadata (source, category, etc) — used by guided contact flows"
     }
   },
   "required": [
     "client_id",
-    "sender_id",
-    "subject",
-    "message"
+    "subject"
   ]
 }
