@@ -68,7 +68,17 @@ export default function Invoices() {
     base44.entities.Client.list("-created_date", 200),
   ]).then(([inv, c]) => { setInvoices(inv); setClients(c); setLoading(false); });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const unsubscribe = base44.entities.Invoice.subscribe(e => {
+      setInvoices(prev =>
+        e.type === 'create' ? [e.data, ...prev] :
+        e.type === 'update' ? prev.map(i => i.id === e.id ? e.data : i) :
+        prev.filter(i => i.id !== e.id)
+      );
+    });
+    return () => unsubscribe();
+  }, []);
 
   const filtered = invoices.filter(i => {
     const matchSearch = !search || i.client_name?.toLowerCase().includes(search.toLowerCase()) || i.invoice_number?.toLowerCase().includes(search.toLowerCase());

@@ -136,7 +136,17 @@ export default function Deals() {
      setLoading(false);
    };
 
-   useEffect(() => { load(); }, []);
+   useEffect(() => {
+     load();
+     const unsubscribe = base44.entities.Deal.subscribe(e => {
+       setDeals(prev =>
+         e.type === 'create' ? [e.data, ...prev] :
+         e.type === 'update' ? prev.map(d => d.id === e.id ? e.data : d) :
+         prev.filter(d => d.id !== e.id)
+       );
+     });
+     return () => unsubscribe();
+   }, []);
 
    const filtered = deals.filter(d => {
      const matchSearch = !search || d.client_name?.toLowerCase().includes(search.toLowerCase());

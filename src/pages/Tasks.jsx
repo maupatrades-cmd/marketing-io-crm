@@ -85,7 +85,17 @@ export default function Tasks() {
     setLoading(false);
   });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const unsubscribe = base44.entities.Task.subscribe(e => {
+      setTasks(prev =>
+        e.type === 'create' ? [e.data, ...prev] :
+        e.type === 'update' ? prev.map(t => t.id === e.id ? e.data : t) :
+        prev.filter(t => t.id !== e.id)
+      );
+    });
+    return () => unsubscribe();
+  }, []);
 
   const isAdminOrOwner = currentUser?.role === "admin" || currentUser?.role === "owner";
   const forceMineMode = authUser?.role !== "admin" && authUser?.role !== "owner";

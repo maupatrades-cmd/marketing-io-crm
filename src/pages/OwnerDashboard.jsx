@@ -97,6 +97,36 @@ export default function OwnerDashboard() {
       setCurrentUser(me);
       setLoading(false);
     }).catch(() => setLoading(false));
+
+    // Real-time subscriptions
+    const unsubs = [
+      base44.entities.Client.subscribe(e => setClients(prev =>
+        e.type === 'create' ? [e.data, ...prev] :
+        e.type === 'update' ? prev.map(x => x.id === e.id ? e.data : x) :
+        prev.filter(x => x.id !== e.id)
+      )),
+      base44.entities.Deal.subscribe(e => setDeals(prev =>
+        e.type === 'create' ? [e.data, ...prev] :
+        e.type === 'update' ? prev.map(x => x.id === e.id ? e.data : x) :
+        prev.filter(x => x.id !== e.id)
+      )),
+      base44.entities.Invoice.subscribe(e => setInvoices(prev =>
+        e.type === 'create' ? [e.data, ...prev] :
+        e.type === 'update' ? prev.map(x => x.id === e.id ? e.data : x) :
+        prev.filter(x => x.id !== e.id)
+      )),
+      base44.entities.Lead.subscribe(e => setLeads(prev =>
+        e.type === 'create' ? [e.data, ...prev] :
+        e.type === 'update' ? prev.map(x => x.id === e.id ? e.data : x) :
+        prev.filter(x => x.id !== e.id)
+      )),
+      base44.entities.Commission.subscribe(e => setCommissions(prev =>
+        e.type === 'create' ? [e.data, ...prev] :
+        e.type === 'update' ? prev.map(x => x.id === e.id ? e.data : x) :
+        prev.filter(x => x.id !== e.id)
+      )),
+    ];
+    return () => unsubs.forEach(u => u());
   }, []);
 
   // Round 5: real 12-week paid-invoice series (replaces hardcoded data).

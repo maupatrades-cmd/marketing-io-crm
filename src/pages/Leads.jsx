@@ -112,9 +112,16 @@ export default function Leads() {
     .catch(() => setLoading(false));
 
   useEffect(() => {
-    // Admin doesn't need the listing; skip the load entirely.
     if (isAdmin) { setLoading(false); return; }
     load();
+    const unsubscribe = base44.entities.Lead.subscribe(e => {
+      setLeads(prev =>
+        e.type === 'create' ? [e.data, ...prev] :
+        e.type === 'update' ? prev.map(l => l.id === e.id ? e.data : l) :
+        prev.filter(l => l.id !== e.id)
+      );
+    });
+    return () => unsubscribe();
   }, [isAdmin]);
 
   const filtered = leads.filter(l => {
