@@ -19,10 +19,15 @@
       "enum": [
         "client",
         "staff",
-        "admin"
+        "admin",
+        "owner",
+        "field_agent",
+        "cpc",
+        "head_of_tech",
+        "driver"
       ],
       "default": "client",
-      "description": "User role in the app"
+      "description": "User role in the app. 'owner' is the business owner referenced by the RLS user_condition; 'admin' is retained for the legacy seed-test-staff-users path. Staff roles (field_agent, cpc, head_of_tech, driver) are written by seed-test-staff-users and the StaffHR hire form."
     },
     "email_verified": {
       "type": "boolean",

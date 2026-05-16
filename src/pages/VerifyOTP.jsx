@@ -35,15 +35,25 @@ export default function VerifyOTP() {
     setLoading(true);
     try {
       const res = await base44.functions.invoke('auth-verify-otp', { email, code, purpose });
-      const { token, user } = res.data;
+      const { token, user } = res.data || {};
 
-      localStorage.setItem('mio_session_token', token);
-      localStorage.setItem('mio_session_user', JSON.stringify(user));
-
+      // password_reset returns { verified, email, purpose } — no token/user.
+      // Hand off to the reset-password page without touching session storage.
       if (purpose === 'password_reset') {
         navigate(`/reset-password?token=${code}&email=${encodeURIComponent(email)}`);
         return;
       }
+
+      // signup_verification / login_mfa must return a session. If either is
+      // missing the response is malformed — fail loudly instead of writing
+      // the string "undefined" into localStorage.
+      if (!token || !user) {
+        setError('Verification succeeded but no session was returned. Please try logging in again.');
+        return;
+      }
+
+      localStorage.setItem('mio_session_token', token);
+      localStorage.setItem('mio_session_user', JSON.stringify(user));
 
       // ?next= overrides role-based default — only honoured if it passed
       // the whitelist check above (so it's safe to redirect to).

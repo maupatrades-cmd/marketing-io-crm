@@ -105,8 +105,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Account already exists with this email' }, { status: 409 });
     }
   } catch (err) {
-    console.error('[auth-register] user_lookup_failed:', err.message);
-    return Response.json({ error: 'user_lookup_failed', detail: err.message }, { status: 500 });
+    // Legacy User entity is optional — if the query fails (entity missing,
+    // permissions, transient), don't block signup. The AppUser check above
+    // is the authoritative duplicate-email gate.
+    console.warn('[auth-register] legacy User lookup failed — continuing without legacy duplicate check:', err?.message);
   }
 
   // Step 4: Hash password
