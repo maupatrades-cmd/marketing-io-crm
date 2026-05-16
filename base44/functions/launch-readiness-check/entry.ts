@@ -412,6 +412,54 @@ Deno.serve(async (req) => {
       detail: 'Manual: SignIn + Register currently use 1+1…10+10 maths captchas. Acceptable as a low-friction bot deterrent; replace with hCaptcha/Turnstile if abuse rises.',
     });
 
+    // =========================================================================
+    // T13 — auth-register tolerates a missing/un-queryable legacy User entity.
+    //   The legacy User.filter() in auth-register used to return 500 and block
+    //   all signups when the entity wasn't queryable. Post-fix it warns and
+    //   continues. Probe the legacy entity here so the owner sees the same
+    //   state auth-register would: queryable (pass), or degraded but tolerated
+    //   (warn). Either way signup must not 500.
+    // =========================================================================
+    try {
+      await base44.asServiceRole.entities.User.filter({ email: '__readiness_probe__@invalid.local' }, '-created_date', 1);
+      checks.push({
+        check: 'T13 — auth-register legacy User lookup queryable',
+        status: 'pass',
+        detail: 'Legacy User entity is queryable — auth-register can still detect shadowing of legacy staff/owner accounts during self-signup.',
+      });
+    } catch (e) {
+      checks.push({
+        check: 'T13 — auth-register legacy User lookup queryable',
+        status: 'warn',
+        detail: `Legacy User entity not queryable (${e.message}). auth-register continues gracefully post-fix, but legacy duplicate-email detection is degraded — verify no staff/owner accounts share an email with self-signup users.`,
+      });
+    }
+
+    // =========================================================================
+    // T14 — VerifyOTP does not persist a session on the password_reset purpose.
+    //   Backend can't introspect the SPA bundle. Manual smoke: trigger Forgot
+    //   Password → enter OTP → confirm you're routed to /reset-password (NOT
+    //   logged into the dashboard), and that base44.auth.me() returns 401 on
+    //   the next request until the new password is submitted.
+    // =========================================================================
+    checks.push({
+      check: 'T14 — VerifyOTP keeps session unauthenticated on password_reset',
+      status: 'warn',
+      detail: 'Manual: run the Forgot Password flow. After entering the OTP you must land on /reset-password with no active session — base44.auth.me() should still be 401 until the new password is set. If the user lands inside the app, the password_reset session-corruption bug has regressed.',
+    });
+
+    // =========================================================================
+    // T15 — OwnerClientDetail HUMAN_LABELS map has no duplicate object keys.
+    //   The dup-key collision silently dropped one of the two values at parse
+    //   time, so the displayed label was wrong for whichever side lost. Can't
+    //   probe from a function — manual code-grep + UI smoke.
+    // =========================================================================
+    checks.push({
+      check: 'T15 — OwnerClientDetail HUMAN_LABELS has no duplicate keys',
+      status: 'warn',
+      detail: 'Manual: grep src/pages/OwnerClientDetail.jsx for HUMAN_LABELS — the map is now split per field, so no key should appear twice within a single object literal. Verify the field-history dialog renders the correct labels for both colliding fields (post-fix the audit log shows distinct human-readable names).',
+    });
+
     // --- Overall rollup ---
     const hasFail = checks.some(c => c.status === 'fail');
     const hasWarn = checks.some(c => c.status === 'warn');
