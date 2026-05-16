@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, Mail, Zap, Lock, Send, CheckCircle2, AlertCircle } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { DialogFooter } from "@/components/ui/dialog";
+import { Shield, Mail, Zap, Lock, Send, CheckCircle2, AlertCircle, UserCog } from "lucide-react";
 import LaunchReadinessModal from "@/components/owner/LaunchReadinessModal";
 import ChecklistItem from "@/components/owner/GoLiveChecklistItem";
 import { useToast } from "@/components/ui/use-toast";
@@ -24,7 +27,26 @@ export default function OwnerSettings() {
   const [emailForm, setEmailForm] = useState({ recipients: "clients", subject: "", body: "" });
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailResult, setEmailResult] = useState(null);
+  const [editUserOpen, setEditUserOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userForm, setUserForm] = useState({ full_name: "", role: "field_agent", is_active: true });
+  const [savingUser, setSavingUser] = useState(false);
   const { toast } = useToast();
+
+  const openEditUser = (u) => {
+    setEditingUser(u);
+    setUserForm({ full_name: u.full_name || "", role: u.role || "field_agent", is_active: u.is_active !== false });
+    setEditUserOpen(true);
+  };
+
+  const saveUser = async () => {
+    setSavingUser(true);
+    await base44.entities.User.update(editingUser.id, userForm);
+    setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...userForm } : u));
+    toast({ title: "User updated" });
+    setEditUserOpen(false);
+    setSavingUser(false);
+  };
 
   useEffect(() => {
     (async () => {
@@ -141,7 +163,7 @@ export default function OwnerSettings() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge className="bg-primary/15 text-primary capitalize">{u.role}</Badge>
-                    <Button size="sm" variant="ghost">Edit</Button>
+                    <Button size="sm" variant="ghost" onClick={() => openEditUser(u)}>Edit</Button>
                   </div>
                 </div>
               ))}
@@ -296,6 +318,48 @@ export default function OwnerSettings() {
           </div>
         )}
       </div>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editUserOpen} onOpenChange={setEditUserOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="gradient-text flex items-center gap-2"><UserCog className="w-5 h-5" /> Edit User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Email</Label>
+              <p className="text-sm text-foreground font-mono">{editingUser?.email}</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Full Name</Label>
+              <Input value={userForm.full_name} onChange={e => setUserForm(f => ({ ...f, full_name: e.target.value }))} className="bg-secondary/50 border-border/50" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Role</Label>
+              <Select value={userForm.role} onValueChange={v => setUserForm(f => ({ ...f, role: v }))}>
+                <SelectTrigger className="bg-secondary/50 border-border/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="cpc">CPC</SelectItem>
+                  <SelectItem value="field_agent">Field Agent</SelectItem>
+                  <SelectItem value="head_of_tech">Head of Tech</SelectItem>
+                  <SelectItem value="driver">Driver</SelectItem>
+                  <SelectItem value="client">Client</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Active Account</Label>
+              <Switch checked={userForm.is_active} onCheckedChange={v => setUserForm(f => ({ ...f, is_active: v }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditUserOpen(false)}>Cancel</Button>
+            <Button onClick={saveUser} disabled={savingUser} className="gradient-bg text-white">{savingUser ? "Saving…" : "Save Changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Email Campaign Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>

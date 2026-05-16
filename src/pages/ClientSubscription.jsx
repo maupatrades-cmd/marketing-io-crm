@@ -5,8 +5,10 @@ import { getCurrentUser } from "@/lib/customAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, AlertTriangle, Edit2, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertCircle, CheckCircle2, AlertTriangle, Edit2, Eye, FileText, CreditCard, MessageSquare, Download } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { Link, useNavigate } from "react-router-dom";
 import InvoiceDownloadButton from "@/components/subscription/InvoiceDownloadButton";
 import PackageUpgradeCard from "@/components/subscription/PackageUpgradeCard";
 
@@ -21,11 +23,27 @@ const PACKAGE_INFO = {
 
 export default function ClientSubscription() {
   const { user: authUser } = useAuth();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [client, setClient] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [contractModalOpen, setContractModalOpen] = useState(false);
+  const [activeContract, setActiveContract] = useState(null);
+  const [loadingContract, setLoadingContract] = useState(false);
+
+  const openContractModal = async () => {
+    if (!client) return;
+    setLoadingContract(true);
+    setContractModalOpen(true);
+    const contracts = await base44.entities.Contract.filter({ client_id: client.id });
+    const signed = (Array.isArray(contracts) ? contracts : [])
+      .filter(c => c.status === "signed" || c.status === "active")
+      .sort((a, b) => new Date(b.signed_date || b.created_date) - new Date(a.signed_date || a.created_date));
+    setActiveContract(signed[0] || null);
+    setLoadingContract(false);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -184,7 +202,10 @@ export default function ClientSubscription() {
 
               <div className="mt-6 flex gap-3">
                 <Button onClick={() => setActiveTab("upgrade")} className="gradient-bg text-white">Upgrade Package →</Button>
-                <Button variant="outline">View Contract</Button>
+                <Button variant="outline" onClick={openContractModal}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  View Contract
+                </Button>
               </div>
             </Card>
 
@@ -306,24 +327,67 @@ export default function ClientSubscription() {
             <Card className="glass border-slate-700/40 p-8">
               <h3 className="text-xl font-bold mb-4">Quick Actions</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button variant="outline" className="justify-start h-12">
-                  <Eye className="w-4 h-4 mr-2" />
-                  View All Invoices
-                </Button>
-                <Button variant="outline" className="justify-start h-12">
+                <Link to="/client/invoices">
+                  <Button variant="outline" className="justify-start h-12 w-full">
+                    <Eye className="w-4 h-4 mr-2" />
+                    View All Invoices
+                  </Button>
+                </Link>
+                <Button variant="outline" className="justify-start h-12" onClick={() => navigate("/client/invoices")}>
+                  <Download className="w-4 h-4 mr-2" />
                   Download Statement
                 </Button>
-                <Button variant="outline" className="justify-start h-12">
-                  Update Payment Details
-                </Button>
-                <Button variant="outline" className="justify-start h-12">
-                  Contact Support
-                </Button>
+                <Link to="/client/billing-update">
+                  <Button variant="outline" className="justify-start h-12 w-full">
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Update Payment Details
+                  </Button>
+                </Link>
+                <Link to="/client/messages?subject=Support+Request">
+                  <Button variant="outline" className="justify-start h-12 w-full">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Contact Support
+                  </Button>
+                </Link>
               </div>
             </Card>
           </div>
         )}
       </div>
+
+      {/* Contract Modal */}
+      <Dialog open={contractModalOpen} onOpenChange={setContractModalOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="gradient-text">Your Active Contract</DialogTitle>
+          </DialogHeader>
+          {loadingContract ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : activeContract?.document_url ? (
+            <iframe
+              src={activeContract.document_url}
+              className="w-full h-[65vh] rounded-lg border border-border/40"
+              title="Contract"
+            />
+          ) : activeContract?.final_signed_pdf_url ? (
+            <div className="text-center py-8 space-y-4">
+              <FileText className="w-12 h-12 text-primary/50 mx-auto" />
+              <p className="text-sm text-muted-foreground">Contract signed on {formatDate(activeContract.signed_date)}</p>
+              <a href={activeContract.final_signed_pdf_url} target="_blank" rel="noopener noreferrer">
+                <Button className="gradient-bg text-white"><Download className="w-4 h-4 mr-2" />Download Signed Contract</Button>
+              </a>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-muted-foreground">No signed contract on file yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Contact your account manager if you believe this is an error.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
