@@ -45,11 +45,13 @@ export default function Playbooks() {
   useEffect(() => {
     const fetchPlaybooks = async () => {
       setLoading(true);
-      const all = await base44.entities.Playbook.list();
+      const token = localStorage.getItem('mio_session_token');
+      const res = await base44.functions.invoke('getPlaybooks', { token });
+      const all = res.data?.playbooks || [];
       
       // Filter by user's role
       const userPlaybooks = all.filter(pb => 
-        pb.visible_to_roles.includes(user.role)
+        pb.visible_to_roles?.includes(user.role)
       );
       
       setPlaybooks(userPlaybooks);
@@ -109,9 +111,11 @@ export default function Playbooks() {
 
   const saveEdit = async () => {
     if (!editForm) return;
-    await base44.entities.Playbook.update(editingId, {
-      full_content: editForm.full_content,
-      usage_notes: editForm.usage_notes
+    const token = localStorage.getItem('mio_session_token');
+    await base44.functions.invoke('updatePlaybook', {
+      token,
+      playbook_id: editingId,
+      data: { full_content: editForm.full_content, usage_notes: editForm.usage_notes }
     });
     
     setPlaybooks(playbooks.map(pb => pb.id === editingId ? editForm : pb));
@@ -126,7 +130,9 @@ export default function Playbooks() {
       const res = await base44.functions.invoke("seedPlaybooks", {});
       sonnerToast.success(res?.data?.message || "Playbooks seeded!");
       // Reload
-      const all = await base44.entities.Playbook.list();
+      const token = localStorage.getItem('mio_session_token');
+      const reloadRes = await base44.functions.invoke('getPlaybooks', { token });
+      const all = reloadRes.data?.playbooks || [];
       const userPlaybooks = all.filter(pb => pb.visible_to_roles?.includes(user.role));
       setPlaybooks(userPlaybooks);
       setFilteredPlaybooks(userPlaybooks);
