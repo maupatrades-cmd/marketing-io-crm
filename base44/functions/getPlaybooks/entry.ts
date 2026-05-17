@@ -1,9 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// This function validates the custom mio_session_token against AppUser,
-// then fetches all Playbooks using service role. It mirrors the pattern
-// used by auth-me which is confirmed working in production.
-
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
@@ -16,29 +12,38 @@ Deno.serve(async (req) => {
 
   const { token } = body;
 
-  if (!token) {
-    return Response.json({ error: 'Token required' }, { status: 400 });
+  let userRole = null;
+
+  // Try custom session token first (staff/CPC/FA logged in via OTP)
+  if (token) {
+    try {
+      const appUsers = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
+      const appUser = appUsers?.[0];
+      if (appUser && appUser.session_expires_at && new Date(appUser.session_expires_at) > new Date()) {
+        userRole = appUser.role;
+      }
+    } catch (err) {
+      console.error('[getPlaybooks] AppUser lookup error:', err);
+    }
   }
 
-  // Validate session via AppUser — same pattern as auth-me
-  let user;
-  try {
-    const appUsers = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
-    user = appUsers?.[0];
-  } catch (err) {
-    console.error('[getPlaybooks] AppUser lookup failed:', err);
-    return Response.json({ error: 'Session lookup failed' }, { status: 500 });
+  // Fallback: try native Base44 SDK auth (owner logs in via SDK)
+  if (!userRole) {
+    try {
+      const sdkUser = await base44.auth.me();
+      if (sdkUser) {
+        userRole = sdkUser.role || 'owner';
+      }
+    } catch (_) {
+      // not authenticated via SDK either
+    }
   }
 
-  if (!user) {
-    return Response.json({ error: 'Invalid session' }, { status: 401 });
+  if (!userRole) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!user.session_expires_at || new Date(user.session_expires_at) < new Date()) {
-    return Response.json({ error: 'Session expired' }, { status: 401 });
-  }
-
-  // Fetch all playbooks (Playbook entity has open read RLS)
+  // Fetch all playbooks
   let playbooks = [];
   try {
     playbooks = await base44.asServiceRole.entities.Playbook.list();
@@ -47,5 +52,5 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Failed to load playbooks' }, { status: 500 });
   }
 
-  return Response.json({ playbooks, user_role: user.role });
+  return Response.json({ playbooks, user_role: userRole });
 });
