@@ -79,5 +79,12 @@
     "content_type",
     "short_description",
     "full_content"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
 }
