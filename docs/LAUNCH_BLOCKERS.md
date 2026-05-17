@@ -25,6 +25,17 @@
 - Holistic deps + integrations audit
 - Spot-checks against App.jsx routing + schema cross-references
 
+## Architectural note — LB-001 to LB-011 need reshaping
+
+LB-281 (auth bridge) verified empirically that Base44's RLS engine does NOT recognise the custom `mio_session_token` as a valid SDK bearer — custom UUIDs can never be valid Base44 JWTs, and the built-in User entity cannot be written from backend functions (confirmed by Base44 directly via the `auth-verify-otp` comment). The fix Base44 applied: bypass SDK auth entirely, route all sensitive entity reads through backend functions that validate `AppUser.session_token` server-side and use `asServiceRole` to read.
+
+**This makes entity-level `rls` blocks irrelevant for client-portal users.** LB-001 through LB-011 (and LB-122-LB-124, LB-130, LB-216, etc. that depend on RLS) need to be re-scoped: instead of "add `rls` block to entity X", the new framing is **"create `get<X>` / `update<X>` backend functions with role-based authz, and rewire all client-portal callers to use them"**. Same goal (cross-tenant isolation, POPIA compliance), different mechanism. Pattern reference: `getPlaybooks` and `updatePlaybook` functions added by Base44 on 2026-05-17.
+
+Items LB-001 through LB-011 are kept on the list for now but will be re-titled and re-scoped as we work through them. The new task per entity is approximately:
+1. Add `get<Entity>` function: validate `AppUser.session_token`, role-check, return `asServiceRole.entities.<Entity>.filter(...)` results.
+2. Add `update<Entity>` and any other mutating functions with role gates.
+3. Rewire every `base44.entities.<Entity>.<method>` call in `src/` to use the function instead.
+
 ---
 
 # CRITICAL
@@ -55,7 +66,7 @@
 
 ## Unauthenticated backend endpoints — identity / account-takeover
 
-- **LB-019** [CRITICAL] `base44/functions/migrate-owner-to-appuser/entry.ts:9-10` — no auth + hardcoded `business.lekgoro@gmail.com` / `MarketingIO2026!` in source (already in git history). Status: NOT STARTED
+- **LB-019** [CRITICAL] `base44/functions/migrate-owner-to-appuser/entry.ts:9-10` — no auth + hardcoded `business.lekgoro@gmail.com` / `MarketingIO2026!` in source (already in git history). Status: ✅ DONE (2026-05-17) — function deleted via PR #86. Manual password rotation still required outside the PR.
 - **LB-020** [CRITICAL] `base44/functions/seedOwnerAccount/entry.ts:9-11` — no auth + hardcoded owner creds; can recreate owner account on demand. Status: NOT STARTED
 - **LB-021** [CRITICAL] `base44/functions/create-test-client/entry.ts:7-8,48` — no auth + hardcoded `Thapelo15!` returned in response body. Status: NOT STARTED
 - **LB-022** [CRITICAL] `base44/functions/seed-test-staff-users/entry.ts:23,121` — `Test123456!` shared password returned to caller. Status: NOT STARTED
@@ -107,6 +118,10 @@
 
 - **LB-054** [CRITICAL] `src/App.jsx` — ~25 admin/owner routes have no `RouteGuard` (lines 145-167 plus owner/admin routes 175-196); typed URL reaches admin pages from any authenticated role. Status: NOT STARTED
 - **LB-055** [CRITICAL] `src/components/RouteGuard.jsx` — purely client-side; race window before `isLoadingAuth` resolves lets typed URLs bypass. Status: NOT STARTED
+
+## Auth bridge (added during this session)
+
+- **LB-281** [CRITICAL] Custom `mio_session_token` was not recognised by Base44 SDK as a valid bearer; entire user base (except Base44 platform owner) hit 401 on `User/me` and 500 on functions calling `auth.me()`. Status: ✅ DONE (2026-05-17) — resolved by Base44 directly via architectural pattern shift: bypass SDK auth, route entity reads through backend functions that validate `AppUser.session_token` server-side. Pattern reference: `getPlaybooks` / `updatePlaybook` functions. **Implications: LB-001 through LB-011 need re-scoping to use this pattern (see architectural note at top of file).**
 
 ---
 
