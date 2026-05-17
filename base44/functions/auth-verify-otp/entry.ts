@@ -94,6 +94,46 @@ Deno.serve(async (req) => {
 
     await base44.asServiceRole.entities.AppUser.update(user.id, userUpdate);
 
+    // LB-281: dual-write session_token to built-in User so Base44 RLS can
+    // resolve the bearer for entity reads. Without this, the SDK call
+    // base44.auth.setToken(token) in SignIn.jsx attaches a bearer that
+    // Base44 doesn't recognise — system entity calls (User/me, User.list)
+    // return 401, and any RLS rule using user_condition.role denies the
+    // request. Non-fatal: if this write fails the login still succeeds.
+    try {
+      const builtInList = await base44.asServiceRole.entities.User.filter({ email: normalizedEmail });
+      const builtIn = Array.isArray(builtInList) ? builtInList[0] : null;
+      if (builtIn?.id) {
+        const builtInUpdate = {
+          session_token: token,
+          session_expires_at: expiresAt,
+          last_login_at: now.toISOString(),
+        };
+        if (purpose === 'signup_verification') {
+          builtInUpdate.pending_verification = false;
+          builtInUpdate.email_verified = true;
+        } else if (purpose === 'login_mfa') {
+          builtInUpdate.failed_login_count = 0;
+        }
+        await base44.asServiceRole.entities.User.update(builtIn.id, builtInUpdate);
+      } else {
+        // No User row yet — provision one so Base44 has a target for RLS lookups.
+        await base44.asServiceRole.entities.User.create({
+          email: normalizedEmail,
+          full_name: user.full_name || '',
+          role: user.role,
+          password_hash: user.password_hash || '',
+          session_token: token,
+          session_expires_at: expiresAt,
+          last_login_at: now.toISOString(),
+          email_verified: true,
+          pending_verification: false,
+        });
+      }
+    } catch (err) {
+      console.error('[auth-verify-otp] User dual-write failed (non-fatal):', err);
+    }
+
     // Activity log — only for clients, non-fatal, never block the response
     if (purpose === 'login_mfa' && user.role === 'client') {
       try {
