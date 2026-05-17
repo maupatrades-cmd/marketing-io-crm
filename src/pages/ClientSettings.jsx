@@ -240,7 +240,10 @@ export default function ClientSettings() {
     if (!user?.id) return;
     setSigningOutEverywhere(true);
     try {
-      await base44.functions.invoke('sign-out-everywhere', { user_id: user.id });
+      await base44.functions.invoke('sign-out-everywhere', {
+        user_id: user.id,
+        token: localStorage.getItem('mio_session_token'),
+      });
       try { await destroySession(user.id); } catch (_) {}
       toast.success('Signed out everywhere. Other devices will log out shortly.');
       setTimeout(() => { window.location.href = '/login'; }, 800);
