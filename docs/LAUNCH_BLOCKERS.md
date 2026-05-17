@@ -70,7 +70,7 @@ Items LB-001 through LB-011 are kept on the list for now but will be re-titled a
 - **LB-020** [CRITICAL] `base44/functions/seedOwnerAccount/entry.ts:9-11` — no auth + hardcoded owner creds; can recreate owner account on demand. Status: ✅ DONE (2026-05-17) — function deleted via PR #88. Tester confirmed 404.
 - **LB-021** [CRITICAL] `base44/functions/create-test-client/entry.ts:7-8,48` — no auth + hardcoded `Thapelo15!` returned in response body. Status: ✅ DONE (2026-05-17) — function deleted via PR #89. Tester confirmed 404.
 - **LB-022** [CRITICAL] `base44/functions/seed-test-staff-users/entry.ts:23,121` — `Test123456!` shared password returned to caller. Status: ✅ DONE (2026-05-17) — function deleted via PR #90. Tester confirmed 404. **Manual password rotation on the 5 test staff accounts still required.**
-- **LB-023** [CRITICAL] `base44/functions/cleanup-stuck-signup/entry.ts` — no auth; deletes AppUser + Clients + OTPCodes for any email. Status: NOT STARTED
+- **LB-023** [CRITICAL] `base44/functions/cleanup-stuck-signup/entry.ts` — no auth; deletes AppUser + Clients + OTPCodes for any email. Status: ✅ DONE (2026-05-17) — function deleted via PR #91. Tester confirmed 404.
 - **LB-024** [CRITICAL] `base44/functions/request-account-deletion/entry.ts:34-51` — no auth; anyone can flip another user's `deletion_pending` and trigger 30-day deletion. Status: NOT STARTED
 - **LB-025** [CRITICAL] `base44/functions/sign-out-everywhere/entry.ts:13-44` — no auth; force-logout any user by user_id. Status: NOT STARTED
 - **LB-026** [CRITICAL] `base44/functions/updateUserRole/entry.ts:6-23` — caller validated against legacy User entity (post-migration broken), no whitelist on target role, admin can self-promote to owner. Status: NOT STARTED
