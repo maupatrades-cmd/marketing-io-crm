@@ -277,7 +277,10 @@ export default function ClientSettings() {
     if (!user?.id || !canConfirmDelete) return;
     setDeleting(true);
     try {
-      const res = await base44.functions.invoke('request-account-deletion', { user_id: user.id });
+      const res = await base44.functions.invoke('request-account-deletion', {
+        user_id: user.id,
+        token: localStorage.getItem('mio_session_token'),
+      });
       const data = res?.data ?? res;
       if (data?.success) {
         toast.success('Deletion requested. You will be signed out.');
