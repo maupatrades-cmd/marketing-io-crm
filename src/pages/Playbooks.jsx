@@ -49,8 +49,9 @@ export default function Playbooks() {
       const res = await base44.functions.invoke('getPlaybooks', { token });
       const all = res.data?.playbooks || [];
       
-      // Owner sees all playbooks; others filtered by role
-      const userPlaybooks = user.role === 'owner'
+      // Owner/founder/admin sees all playbooks; others filtered by role
+      const adminRoles = ['owner', 'founder', 'admin'];
+      const userPlaybooks = adminRoles.includes(user.role)
         ? all
         : all.filter(pb => pb.visible_to_roles?.includes(user.role));
       
