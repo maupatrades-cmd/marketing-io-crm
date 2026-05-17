@@ -67,7 +67,7 @@ Items LB-001 through LB-011 are kept on the list for now but will be re-titled a
 ## Unauthenticated backend endpoints — identity / account-takeover
 
 - **LB-019** [CRITICAL] `base44/functions/migrate-owner-to-appuser/entry.ts:9-10` — no auth + hardcoded `business.lekgoro@gmail.com` / `MarketingIO2026!` in source (already in git history). Status: ✅ DONE (2026-05-17) — function deleted via PR #86. Manual password rotation still required outside the PR.
-- **LB-020** [CRITICAL] `base44/functions/seedOwnerAccount/entry.ts:9-11` — no auth + hardcoded owner creds; can recreate owner account on demand. Status: NOT STARTED
+- **LB-020** [CRITICAL] `base44/functions/seedOwnerAccount/entry.ts:9-11` — no auth + hardcoded owner creds; can recreate owner account on demand. Status: ✅ DONE (2026-05-17) — function deleted via PR #88. Tester confirmed 404.
 - **LB-021** [CRITICAL] `base44/functions/create-test-client/entry.ts:7-8,48` — no auth + hardcoded `Thapelo15!` returned in response body. Status: NOT STARTED
 - **LB-022** [CRITICAL] `base44/functions/seed-test-staff-users/entry.ts:23,121` — `Test123456!` shared password returned to caller. Status: NOT STARTED
 - **LB-023** [CRITICAL] `base44/functions/cleanup-stuck-signup/entry.ts` — no auth; deletes AppUser + Clients + OTPCodes for any email. Status: NOT STARTED
