@@ -27,6 +27,7 @@ export async function getCurrentUser() {
     const user = res.data?.user;
     if (user) {
       localStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
+      base44.auth.setToken(token);
       return user;
     }
   } catch (_) {
