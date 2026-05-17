@@ -181,6 +181,25 @@
     "cancellation_reason": {
       "type": "string",
       "description": "Free-form admin note explaining why client was cancelled"
+    },
+    "deletion_pending": {
+      "type": "boolean",
+      "default": false,
+      "description": "LB-024: True after the client requested permanent account deletion via ClientSettings. Cleared if cancelled within the 14-day grace window. The process-pending-deletions cron sweeps rows where this is true AND deletion_scheduled_at <= now()."
+    },
+    "deletion_scheduled_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "LB-024: Timestamp when this Client is eligible for permanent anonymisation. Set to deletion request time + 14 days. Cleared on cancel."
+    },
+    "deletion_cancel_token": {
+      "type": "string",
+      "description": "LB-024: Single-use UUID issued at deletion request time. Used by the cancel link in Email 1 to authenticate the cancel action without requiring login. Cleared on use or on permanent anonymisation."
+    },
+    "anonymised_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "LB-024: Set when process-pending-deletions has anonymised this Client row. PII fields (business_name, contact_person, email, phone, address, id_reg_number, notes) are replaced with [deleted] placeholders. Row is kept (not deleted) so financial records (Invoice/Payment/Commission/Contract) retain a valid client_id reference for SARS 5-year retention."
     }
   },
   "required": [
