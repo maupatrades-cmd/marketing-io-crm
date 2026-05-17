@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
 import ClientSidebar from "@/components/ClientSidebar";
 import PortalFooter from "@/components/PortalFooter";
 import AdminNotificationBell from "@/components/AdminNotificationBell";
+import DeletionPendingBanner from "@/components/banner/DeletionPendingBanner";
 
 const STAFF_NAV = {
   field_agent: [
@@ -161,6 +162,7 @@ export default function AppLayout({ children, title, subtitle }) {
               {subtitle && <p className="text-xs" style={{ color: "#6b6b85" }}>{subtitle}</p>}
             </div>
           </header>
+          <DeletionPendingBanner />
           <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
             {children}
             <PortalFooter />
@@ -571,6 +573,7 @@ export default function AppLayout({ children, title, subtitle }) {
           </div>
           <AdminNotificationBell />
         </header>
+        <DeletionPendingBanner />
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           {children}
           <PortalFooter />

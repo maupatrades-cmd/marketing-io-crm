@@ -1,10 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { Resend } from 'npm:resend@3.2.0';
 
-const HEAD_EMAIL = 'head@marketingio.co.za';
-const FROM = 'Marketing iO Team <hello@marketingio.co.za>';
-const LOGO_URL = 'https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png';
-const GRACE_DAYS = 30;
+// LB-024: 14-day cooling-off account deletion.
+// - Auth: caller must be the user being deleted (self-deletion) OR owner/admin
+//   acting on behalf. Token is the AppUser session_token from localStorage.
+// - Effect: writes deletion_pending + deletion_scheduled_at (now+14d) +
+//   deletion_cancel_token to the caller's CLIENT row (not AppUser).
+// - Sends Email 1 with a cancel link (?token=<deletion_cancel_token>).
+// - Does NOT delete anything yet. Permanent deletion is handled by
+//   process-pending-deletions (daily 03:00 SAST cron).
+
+const APP_URL  = Deno.env.get('APP_URL') || 'https://app.marketingio.co.za';
+const FROM     = Deno.env.get('RESEND_FROM_EMAIL') || 'Marketing iO Team <hello@marketingio.co.za>';
+const GRACE_DAYS = 14;
 
 function escapeHtml(s: string): string {
   return String(s ?? '').replace(/[<>&"']/g, c => (
@@ -13,7 +21,7 @@ function escapeHtml(s: string): string {
 }
 
 function wrapEmail(bodyHtml: string) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Marketing iO</title><!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]--></head>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Marketing iO</title></head>
 <body style="margin:0;padding:0;background-color:#0a0a2e;font-family:Arial,Helvetica,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a0a2e;"><tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background-color:#ffffff;border-collapse:collapse;">
@@ -31,6 +39,13 @@ ${bodyHtml}
 </body></html>`;
 }
 
+function unwrapList(result: any): any[] {
+  if (!result) return [];
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.data)) return result.data;
+  return [];
+}
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
@@ -41,13 +56,11 @@ Deno.serve(async (req) => {
   if (!user_id) return Response.json({ error: 'user_id required' }, { status: 400 });
   if (!token) return Response.json({ error: 'token required' }, { status: 401 });
 
-  // LB-024: authz — caller must own the session AND be the user being deleted
-  // (or be owner/admin acting on behalf). Without this gate, anyone could
-  // POST { user_id } and trigger a 30-day deletion countdown on any account.
+  // Authz: resolve caller, allow self-deletion OR owner/admin on behalf.
   let caller: any = null;
   try {
-    const list = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
-    caller = Array.isArray(list) ? list[0] : null;
+    const list = unwrapList(await base44.asServiceRole.entities.AppUser.filter({ session_token: token }));
+    caller = list[0] || null;
   } catch (err) {
     console.error('[request-account-deletion] caller lookup failed:', err);
   }
@@ -61,91 +74,122 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'forbidden' }, { status: 403 });
   }
 
-  // Find AppUser.
-  let appUser: any = null;
-  try {
-    const found = await base44.asServiceRole.entities.AppUser.filter({ id: user_id });
-    appUser = Array.isArray(found) ? found[0] : found;
-  } catch (err) {
-    console.error('[request-account-deletion] AppUser lookup failed:', err);
+  // Resolve target AppUser (in case admin is acting on behalf of someone else).
+  let targetUser: any = caller;
+  if (!isSelf) {
+    try {
+      const list = unwrapList(await base44.asServiceRole.entities.AppUser.filter({ id: user_id }));
+      targetUser = list[0] || null;
+    } catch (err) {
+      console.error('[request-account-deletion] target lookup failed:', err);
+    }
+    if (!targetUser) return Response.json({ error: 'user_not_found' }, { status: 404 });
   }
-  if (!appUser) return Response.json({ error: 'user_not_found' }, { status: 404 });
 
-  if (appUser.deletion_pending) {
+  // Find the linked Client row. Deletion state lives on Client.
+  let client: any = null;
+  try {
+    const list = unwrapList(await base44.asServiceRole.entities.Client.filter({ client_user_id: targetUser.id }));
+    client = list[0] || null;
+  } catch (err) {
+    console.error('[request-account-deletion] client lookup failed:', err);
+  }
+  if (!client) {
+    // No Client linked. Staff/admin AppUsers (cpc, field_agent etc.) don't have
+    // Client rows; they shouldn't be reaching this flow from the client portal.
+    return Response.json({ error: 'no_client_record' }, { status: 404 });
+  }
+
+  // Idempotency: already scheduled? Return existing schedule.
+  if (client.deletion_pending && client.deletion_scheduled_at) {
     return Response.json({
       success: true,
       already_pending: true,
-      deletion_requested_at: appUser.deletion_requested_at
+      deletion_scheduled_at: client.deletion_scheduled_at,
     });
   }
 
-  const nowIso = new Date().toISOString();
-  const graceEnd = new Date(Date.now() + GRACE_DAYS * 24 * 60 * 60 * 1000);
-  const graceEndIso = graceEnd.toISOString();
+  const cancelToken = crypto.randomUUID().replace(/-/g, '');
+  const scheduledAt = new Date(Date.now() + GRACE_DAYS * 24 * 60 * 60 * 1000);
+  const scheduledIso = scheduledAt.toISOString();
 
   try {
-    await base44.asServiceRole.entities.AppUser.update(appUser.id, {
+    await base44.asServiceRole.entities.Client.update(client.id, {
       deletion_pending: true,
-      deletion_requested_at: nowIso
+      deletion_scheduled_at: scheduledIso,
+      deletion_cancel_token: cancelToken,
     });
   } catch (err: any) {
-    console.error('[request-account-deletion] update failed:', err);
+    console.error('[request-account-deletion] Client.update failed:', err);
     return Response.json({ error: 'update_failed', detail: err?.message }, { status: 500 });
   }
 
-  // Best-effort notifications. Errors here must not fail the deletion request.
-  const apiKey = Deno.env.get('RESEND_API_KEY');
-  if (apiKey) {
-    const resend = new Resend(apiKey);
-    const userName = appUser.full_name || appUser.first_name || 'there';
-    const graceHuman = graceEnd.toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+  // Audit log (non-fatal).
+  try {
+    await base44.asServiceRole.entities.ClientActivityLog.create({
+      client_id: client.id,
+      client_name: String(client.business_name || ''),
+      actor_id: caller.id,
+      actor_role: String(caller.role || 'client'),
+      event_type: 'account_deletion_requested',
+      event_category: 'account',
+      event_label: 'Account deletion requested',
+      event_summary: `Account scheduled for deletion on ${scheduledIso.split('T')[0]}. 14-day cooling-off period started.`,
+      event_metadata: {
+        deletion_scheduled_at: scheduledIso,
+        grace_days: GRACE_DAYS,
+        on_behalf_of: isSelf ? null : targetUser.id,
+      },
+      logged_by: caller.id,
+      logged_by_name: String(caller.full_name || caller.email || ''),
+    });
+  } catch (err) {
+    console.error('[request-account-deletion] activity log failed (non-fatal):', err);
+  }
 
-    try {
+  // Email 1 — Deletion scheduled (POPIA notice).
+  try {
+    const apiKey = Deno.env.get('RESEND_API_KEY');
+    if (apiKey) {
+      const resend = new Resend(apiKey);
+      const clientName = String(targetUser.full_name || client.contact_person || 'there');
+      const dateHuman = scheduledAt.toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+      const cancelLink = `${APP_URL}/cancel-deletion?token=${cancelToken}`;
+
+      const html = wrapEmail(`
+        <h1 style="margin:0 0 16px 0;color:#0f172a;font-size:22px;">Your Marketing iO account will be deleted on ${escapeHtml(dateHuman)}</h1>
+        <p style="margin:0 0 16px 0;">Hi ${escapeHtml(clientName)},</p>
+        <p style="margin:0 0 16px 0;">We've received your request to delete your Marketing iO account.</p>
+        <p style="margin:0 0 16px 0;">Your account is scheduled to be permanently deleted on <strong>${escapeHtml(dateHuman)}</strong>.</p>
+        <h2 style="margin:24px 0 12px 0;color:#0f172a;font-size:18px;">Changed your mind?</h2>
+        <p style="margin:0 0 16px 0;">Log back into your account before <strong>${escapeHtml(dateHuman)}</strong> and click "Cancel Deletion." Your account will be restored immediately and nothing will be lost.</p>
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:24px auto;"><tr><td>
+          <a href="${cancelLink}" style="display:inline-block;background:linear-gradient(135deg,#a764e6 0%,#ec4899 100%);color:#ffffff;padding:14px 32px;border-radius:8px;font-weight:600;font-size:16px;text-decoration:none;">Cancel Deletion</a>
+        </td></tr></table>
+        <p style="margin:0 0 16px 0;color:#475569;font-size:14px;">If you do nothing, your account and all your data will be permanently deleted on ${escapeHtml(dateHuman)}. This cannot be undone.</p>
+        <p style="margin:0 0 16px 0;color:#b91c1c;font-size:14px;"><strong>If you didn't request this deletion</strong>, please log in immediately and cancel it — someone may be trying to access your account.</p>
+        <p style="margin:24px 0 4px 0;">Thank you for being part of Marketing iO.</p>
+        <p style="margin:0 0 4px 0;">— The Marketing iO Team</p>
+        <p style="margin:24px 0 0 0;color:#94a3b8;font-size:12px;">Marketing iO (Pty) Ltd · marketingio.co.za · info@marketingio.co.za</p>
+        <p style="margin:8px 0 0 0;color:#94a3b8;font-size:12px;">POPIA compliance: your data will be permanently removed on ${escapeHtml(dateHuman)}.</p>
+      `);
+
       await resend.emails.send({
         from: FROM,
-        to: appUser.email,
-        subject: 'Account deletion requested — 30-day grace period started',
-        html: wrapEmail(`
-          <h1 style="margin:0 0 8px 0;font-size:22px;color:#0f172a;">Account deletion requested</h1>
-          <p style="margin:0 0 16px 0;color:#475569;">Hi ${escapeHtml(userName)},</p>
-          <p style="margin:0 0 12px 0;color:#475569;">We've received your request to delete your Marketing iO account. To comply with POPIA, your account will enter a <strong>30-day grace period</strong> before permanent deletion.</p>
-          <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;margin:18px 0;color:#78350f;font-size:14px;">
-            Your account will be permanently deleted on <strong>${escapeHtml(graceHuman)}</strong>.
-          </div>
-          <p style="margin:0 0 12px 0;color:#475569;">If you change your mind, sign in any time before that date and we'll cancel the request — no questions asked.</p>
-          <p style="margin:16px 0 0 0;color:#475569;">— The Marketing iO Team</p>
-        `)
+        to: targetUser.email,
+        subject: `Your Marketing iO account will be deleted on ${dateHuman}`,
+        html,
       });
-    } catch (err) {
-      console.error('[request-account-deletion] user confirmation email failed:', err);
+    } else {
+      console.error('[request-account-deletion] RESEND_API_KEY missing');
     }
-
-    try {
-      await resend.emails.send({
-        from: FROM,
-        to: HEAD_EMAIL,
-        subject: `[ACCOUNT DELETION] ${appUser.email} requested deletion`,
-        html: `
-          <h2 style="margin:0 0 8px 0;color:#0f172a;">Account deletion requested</h2>
-          <table cellpadding="6" cellspacing="0" border="0" style="border-collapse:collapse;font-size:14px;margin:8px 0;">
-            <tr><td style="color:#64748b;width:160px;">User</td><td><strong>${escapeHtml(appUser.full_name || '—')}</strong></td></tr>
-            <tr><td style="color:#64748b;">Email</td><td>${escapeHtml(appUser.email || '—')}</td></tr>
-            <tr><td style="color:#64748b;">Mobile</td><td>${escapeHtml(appUser.mobile_number || '—')}</td></tr>
-            <tr><td style="color:#64748b;">Requested</td><td>${escapeHtml(nowIso)}</td></tr>
-            <tr><td style="color:#64748b;">Grace ends</td><td>${escapeHtml(graceEndIso)}</td></tr>
-          </table>
-          <p style="margin-top:16px;color:#475569;font-size:13px;">No action required — system will purge after 30 days unless the user signs back in to cancel.</p>
-        `
-      });
-    } catch (err) {
-      console.error('[request-account-deletion] head notification failed:', err);
-    }
+  } catch (err) {
+    console.error('[request-account-deletion] Email 1 send failed (non-fatal):', err);
   }
 
   return Response.json({
     success: true,
-    deletion_requested_at: nowIso,
-    grace_ends_at: graceEndIso,
-    grace_days: GRACE_DAYS
+    deletion_scheduled_at: scheduledIso,
+    grace_days: GRACE_DAYS,
   });
 });

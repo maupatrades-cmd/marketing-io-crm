@@ -283,9 +283,13 @@ export default function ClientSettings() {
       });
       const data = res?.data ?? res;
       if (data?.success) {
-        toast.success('Deletion requested. You will be signed out.');
+        const scheduledAt = data?.deletion_scheduled_at;
+        const dateStr = scheduledAt
+          ? new Date(scheduledAt).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })
+          : 'in 14 days';
+        toast.success(`Account scheduled for deletion on ${dateStr}. Check your email — you can cancel any time before then.`);
         try { await destroySession(user.id); } catch (_) {}
-        setTimeout(() => { window.location.href = '/login'; }, 1500);
+        setTimeout(() => { window.location.href = '/login'; }, 2200);
       } else {
         toast.error('Could not request deletion. Please try again.');
       }
@@ -457,7 +461,7 @@ export default function ClientSettings() {
           {confirmDeleteOpen && (
             <div className="rounded-xl border border-rose-500/40 bg-rose-950/20 p-4 space-y-3">
               <p className="text-sm text-rose-100">
-                <strong>This starts a 30-day grace period.</strong> Your account is marked for deletion and you'll be signed out. Sign back in any time within 30 days to cancel — after that, the account is permanently deleted per POPIA.
+                <strong>This starts a 14-day cooling-off period.</strong> We'll email you confirmation with a cancel link, and you'll be signed out. Sign back in any time within 14 days to cancel — after that, your account and personal data are permanently anonymised per POPIA. Financial records (invoices, contracts) are retained for 5 years per SARS requirements but with all personal details removed.
               </p>
               <Field
                 label="Type DELETE to confirm"
