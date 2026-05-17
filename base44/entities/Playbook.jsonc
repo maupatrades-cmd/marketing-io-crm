@@ -79,5 +79,23 @@
     "content_type",
     "short_description",
     "full_content"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "owner"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "owner"
+      }
+    }
+  }
 }

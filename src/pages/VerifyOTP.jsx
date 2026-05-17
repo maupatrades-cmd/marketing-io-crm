@@ -54,6 +54,7 @@ export default function VerifyOTP() {
 
       localStorage.setItem('mio_session_token', token);
       localStorage.setItem('mio_session_user', JSON.stringify(user));
+      base44.auth.setToken(token);
 
       // ?next= overrides role-based default — only honoured if it passed
       // the whitelist check above (so it's safe to redirect to).
