@@ -37,8 +37,29 @@ Deno.serve(async (req) => {
   let body: any;
   try { body = await req.json(); } catch { return Response.json({ error: 'invalid_json' }, { status: 400 }); }
 
-  const { user_id } = body || {};
+  const { user_id, token } = body || {};
   if (!user_id) return Response.json({ error: 'user_id required' }, { status: 400 });
+  if (!token) return Response.json({ error: 'token required' }, { status: 401 });
+
+  // LB-024: authz — caller must own the session AND be the user being deleted
+  // (or be owner/admin acting on behalf). Without this gate, anyone could
+  // POST { user_id } and trigger a 30-day deletion countdown on any account.
+  let caller: any = null;
+  try {
+    const list = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
+    caller = Array.isArray(list) ? list[0] : null;
+  } catch (err) {
+    console.error('[request-account-deletion] caller lookup failed:', err);
+  }
+  if (!caller) return Response.json({ error: 'invalid_session' }, { status: 401 });
+  if (!caller.session_expires_at || new Date(caller.session_expires_at) < new Date()) {
+    return Response.json({ error: 'session_expired' }, { status: 401 });
+  }
+  const isSelf = String(caller.id) === String(user_id);
+  const isAdmin = caller.role === 'owner' || caller.role === 'admin';
+  if (!isSelf && !isAdmin) {
+    return Response.json({ error: 'forbidden' }, { status: 403 });
+  }
 
   // Find AppUser.
   let appUser: any = null;
