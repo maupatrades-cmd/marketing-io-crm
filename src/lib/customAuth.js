@@ -27,7 +27,9 @@ export async function getCurrentUser() {
     const user = res.data?.user;
     if (user) {
       localStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
-      base44.auth.setToken(token);
+      // Do NOT call base44.auth.setToken() — this app uses AppUser-based custom auth.
+      // Setting the SDK token attaches a bearer that Base44's middleware can't resolve,
+      // causing 500s on any direct entity call. All data access goes through backend functions.
       return user;
     }
   } catch (_) {
