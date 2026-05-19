@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Search, X, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEscapeKey } from '@/lib/useEscapeKey';
 
 // Owner-initiated thread creation modal.
 // Lets the owner pick a client by name/email search and post the first
@@ -15,6 +16,9 @@ export default function NewThreadModal({ open, onClose, onCreated, currentUserId
   const [selectedClient, setSelectedClient] = useState(null);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+
+  // Close on Escape (only when open and not mid-send).
+  useEscapeKey(open && !sending, onClose);
 
   // Load active clients when the modal opens.
   useEffect(() => {

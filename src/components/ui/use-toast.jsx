@@ -2,7 +2,15 @@
 import { useState, useEffect } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+// How long the toast stays in the DOM after being dismissed (for exit
+// animation). Previously 1,000,000 ms (~16 minutes) — a tutorial copy-paste
+// that effectively made dismissed toasts hang around forever.
+const TOAST_REMOVE_DELAY = 5000;
+// Default visible duration before the toast auto-dismisses. Callers can
+// override per-toast by passing { duration } in props. Use 5s for
+// destructive/error variants so users have time to read what went wrong.
+const DEFAULT_DURATION = 3000;
+const DESTRUCTIVE_DURATION = 5000;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -133,6 +141,18 @@ function toast({ ...props }) {
       },
     },
   });
+
+  // Auto-dismiss after the visible duration. Caller can opt out by passing
+  // duration: 0 (e.g. for toasts that need an explicit user action).
+  const duration =
+    typeof props.duration === "number"
+      ? props.duration
+      : props.variant === "destructive"
+      ? DESTRUCTIVE_DURATION
+      : DEFAULT_DURATION;
+  if (duration > 0) {
+    setTimeout(() => dismiss(), duration);
+  }
 
   return {
     id,

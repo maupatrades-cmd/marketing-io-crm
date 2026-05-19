@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Phone, User, AlertTriangle, X, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
+import { useEscapeKey } from '@/lib/useEscapeKey';
 
 const OWNER_EMAIL = 'head@marketingio.co.za';
 
@@ -11,6 +12,9 @@ export default function ContactCenterModal({ client, onClose }) {
   const fallbackTimerRef = useRef(null);
 
   const firstName = client?.contact_person?.split(' ')[0] || 'there';
+
+  // Close on Escape (modal is always rendered when mounted by parent).
+  useEscapeKey(true, onClose);
 
   useEffect(() => () => {
     if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
@@ -53,7 +57,10 @@ export default function ContactCenterModal({ client, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div className="bg-slate-900 border border-slate-700/50 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
 
         <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
