@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { getNextStepsCopy } from '@/config/packageCategories';
 import { getCurrentUser } from '@/lib/customAuth';
 import { logClientActivityFromBrowser } from '@/lib/activityLog';
+import MascotPlayer from '@/components/mascot/MascotPlayer';
 
 // Step 8 PR F — buyer-facing payment success page.
 //
@@ -57,6 +58,17 @@ export default function PaymentSuccess() {
   const [phase, setPhase] = useState(ref ? 'loading' : 'no_ref');
   const [summary, setSummary] = useState(null);
   const pollStartedAt = useRef(null);
+  const [celebrating, setCelebrating] = useState(false);
+  const celebrationShownRef = useRef(false);
+
+  // Trigger the mascot celebration overlay the first time we hit
+  // phase=='successful'. Auto-dismisses inside MascotPlayer (6s) or on click.
+  useEffect(() => {
+    if (phase === 'successful' && !celebrationShownRef.current) {
+      celebrationShownRef.current = true;
+      setCelebrating(true);
+    }
+  }, [phase]);
 
   // Initial fetch + polling while pending.
   useEffect(() => {
@@ -130,6 +142,9 @@ export default function PaymentSuccess() {
         {phase === 'failed' && <FailedView summary={summary} />}
         {phase === 'successful' && <SuccessfulView summary={summary} />}
       </div>
+      {celebrating && (
+        <MascotPlayer mode="overlay" onDismiss={() => setCelebrating(false)} />
+      )}
     </div>
   );
 }

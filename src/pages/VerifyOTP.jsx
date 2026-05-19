@@ -56,6 +56,13 @@ export default function VerifyOTP() {
       localStorage.setItem('mio_session_user', JSON.stringify(user));
       base44.auth.setToken(token);
 
+      // Welcome mascot — fires once, only on signup_verification, picked up
+      // by ClientPortal on first mount and cleared as soon as the overlay
+      // dismisses. login_mfa and password_reset don't set the flag.
+      if (purpose === 'signup_verification' && user.role === 'client') {
+        localStorage.setItem('mio_show_welcome_mascot', '1');
+      }
+
       // ?next= overrides role-based default — only honoured if it passed
       // the whitelist check above (so it's safe to redirect to).
       if (nextParam) {
