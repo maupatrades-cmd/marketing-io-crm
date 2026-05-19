@@ -143,6 +143,20 @@
       "type": "string",
       "format": "date-time",
       "description": "Server-side bump used by 'Sign out everywhere'. Sessions issued before this timestamp should be treated as invalid by auth-me."
+    },
+    "lockdown_token": {
+      "type": "string",
+      "description": "LB-031c: One-time token embedded in the 'wasn't me' link emailed after every successful password change. Consumed by emergency-account-lockdown."
+    },
+    "lockdown_token_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "LB-031c: When lockdown_token expires (24h after password change). Past this point the 'wasn't me' link no longer works and the user must contact support."
+    },
+    "password_reset_required": {
+      "type": "boolean",
+      "default": false,
+      "description": "LB-031c: Set true by emergency-account-lockdown. auth-login refuses to issue an OTP while this is true; cleared by reset-password on successful new-password submission."
     }
   },
   "required": [
