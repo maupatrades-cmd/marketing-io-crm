@@ -19,10 +19,15 @@
       "enum": [
         "client",
         "staff",
-        "admin"
+        "admin",
+        "owner",
+        "field_agent",
+        "cpc",
+        "head_of_tech",
+        "driver"
       ],
       "default": "client",
-      "description": "User role in the app"
+      "description": "User role in the app. 'owner' is the business owner referenced by the RLS user_condition; 'admin' is retained for the legacy seed-test-staff-users path. Staff roles (field_agent, cpc, head_of_tech, driver) are written by seed-test-staff-users and the StaffHR hire form."
     },
     "email_verified": {
       "type": "boolean",
@@ -90,7 +95,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Last 10 bcrypt hashes \u2014 new passwords must not match any of these"
+      "description": "Last 10 bcrypt hashes — new passwords must not match any of these"
     },
     "password_changed_at": {
       "type": "string",
@@ -101,10 +106,68 @@
       "type": "string",
       "format": "date-time",
       "description": "When the password expires (90 days after last change)"
+    },
+    "first_name": {
+      "type": "string",
+      "description": "User first name (multi-step signup)"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "User last name (multi-step signup)"
+    },
+    "mobile_number": {
+      "type": "string",
+      "description": "Mobile number, SA format (+27 or 0-prefixed, 10 digits if local)"
+    },
+    "popia_consent_given": {
+      "type": "boolean",
+      "default": false,
+      "description": "POPIA marketing-communication consent flag"
+    },
+    "popia_consent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When POPIA consent was given"
+    },
+    "deletion_pending": {
+      "type": "boolean",
+      "default": false,
+      "description": "True after the user requested account deletion. Account enters 30-day grace per POPIA before hard delete."
+    },
+    "deletion_requested_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp the user clicked 'Delete account'. Hard delete eligible after deletion_requested_at + 30 days."
+    },
+    "force_logout_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Server-side bump used by 'Sign out everywhere'. Sessions issued before this timestamp should be treated as invalid by auth-me."
     }
   },
   "required": [
     "email",
     "password_hash"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": { "role": "owner" }
+    },
+    "read": {
+      "$or": [
+        { "data.id":    "{{user.id}}" },
+        { "data.email": "{{user.email}}" },
+        { "user_condition": { "role": "owner" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.id": "{{user.id}}" },
+        { "user_condition": { "role": "owner" } }
+      ]
+    },
+    "delete": {
+      "user_condition": { "role": "owner" }
+    }
+  }
 }
