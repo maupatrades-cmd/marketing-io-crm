@@ -59,6 +59,7 @@ export default function InternalMail() {
       to_name: toUser?.full_name || "",
       to_email: toUser?.email || "",
       subject: form.subject,
+      message: form.body,
       body: form.body,
       read: false,
     });
