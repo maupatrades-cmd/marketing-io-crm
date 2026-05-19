@@ -42,11 +42,28 @@ function unreadFieldFor(role: string): string | null {
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const { client_id, current_user_id, current_user_role } = await req.json();
+  const body = await req.json().catch(() => ({}));
+  const { client_id, token } = body;
 
-  if (!client_id || !current_user_id || !current_user_role) {
-    return Response.json({ error: 'client_id, current_user_id, current_user_role required' }, { status: 400 });
+  if (!client_id) return Response.json({ error: 'client_id required' }, { status: 400 });
+  if (!token) return Response.json({ error: 'token required' }, { status: 401 });
+
+  // LB-029: derive caller identity from session token. Prior version trusted
+  // current_user_id / current_user_role from the request body, letting anyone
+  // claim any user_id or role to read or create any client's thread.
+  let caller: any = null;
+  try {
+    const callerList = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
+    caller = (Array.isArray(callerList) ? callerList[0] : null) || null;
+  } catch (err) {
+    console.error('[get-or-create-client-thread] caller lookup failed:', err);
   }
+  if (!caller) return Response.json({ error: 'invalid_session' }, { status: 401 });
+  if (!caller.session_expires_at || new Date(caller.session_expires_at) < new Date()) {
+    return Response.json({ error: 'session_expired' }, { status: 401 });
+  }
+  const current_user_id = caller.id;
+  const current_user_role = caller.role;
 
   // Load client first so permission checks have something to chew on.
   let client: any = null;

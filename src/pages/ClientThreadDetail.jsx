@@ -93,7 +93,10 @@ export default function ClientThreadDetail() {
         setThread(t);
 
         // Load messages.
-        const res = await base44.functions.invoke('list-thread-messages', { thread_id: t.id });
+        const res = await base44.functions.invoke('list-thread-messages', {
+          thread_id: t.id,
+          token: localStorage.getItem('mio_session_token'),
+        });
         const payload = res?.data ?? res;
         setMessages(Array.isArray(payload?.messages) ? payload.messages : []);
       } catch (err) {
@@ -113,7 +116,10 @@ export default function ClientThreadDetail() {
       if (cancelled) return;
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       try {
-        const res = await base44.functions.invoke('list-thread-messages', { thread_id: thread.id });
+        const res = await base44.functions.invoke('list-thread-messages', {
+          thread_id: thread.id,
+          token: localStorage.getItem('mio_session_token'),
+        });
         const payload = res?.data ?? res;
         if (!cancelled && Array.isArray(payload?.messages)) setMessages(payload.messages);
       } catch { /* swallow */ }
@@ -139,7 +145,10 @@ export default function ClientThreadDetail() {
       });
       setDraft('');
       // Optimistic refresh
-      const res = await base44.functions.invoke('list-thread-messages', { thread_id: thread.id });
+      const res = await base44.functions.invoke('list-thread-messages', {
+        thread_id: thread.id,
+        token: localStorage.getItem('mio_session_token'),
+      });
       const payload = res?.data ?? res;
       if (Array.isArray(payload?.messages)) setMessages(payload.messages);
     } catch (err) {

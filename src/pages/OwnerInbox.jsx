@@ -154,7 +154,8 @@ export default function OwnerInbox() {
       const res = await base44.functions.invoke('get-or-create-client-thread', {
         client_id: t.client_id,
         current_user_id: user.id,
-        current_user_role: 'owner'
+        current_user_role: 'owner',
+        token: localStorage.getItem('mio_session_token'),
       });
       const data = res.data || {};
       if (data.error) {
@@ -180,7 +181,8 @@ export default function OwnerInbox() {
         const res = await base44.functions.invoke('list-thread-messages', {
           thread_id: selected.thread.id,
           current_user_id: user.id,
-          current_user_role: 'owner'
+          current_user_role: 'owner',
+          token: localStorage.getItem('mio_session_token'),
         });
         const data = res.data || {};
         if (data.thread || data.messages) {

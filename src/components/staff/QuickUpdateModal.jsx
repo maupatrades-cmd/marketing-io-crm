@@ -23,6 +23,7 @@ export default function QuickUpdateModal({ user, onClose }) {
     try {
       const thread = await base44.functions.invoke("get-or-create-client-thread", {
         client_id: selectedClientId,
+        token: localStorage.getItem('mio_session_token'),
       });
       const threadId = thread?.data?.thread_id || thread?.data?.id;
       if (!threadId) throw new Error("Could not get thread");
