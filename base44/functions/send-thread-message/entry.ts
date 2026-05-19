@@ -48,11 +48,30 @@ function notificationEmail(opts: { to: string; senderName: string; clientName: s
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const { thread_id, sender_id, message } = await req.json();
+  const body = await req.json().catch(() => ({}));
+  const { thread_id, message, token } = body;
 
-  if (!thread_id || !sender_id || !message || !message.trim()) {
-    return Response.json({ error: 'thread_id, sender_id, message required' }, { status: 400 });
+  if (!thread_id || !message || !message.trim()) {
+    return Response.json({ error: 'thread_id, message required' }, { status: 400 });
   }
+  if (!token) return Response.json({ error: 'token required' }, { status: 401 });
+
+  // LB-027: derive sender_id from the session token, never trust a body-supplied
+  // sender_id. Prior version accepted sender_id from the request body, letting
+  // anyone impersonate any thread participant as long as they knew that
+  // participant's user_id.
+  let caller: any = null;
+  try {
+    const callerList = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
+    caller = (Array.isArray(callerList) ? callerList[0] : null) || null;
+  } catch (err) {
+    console.error('[send-thread-message] caller lookup failed:', err);
+  }
+  if (!caller) return Response.json({ error: 'invalid_session' }, { status: 401 });
+  if (!caller.session_expires_at || new Date(caller.session_expires_at) < new Date()) {
+    return Response.json({ error: 'session_expires' }, { status: 401 });
+  }
+  const sender_id = caller.id;
 
   // Load thread.
   let thread: any = null;

@@ -32,6 +32,7 @@ export default function QuickUpdateModal({ user, onClose }) {
         sender_id: user?.id,
         sender_name: user?.full_name,
         sender_role: user?.role,
+        token: localStorage.getItem('mio_session_token'),
       });
       toast.success("Message sent!");
       onClose();

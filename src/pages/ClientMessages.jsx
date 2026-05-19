@@ -197,7 +197,8 @@ export default function ClientMessages() {
       const res = await base44.functions.invoke('send-thread-message', {
         thread_id: thread.id,
         sender_id: user.id,
-        message: text
+        message: text,
+        token: localStorage.getItem('mio_session_token'),
       });
       const data = res.data || {};
       if (data.error) {
