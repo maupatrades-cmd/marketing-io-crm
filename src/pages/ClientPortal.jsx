@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { getCurrentUser } from "@/lib/customAuth";
+import MascotPlayer from "@/components/mascot/MascotPlayer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -32,6 +33,14 @@ export default function ClientPortal() {
   const [user, setUser] = useState(null);
   const [client, setClient] = useState(null);
   const [enquiries, setEnquiries] = useState([]);
+  const [showWelcomeMascot, setShowWelcomeMascot] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('mio_show_welcome_mascot') === '1'
+  );
+
+  const dismissWelcomeMascot = () => {
+    setShowWelcomeMascot(false);
+    try { localStorage.removeItem('mio_show_welcome_mascot'); } catch (_) {}
+  };
   const [productImages, setProductImages] = useState({});
   const [onboarding, setOnboarding] = useState(null);
   const [deliverables, setDeliverables] = useState([]);
@@ -412,9 +421,15 @@ export default function ClientPortal() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-foreground">
+      {/* Welcome mascot — fires once on first portal load after signup */}
+      {showWelcomeMascot && (
+        <MascotPlayer mode="overlay" onDismiss={dismissWelcomeMascot} />
+      )}
+      {/* Looping mascot decoration — bottom-right corner, transparent */}
+      <MascotPlayer mode="loop" size={140} className="fixed bottom-4 right-4 z-20 hidden sm:block" />
       {/* Splash Screen */}
       {!splashDismissed && (
-        <SplashScreen 
+        <SplashScreen
           client={client}
           onDismiss={() => setSplashDismissed(true)}
         />
