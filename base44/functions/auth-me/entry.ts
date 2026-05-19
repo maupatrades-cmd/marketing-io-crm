@@ -32,6 +32,20 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Session expired' }, { status: 401 });
   }
 
+  // LB-031c / LB-025: honor force_logout_at. sign-out-everywhere and
+  // emergency-account-lockdown bump this field to "now" to invalidate any
+  // session issued before that moment. Use last_login_at as the
+  // "session_issued_at" proxy — it's written atomically with session_token
+  // in auth-verify-otp. Without this check, force_logout_at was a passive
+  // tombstone (LB-025 ship-bug).
+  if (
+    user.force_logout_at &&
+    user.last_login_at &&
+    new Date(user.last_login_at) < new Date(user.force_logout_at)
+  ) {
+    return Response.json({ error: 'force_logged_out' }, { status: 401 });
+  }
+
   return Response.json({
     user: {
       id: user.id,
