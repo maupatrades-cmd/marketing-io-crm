@@ -22,7 +22,12 @@ Deno.serve(async (req) => {
   }
   if (!token) return Response.json({ error: 'token required' }, { status: 401 });
 
-  // Validate session
+  // LB-030: bind the password change to an authenticated session. Previously
+  // only current_password was checked, which meant anyone who knew (or
+  // brute-forced over time) a user's password could change it from anywhere
+  // with no active login. Now caller must hold a valid session AND know the
+  // current password AND target their own user_id. No admin bypass — admins
+  // reset passwords via the password_reset flow, not this endpoint.
   let caller = null;
   try {
     const callerList = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
