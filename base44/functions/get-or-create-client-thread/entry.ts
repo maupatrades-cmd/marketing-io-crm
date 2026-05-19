@@ -14,6 +14,16 @@ async function resolveConsultantId(base44: any, client: any): Promise<string | n
 }
 
 async function resolveOwnerId(base44: any): Promise<string | null> {
+  // Use AppUser as the canonical identity store. Legacy User entity has
+  // different row ids for the same person, which causes participant check
+  // mismatches in send-thread-message when the caller's session-derived id
+  // (AppUser.id) doesn't match a thread.owner_id stored from User.id.
+  try {
+    const owners = await base44.asServiceRole.entities.AppUser.filter({ role: 'owner' });
+    const o = Array.isArray(owners) ? owners[0] : owners;
+    if (o?.id) return o.id;
+  } catch (_) {}
+  // Fall back to legacy User if AppUser lookup fails (shouldn't happen).
   try {
     const owners = await base44.asServiceRole.entities.User.filter({ role: 'owner' });
     const o = Array.isArray(owners) ? owners[0] : owners;
