@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { getCurrentUser } from "@/lib/customAuth";
 import AppLayout from "@/components/AppLayout";
-import { Send, MessageSquare, ArrowLeft } from "lucide-react";
+import { Send, MessageSquare, ArrowLeft, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import NewThreadModal from "@/components/inbox/NewThreadModal";
 
 const ROLE_STYLE = {
   client:     { ring: 'ring-purple-500/40', bg: 'bg-purple-500', badge: 'bg-purple-500/15 text-purple-300 border-purple-500/40', label: 'Client' },
@@ -115,6 +116,7 @@ export default function OwnerInbox() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [newThreadOpen, setNewThreadOpen] = useState(false);
   const scrollRef = useRef(null);
 
   // Load current user + thread list — load ALL threads (active + any status)
@@ -300,10 +302,30 @@ export default function OwnerInbox() {
         </div>
       ) : (
         <div>
+          <div className="flex items-center justify-end mb-3">
+            <button
+              type="button"
+              onClick={() => setNewThreadOpen(true)}
+              className="inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg text-white hover:opacity-90 transition-opacity"
+              style={{ background: 'linear-gradient(135deg,#a764e6 0%,#ec4899 100%)' }}
+            >
+              <Plus className="w-4 h-4" />
+              New message
+            </button>
+          </div>
           {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
           <ThreadList threads={threads} onSelect={openThread} />
         </div>
       )}
+      <NewThreadModal
+        open={newThreadOpen}
+        onClose={() => setNewThreadOpen(false)}
+        onCreated={async (newThread) => {
+          await loadThreads();
+          if (newThread) openThread(newThread);
+        }}
+        currentUserId={user?.id}
+      />
     </AppLayout>
   );
 }
