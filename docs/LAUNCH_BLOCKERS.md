@@ -75,8 +75,8 @@ Items LB-001 through LB-011 are kept on the list for now but will be re-titled a
 - **LB-025** [CRITICAL] `base44/functions/sign-out-everywhere/entry.ts:13-44` — no auth; force-logout any user by user_id. Status: ✅ DONE (2026-05-17) — auth gate added via PR #94. Tester confirmed self-flow works; console-based attack tests deferred to curl (base44 SDK not exposed on window in prod builds).
 - **LB-026** [CRITICAL] `base44/functions/updateUserRole/entry.ts:6-23` — caller validated against legacy User entity (post-migration broken), no whitelist on target role, admin can self-promote to owner. Status: ✅ DONE (2026-05-17) — function deleted via PR #95. Tester confirmed 404.
 - **LB-027** [CRITICAL] `base44/functions/send-thread-message/entry.ts:49-82` — `sender_id` taken from body without session verification; any caller can impersonate any thread participant. Status: ✅ DONE (2026-05-19) — sender now derived from session token via PR #96. ClientThread + ClientThreadMessage entities also deployed to live (were missing from production app entirely).
-- **LB-028** [CRITICAL] `base44/functions/list-thread-messages/entry.ts:19-43` — `current_user_id` from body; IDOR reads any thread. Status: NOT STARTED
-- **LB-029** [CRITICAL] `base44/functions/get-or-create-client-thread/entry.ts:43-80` — same IDOR pattern as LB-028. Status: NOT STARTED
+- **LB-028** [CRITICAL] `base44/functions/list-thread-messages/entry.ts:19-43` — `current_user_id` from body; IDOR reads any thread. Status: ✅ DONE (2026-05-19) — caller derived from session via PR #97.
+- **LB-029** [CRITICAL] `base44/functions/get-or-create-client-thread/entry.ts:43-80` — same IDOR pattern as LB-028. Status: ✅ DONE (2026-05-19) — caller derived from session via PR #97.
 - **LB-030** [CRITICAL] `base44/functions/change-password/entry.ts:18` — `user_id` from body, not session; design flaw (current_password is the only gate). Status: NOT STARTED
 
 ## Unauthenticated backend endpoints — email / notifications

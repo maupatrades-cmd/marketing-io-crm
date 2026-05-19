@@ -18,9 +18,31 @@ Deno.serve(async (req) => {
   let body: any;
   try { body = await req.json(); } catch { return Response.json({ error: 'invalid_json' }, { status: 400 }); }
 
-  const { user_id, current_password, new_password } = body || {};
+  const { user_id, current_password, new_password, token } = body || {};
   if (!user_id || !current_password || !new_password) {
     return Response.json({ error: 'user_id, current_password, new_password required' }, { status: 400 });
+  }
+  if (!token) return Response.json({ error: 'token required' }, { status: 401 });
+
+  // LB-030: bind the password change to an authenticated session. Previously
+  // only current_password was checked, which meant anyone who knew (or
+  // brute-forced over time) a user's password could change it from anywhere
+  // with no active login. Now caller must hold a valid session AND know the
+  // current password AND target their own user_id. No admin bypass — admins
+  // reset passwords via the password_reset flow, not this endpoint.
+  let caller: any = null;
+  try {
+    const callerList = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
+    caller = (Array.isArray(callerList) ? callerList[0] : null) || null;
+  } catch (err) {
+    console.error('[change-password] caller lookup failed:', err);
+  }
+  if (!caller) return Response.json({ error: 'invalid_session' }, { status: 401 });
+  if (!caller.session_expires_at || new Date(caller.session_expires_at) < new Date()) {
+    return Response.json({ error: 'session_expired' }, { status: 401 });
+  }
+  if (String(caller.id) !== String(user_id)) {
+    return Response.json({ error: 'forbidden' }, { status: 403 });
   }
 
   const validation = validatePassword(new_password);

@@ -212,7 +212,8 @@ export default function ClientSettings() {
       const res = await base44.functions.invoke('change-password', {
         user_id: user.id,
         current_password: currentPw,
-        new_password: newPw
+        new_password: newPw,
+        token: localStorage.getItem('mio_session_token'),
       });
       const data = res?.data ?? res;
       if (data?.error) {
