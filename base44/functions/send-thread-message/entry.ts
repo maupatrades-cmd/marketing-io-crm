@@ -94,13 +94,32 @@ Deno.serve(async (req) => {
   const isOwner = thread.owner_id && thread.owner_id === sender_id;
   const isConsultant = thread.consultant_id && thread.consultant_id === sender_id;
   const isClient = client?.client_user_id && client.client_user_id === sender_id;
+  // Role-based bypass for owner/admin: matches the existing behavior in
+  // list-thread-messages and fixes the User-vs-AppUser id mismatch that
+  // happens because resolveOwnerId historically stored the built-in User.id
+  // on thread.owner_id, but the post-LB-027 caller.id comes from AppUser.
+  const isOwnerByRole = caller.role === 'owner';
+  const isAdminByRole = caller.role === 'admin';
   const isParticipant = isOwner || isConsultant || isClient
+    || isOwnerByRole || isAdminByRole
     || (Array.isArray(thread.participants) && thread.participants.includes(sender_id));
   if (!isParticipant) {
     return Response.json({ error: 'forbidden' }, { status: 403 });
   }
 
-  const senderRole = determineSenderRole(thread, client, sender_id);
+  // Derive sender role: prefer the caller's actual role from their session
+  // over any inference from stored thread.owner_id / consultant_id, which
+  // may reference a different entity's id (legacy User vs AppUser).
+  let senderRole: string;
+  if (caller.role === 'owner') {
+    senderRole = 'owner';
+  } else if (caller.role === 'admin' || caller.role === 'consultant') {
+    senderRole = 'consultant';
+  } else if (caller.role === 'client') {
+    senderRole = 'client';
+  } else {
+    senderRole = determineSenderRole(thread, client, sender_id);
+  }
   const senderInfo = await lookupParticipant(base44, sender_id);
   const senderName = senderInfo.name || 'Marketing iO';
   const trimmedMessage = message.trim();
