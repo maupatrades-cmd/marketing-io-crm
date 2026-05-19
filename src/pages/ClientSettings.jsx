@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { getCurrentUser, destroySession } from '@/lib/customAuth';
 import { validatePassword, getPasswordStrength } from '@/lib/passwordValidator';
-import { Loader2, Save, ShieldCheck, Bell, Trash2, AlertTriangle, KeyRound, LogOut } from 'lucide-react';
+import { Loader2, Save, ShieldCheck, Bell, Trash2, AlertTriangle, KeyRound, LogOut, Eye, EyeOff } from 'lucide-react';
 
 const NOTIFICATION_KEYS = [
   { key: 'email_invoice_issued',     label: 'Email when an invoice is issued' },
@@ -45,19 +45,33 @@ function Section({ icon: Icon, title, subtitle, accent = 'default', children }) 
   );
 }
 
-function Field({ label, value, onChange, type = 'text', readOnly = false, hint, error }) {
+function Field({ label, value, onChange, type = 'text', readOnly = false, hint, error, showToggle = false }) {
+  const [show, setShow] = useState(false);
+  const inputType = showToggle ? (show ? 'text' : 'password') : type;
   return (
     <div>
       <label className="block text-xs uppercase tracking-wider text-slate-400 mb-1">{label}</label>
-      <input
-        type={type}
-        value={value ?? ''}
-        readOnly={readOnly}
-        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-        className={`w-full bg-slate-900 border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/60 ${
-          error ? 'border-rose-500/60' : 'border-slate-700/60'
-        } ${readOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
-      />
+      <div className="relative">
+        <input
+          type={inputType}
+          value={value ?? ''}
+          readOnly={readOnly}
+          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+          className={`w-full bg-slate-900 border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/60 ${
+            error ? 'border-rose-500/60' : 'border-slate-700/60'
+          } ${readOnly ? 'opacity-70 cursor-not-allowed' : ''} ${showToggle ? 'pr-10' : ''}`}
+        />
+        {showToggle && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setShow(s => !s)}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        )}
+      </div>
       {hint && !error && <p className="text-[11px] text-slate-500 mt-1">{hint}</p>}
       {error && <p className="text-[11px] text-rose-400 mt-1">{error}</p>}
     </div>
@@ -101,6 +115,8 @@ export default function ClientSettings() {
   const [changingPw, setChangingPw] = useState(false);
   const [recentLogins, setRecentLogins] = useState([]);
   const [signingOutEverywhere, setSigningOutEverywhere] = useState(false);
+  const [passwordExpiresAt, setPasswordExpiresAt] = useState(null);
+  const [passwordExpired, setPasswordExpired] = useState(false);
 
   // Notifications
   const [prefs, setPrefs] = useState({});
@@ -120,6 +136,10 @@ export default function ClientSettings() {
       setUser(me);
       setFullName(me.full_name || '');
       setMobileNumber(me.mobile_number || '');
+      if (me.password_expires_at) {
+        setPasswordExpiresAt(me.password_expires_at);
+        setPasswordExpired(new Date(me.password_expires_at) < new Date());
+      }
 
       try {
         const clients = await base44.entities.Client.filter({ email: me.email });
@@ -218,15 +238,18 @@ export default function ClientSettings() {
       const data = res?.data ?? res;
       if (data?.error) {
         const map = {
-          wrong_current_password: 'Current password is incorrect.',
-          same_as_old: 'New password must be different from the current one.',
-          invalid_new_password: data.detail?.[0] || 'New password is invalid.',
-          user_not_found: 'Account not found. Please sign in again.'
-        };
+            wrong_current_password: 'Current password is incorrect.',
+            same_as_old: 'New password must be different from the current one.',
+            password_previously_used: 'This password has been used before. Please choose a new one.',
+            invalid_new_password: data.detail?.[0] || 'New password is invalid.',
+            user_not_found: 'Account not found. Please sign in again.'
+          };
         toast.error(map[data.error] || 'Could not change password.');
         return;
       }
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
+      const newExpiry = data?.password_expires_at || null;
+      if (newExpiry) { setPasswordExpiresAt(newExpiry); setPasswordExpired(false); }
       toast.success('Password changed successfully');
     } catch (err) {
       console.error('[ClientSettings] change-password failed:', err);
@@ -352,17 +375,29 @@ export default function ClientSettings() {
             <span className="text-sm text-emerald-200">Two-factor authentication: <strong>Enabled (mandatory)</strong></span>
           </div>
 
+          {/* Password expiry warning */}
+          {passwordExpiresAt && (
+            <div className={`rounded-xl border p-3 flex items-start gap-2 ${passwordExpired ? 'border-rose-500/40 bg-rose-950/20' : 'border-amber-500/40 bg-amber-950/20'}`}>
+              <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${passwordExpired ? 'text-rose-400' : 'text-amber-400'}`} />
+              <span className={`text-sm ${passwordExpired ? 'text-rose-200' : 'text-amber-200'}`}>
+                {passwordExpired
+                  ? 'Your password has expired. Please update it now.'
+                  : `Password expires on ${fmtDate(passwordExpiresAt)}. Update it before then to avoid being locked out.`}
+              </span>
+            </div>
+          )}
+
           <div className="space-y-3">
             <p className="text-sm font-semibold text-white flex items-center gap-2"><KeyRound className="w-4 h-4 text-primary" /> Change password</p>
-            <Field label="Current password" type="password" value={currentPw} onChange={setCurrentPw} />
-            <Field label="New password" type="password" value={newPw} onChange={setNewPw} />
+            <Field label="Current password" value={currentPw} onChange={setCurrentPw} showToggle />
+            <Field label="New password" value={newPw} onChange={setNewPw} showToggle />
             {newPw && (
               <div className="text-[11px] -mt-1 space-y-0.5">
                 <p className={pwStrength?.color || 'text-slate-500'}>Strength: {pwStrength?.level || ''}</p>
                 {pwIssues.map(e => <p key={e} className="text-rose-400">• {e}</p>)}
               </div>
             )}
-            <Field label="Confirm new password" type="password" value={confirmPw} onChange={setConfirmPw}
+            <Field label="Confirm new password" value={confirmPw} onChange={setConfirmPw} showToggle
               error={confirmPw && confirmPw !== newPw ? 'Does not match new password' : undefined} />
             <button
               type="button"
