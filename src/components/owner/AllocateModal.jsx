@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { X, AlertCircle, Check, UserCheck, UserX } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { useEscapeKey } from '@/lib/useEscapeKey';
 
 const ALLOCATION_WINDOW_DAYS = 7;
 
@@ -16,6 +17,9 @@ export default function AllocateModal({ lead, isOpen, onClose, onAllocated }) {
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [paidAggregate, setPaidAggregate] = useState({ totalPaid: 0, recentInvoiceIds: [] });
   const [working, setWorking] = useState(false);
+
+  // Close on Escape (only when open and not mid-action).
+  useEscapeKey(isOpen && !working, onClose);
 
   useEffect(() => {
     if (!isOpen || !lead) return;
@@ -137,7 +141,10 @@ export default function AllocateModal({ lead, isOpen, onClose, onAllocated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === e.currentTarget && !working) onClose(); }}
+    >
       <div className="bg-slate-900 border border-slate-700/50 rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
           <h2 className="text-xl font-bold text-white">Allocate {lead.business_name}</h2>
