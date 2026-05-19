@@ -85,7 +85,12 @@ Deno.serve(async (req) => {
     password_reset_token: null,
     password_reset_expires_at: null,
     failed_login_count: 0,
-    lockout_until: null
+    lockout_until: null,
+    // LB-031c: completing a password reset clears the post-lockdown gate
+    // and any unconsumed lockdown token from a previous password change.
+    password_reset_required: false,
+    lockdown_token: null,
+    lockdown_token_expires_at: null
   });
 
   // Activity audit (Client Portal PR A): password_reset_completed.

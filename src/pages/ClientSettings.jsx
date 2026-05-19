@@ -227,6 +227,28 @@ export default function ClientSettings() {
       toast.error(v.errors[0]);
       return;
     }
+    // LB-031c Bug 2: the base44 SDK throws on non-2xx responses, so the
+    // function's mapped error codes (password_previously_used, etc.) used to
+    // land in the bare-catch fallback "Could not change password. Please try
+    // again." — never showing the user the real reason. We now build the map
+    // once and apply it to both the resolved-response and thrown-error paths
+    // (err.response.data carries the body).
+    const errorMap = {
+      wrong_current_password: 'Current password is incorrect.',
+      same_as_old: 'New password must be different from the current one.',
+      password_previously_used: 'This password has been used before. Please choose a different one.',
+      invalid_new_password: 'New password is invalid.',
+      user_not_found: 'Account not found. Please sign in again.',
+      invalid_session: 'Your session has expired. Please sign in again.',
+      session_expired: 'Your session has expired. Please sign in again.',
+      forbidden: 'You can only change your own password.',
+      no_password_on_record: 'This account has no password on record. Please use "Forgot password" to set one.',
+    };
+    const messageForError = (code, detail) => {
+      if (code === 'invalid_new_password' && Array.isArray(detail) && detail[0]) return detail[0];
+      return errorMap[code] || null;
+    };
+
     setChangingPw(true);
     try {
       const res = await base44.functions.invoke('change-password', {
@@ -237,23 +259,18 @@ export default function ClientSettings() {
       });
       const data = res?.data ?? res;
       if (data?.error) {
-        const map = {
-            wrong_current_password: 'Current password is incorrect.',
-            same_as_old: 'New password must be different from the current one.',
-            password_previously_used: 'This password has been used before. Please choose a new one.',
-            invalid_new_password: data.detail?.[0] || 'New password is invalid.',
-            user_not_found: 'Account not found. Please sign in again.'
-          };
-        toast.error(map[data.error] || 'Could not change password.');
+        toast.error(messageForError(data.error, data.detail) || 'Could not change password.');
         return;
       }
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
       const newExpiry = data?.password_expires_at || null;
       if (newExpiry) { setPasswordExpiresAt(newExpiry); setPasswordExpired(false); }
-      toast.success('Password changed successfully');
+      toast.success('Password changed. Check your email for a confirmation.');
     } catch (err) {
       console.error('[ClientSettings] change-password failed:', err);
-      toast.error('Could not change password. Please try again.');
+      const body = err?.response?.data || {};
+      const mapped = messageForError(body.error, body.detail);
+      toast.error(mapped || 'Could not change password. Please try again.');
     } finally {
       setChangingPw(false);
     }

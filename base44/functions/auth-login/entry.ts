@@ -80,6 +80,18 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Account locked', lockout_until: user.lockout_until }, { status: 423 });
   }
 
+  // LB-031c: if the user clicked "this wasn't me" after a suspicious password
+  // change, refuse to issue an OTP until they reset their password via the
+  // public forgot-password flow. The reset-password function clears this flag
+  // on successful new-password submission.
+  if (user.password_reset_required) {
+    return Response.json({
+      error: 'password_reset_required',
+      email: normalizedEmail,
+      message: 'Your account is locked. Please reset your password to continue.',
+    }, { status: 423 });
+  }
+
   if (user.pending_verification) {
     // Re-generate OTP so they can verify
     const otp = String(Math.floor(100000 + Math.random() * 900000));

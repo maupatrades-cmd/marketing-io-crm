@@ -38,6 +38,7 @@ import ContractSigningPublic from './pages/ContractSigningPublic';
 import ContractView from './pages/ContractView';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import AccountLockedDown from './pages/AccountLockedDown';
 import EmailTemplates from './pages/EmailTemplates';
 import Deliverables from './pages/Deliverables';
 import MyKPIs from './pages/MyKPIs';
@@ -247,6 +248,7 @@ const AuthenticatedApp = () => {
 
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/account-locked-down" element={<AccountLockedDown />} />
 
       {/* Auth routes */}
       <Route path="/login" element={<SignIn />} />
