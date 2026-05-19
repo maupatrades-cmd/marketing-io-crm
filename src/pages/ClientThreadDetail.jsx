@@ -135,6 +135,7 @@ export default function ClientThreadDetail() {
       await base44.functions.invoke('send-thread-message', {
         thread_id: thread.id,
         message:   draft.trim(),
+        token:     localStorage.getItem('mio_session_token'),
       });
       setDraft('');
       // Optimistic refresh
