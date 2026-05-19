@@ -113,7 +113,8 @@ export default function ClientMessages() {
         const res = await base44.functions.invoke('get-or-create-client-thread', {
           client_id: c.id,
           current_user_id: me.id,
-          current_user_role: 'client'
+          current_user_role: 'client',
+          token: localStorage.getItem('mio_session_token'),
         });
         const data = res.data || {};
         if (data.error) {
@@ -157,7 +158,8 @@ export default function ClientMessages() {
         const res = await base44.functions.invoke('list-thread-messages', {
           thread_id: thread.id,
           current_user_id: user.id,
-          current_user_role: 'client'
+          current_user_role: 'client',
+          token: localStorage.getItem('mio_session_token'),
         });
         const data = res.data || {};
         if (data.thread) setThread(data.thread);
