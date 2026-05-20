@@ -146,7 +146,10 @@ Deno.serve(async (req) => {
   // LB-031c: mint a one-time lockdown token for the "this wasn't me" email
   // link. 24h validity. Stored on the user row; consumed by
   // emergency-account-lockdown when the user confirms via the SPA page.
-  const lockdownToken = crypto.randomUUID();
+  // Hyphens stripped to match the convention used by send-forgot-password-email
+  // and to side-step any quirks in Base44's filter behavior on hyphenated
+  // values in newly-added fields.
+  const lockdownToken = crypto.randomUUID().replace(/-/g, '');
   const lockdownExpiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
 
   try {
@@ -206,7 +209,11 @@ Deno.serve(async (req) => {
       console.error('[change-password] RESEND_API_KEY missing; confirmation email not sent');
     } else {
       const appOrigin = Deno.env.get('APP_ORIGIN') || 'https://app.marketingio.co.za';
-      const lockdownLink = `${appOrigin}/account-locked-down?token=${encodeURIComponent(lockdownToken)}`;
+      // LB-031c: link carries both the token AND the user id. The lockdown
+      // function looks up the user by id (always reliable) and verifies the
+      // token matches in constant time — instead of filtering AppUser by
+      // lockdown_token, which proved unreliable for newly-added schema fields.
+      const lockdownLink = `${appOrigin}/account-locked-down?token=${encodeURIComponent(lockdownToken)}&uid=${encodeURIComponent(user.id)}`;
       const whenSast = formatSastDateTime(now);
       const fullName = String(user.full_name || 'there');
       const bodyHtml = `
