@@ -1,6 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { Resend } from 'npm:resend@3.2.0';
 
+// LB-031c (redeploy): logic identical to PR #106. Base44's builder got
+// stuck on a stale artifact after #106 merged — frontend + change-password
+// updates deployed but this function kept serving the old filter-by-token
+// path, returning phantom "invalid or has already been used" on fresh
+// tokens. This single-file PR has no semantic changes vs main; the new
+// content hash forces Base44 to rebuild and redeploy.
+//
 // LB-031c: emergency account lockdown — the destructive side of the
 // "this wasn't me" confirmation flow.
 //
