@@ -11,15 +11,20 @@ import { base44 } from '@/api/base44Client';
 export default function AccountLockedDown() {
   const [searchParams] = useSearchParams();
   const token = (searchParams.get('token') || '').trim();
+  // LB-031c: the email link also carries uid so the backend can look up the
+  // user by primary key and verify the token in constant time, sidestepping
+  // unreliable filter-on-newly-added-field behavior in Base44.
+  const uid = (searchParams.get('uid') || '').trim();
+  const linkComplete = Boolean(token && uid);
 
   const [phase, setPhase] = useState('confirm'); // 'confirm' | 'working' | 'done' | 'error'
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleConfirm = async () => {
-    if (!token || phase === 'working') return;
+    if (!linkComplete || phase === 'working') return;
     setPhase('working');
     try {
-      const res = await base44.functions.invoke('emergency-account-lockdown', { token });
+      const res = await base44.functions.invoke('emergency-account-lockdown', { token, user_id: uid });
       const data = res?.data ?? res;
       if (data?.error) {
         setErrorMessage(data.message || 'This lockdown link is invalid or has expired.');
@@ -47,12 +52,12 @@ export default function AccountLockedDown() {
           boxShadow: '0 30px 70px -15px rgba(0,0,0,0.6)',
         }}
       >
-        {!token && (
+        {!linkComplete && (
           <div className="text-center">
             <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-3" />
             <h1 className="text-2xl font-bold mb-2">Invalid lockdown link</h1>
             <p className="text-slate-300 mb-6">
-              This page needs a valid lockdown token from your password-change confirmation email.
+              This page needs a valid lockdown link from your password-change confirmation email.
               If you didn't change your password and didn't receive an email, contact{' '}
               <a href="mailto:info@marketingio.co.za" className="text-pink-300 underline">info@marketingio.co.za</a>.
             </p>
@@ -60,7 +65,7 @@ export default function AccountLockedDown() {
           </div>
         )}
 
-        {token && phase === 'confirm' && (
+        {linkComplete && phase === 'confirm' && (
           <>
             <div className="flex items-center gap-3 mb-4">
               <Lock className="w-8 h-8 text-rose-400 shrink-0" />
@@ -95,14 +100,14 @@ export default function AccountLockedDown() {
           </>
         )}
 
-        {token && phase === 'working' && (
+        {linkComplete && phase === 'working' && (
           <div className="text-center py-6">
             <Loader2 className="w-10 h-10 text-pink-400 mx-auto mb-3 animate-spin" />
             <p className="text-slate-300">Locking down your account…</p>
           </div>
         )}
 
-        {token && phase === 'done' && (
+        {linkComplete && phase === 'done' && (
           <>
             <div className="flex items-center gap-3 mb-4">
               <CheckCircle2 className="w-8 h-8 text-emerald-400 shrink-0" />
@@ -126,7 +131,7 @@ export default function AccountLockedDown() {
           </>
         )}
 
-        {token && phase === 'error' && (
+        {linkComplete && phase === 'error' && (
           <>
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="w-8 h-8 text-amber-400 shrink-0" />

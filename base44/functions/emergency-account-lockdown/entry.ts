@@ -11,7 +11,14 @@ import { Resend } from 'npm:resend@3.2.0';
 // requiring POST + an explicit user click eliminates the silent-lockdown
 // footgun. GET requests to this endpoint return 405 Method Not Allowed.
 //
-// Body: { token: string }
+// Body: { token: string, user_id: string }
+// Lookup strategy: by user_id (always indexed / reliable), then verify the
+// supplied token matches the stored lockdown_token in constant time. We
+// switched away from AppUser.filter({ lockdown_token: ... }) because that
+// filter proved unreliable for newly-added schema fields on Base44 — the
+// token was being persisted, but the filter would return zero matches,
+// producing a phantom "invalid or has already been used" message.
+//
 // On success:
 //   - bumps force_logout_at to invalidate every existing session (LB-025)
 //   - sets password_reset_required = true (consumed by auth-login)
@@ -46,6 +53,16 @@ function formatSastDateTime(date) {
   });
 }
 
+// Constant-time string compare to avoid leaking the stored lockdown_token
+// via timing differences when an attacker iterates candidate values.
+function tokensMatch(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'method_not_allowed' }, { status: 405 });
@@ -57,21 +74,24 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return Response.json({ error: 'invalid_json' }, { status: 400 }); }
 
   const token = String(body?.token || '');
-  if (!token) {
-    return Response.json({ error: 'token_required' }, { status: 400 });
+  const userId = String(body?.user_id || '');
+  if (!token || !userId) {
+    return Response.json({ error: 'token_and_user_id_required' }, { status: 400 });
   }
 
-  // Look up the user by lockdown_token
+  // Look up the user by id (reliable) then verify the token matches.
   let user = null;
   try {
-    const matches = await base44.asServiceRole.entities.AppUser.filter({ lockdown_token: token });
+    const matches = await base44.asServiceRole.entities.AppUser.filter({ id: userId });
     user = (Array.isArray(matches) ? matches[0] : null) || null;
   } catch (err) {
     console.error('[emergency-account-lockdown] lookup failed:', err);
     return Response.json({ error: 'lookup_failed' }, { status: 500 });
   }
 
-  if (!user) {
+  // Single invalid_token response covers all three rejection paths (no user,
+  // no stored token, token mismatch) so callers can't probe which case hit.
+  if (!user || !user.lockdown_token || !tokensMatch(user.lockdown_token, token)) {
     return Response.json({
       error: 'invalid_token',
       message: 'This lockdown link is invalid or has already been used.',
