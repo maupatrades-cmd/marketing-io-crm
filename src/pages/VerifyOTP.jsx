@@ -61,12 +61,19 @@ export default function VerifyOTP() {
       // dismisses. login_mfa and password_reset don't set the flag.
       if (purpose === 'signup_verification' && user.role === 'client') {
         localStorage.setItem('mio_show_welcome_mascot', '1');
+        localStorage.setItem('mio_new_signup', '1');
       }
 
       // Security questions gate — applies to all roles, both new signups and
       // existing users who signed up before this feature shipped.
       if (res.data.needs_security_questions) {
         window.location.href = '/set-security-questions';
+        return;
+      }
+
+      // Welcome page gate — only for client role, only if not yet seen
+      if (res.data.needs_welcome && user.role === 'client') {
+        window.location.href = '/welcome';
         return;
       }
 

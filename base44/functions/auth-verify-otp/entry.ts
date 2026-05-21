@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
     return Response.json({
       token,
       needs_security_questions: !user.security_questions_set_at,
+      needs_welcome: !user.welcome_seen_at,
       user: {
         id: user.id,
         email: user.email,

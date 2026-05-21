@@ -53,9 +53,9 @@ Deno.serve(async (req) => {
 
   // Step 1: Parse request
   console.log('[auth-register] Step: parsing request body');
-  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password;
+  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address;
   try {
-    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password } = await req.json());
+    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address } = await req.json());
   } catch (err) {
     console.error('[auth-register] request_parse_failed:', err.message);
     return Response.json({ error: 'request_parse_failed', detail: err.message }, { status: 500 });
@@ -68,8 +68,16 @@ Deno.serve(async (req) => {
   if (!fullName && (first_name || last_name)) {
     fullName = `${first_name || ''} ${last_name || ''}`.trim();
   }
+  const trimmedCity = (city || '').trim();
+  const trimmedStreetAddress = (street_address || '').trim();
   if (!fullName || !email || !password || !businessName) {
     return Response.json({ error: 'All required fields must be provided.' }, { status: 400 });
+  }
+  if (!trimmedCity) {
+    return Response.json({ error: 'City is required.' }, { status: 400 });
+  }
+  if (!trimmedStreetAddress) {
+    return Response.json({ error: 'Street address is required.' }, { status: 400 });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.json({ error: 'Invalid email format.' }, { status: 400 });
@@ -141,6 +149,8 @@ Deno.serve(async (req) => {
    if (first_name) userPayload.first_name = first_name.trim();
    if (last_name) userPayload.last_name = last_name.trim();
    if (rawMobile) userPayload.mobile_number = rawMobile;
+   if (trimmedCity) userPayload.city = trimmedCity;
+   if (trimmedStreetAddress) userPayload.street_address = trimmedStreetAddress;
    try {
      newUser = await base44.asServiceRole.entities.AppUser.create(userPayload);
    } catch (err) {

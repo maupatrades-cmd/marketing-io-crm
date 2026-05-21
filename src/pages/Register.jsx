@@ -236,11 +236,13 @@ export default function Register() {
   const [captcha] = useState(makeCaptcha);
   const [captchaInput, setCaptchaInput] = useState('');
   const [clientId, setClientId] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [verificationEmail, setVerificationEmail] = useState('');
 
   const [form, setForm] = useState({
     // Step 1
     first_name: '', last_name: '', email: '', mobile_number: '',
+    city: '', street_address: '',
     password: '', confirmPassword: '', agreed: false,
     // Step 2
     business_name: '', industry: '', years_in_business: '',
@@ -295,6 +297,8 @@ export default function Register() {
     if (!form.first_name.trim() || !form.last_name.trim()) { setError('First and last name are required.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError('Please enter a valid email address.'); return; }
     if (!isValidSAMobile(form.mobile_number)) { setError('Mobile must be SA format: 0XXXXXXXXX or +27XXXXXXXXX.'); return; }
+    if (!form.city.trim()) { setError('City is required.'); return; }
+    if (!form.street_address.trim()) { setError('Street address is required.'); return; }
     if (!pwValidation.valid) { setError(pwValidation.errors[0]); return; }
     if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
     if (parseInt(captchaInput) !== captcha.answer) { setError('Incorrect answer to the security question.'); return; }
@@ -309,10 +313,13 @@ export default function Register() {
         email: form.email.toLowerCase().trim(),
         mobile_number: form.mobile_number.replace(/\s+/g, ''),
         businessName: form.business_name.trim() || `${form.first_name.trim()}'s business`,
+        city: form.city.trim(),
+        street_address: form.street_address.trim(),
         password: form.password
       });
       const data = res.data;
       setClientId(data.client_id);
+      setUserId(data.user_id);
       setVerificationEmail(data.email);
       setStep(2);
     } catch (err) {
@@ -481,6 +488,9 @@ export default function Register() {
 
               <TextField label="Mobile number (SA: 0XXXXXXXXX or +27XXXXXXXXX)" type="tel" required value={form.mobile_number} onChange={set('mobile_number')} placeholder="082 123 4567" autoComplete="tel" />
 
+              <TextField label="City" required value={form.city} onChange={set('city')} placeholder="Johannesburg" autoComplete="address-level2" />
+              <TextField label="Street address" required value={form.street_address} onChange={set('street_address')} placeholder="75 Marshall Street" autoComplete="street-address" />
+
               <div>
                 <label className={labelClass}>Password *</label>
                 <div className="relative">
@@ -648,7 +658,7 @@ export default function Register() {
                 <button type="button" onClick={() => submitStep5(false)} disabled={loading}
                   className="py-3 px-6 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60 flex items-center justify-center gap-2"
                   style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}>
-                  {loading ? 'Submitting…' : <>Submit & Verify Email <ArrowRight className="w-4 h-4" /></>}
+                  {loading ? 'Submitting...' : <>Submit {'&'} Verify Email <ArrowRight className="w-4 h-4" /></>}
                 </button>
               </div>
             </div>

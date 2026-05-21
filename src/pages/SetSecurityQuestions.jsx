@@ -36,12 +36,19 @@ export default function SetSecurityQuestions() {
         session_token: sessionToken,
         answers
       });
-      // Redirect to appropriate portal based on stored user role
+      // Redirect: new client signups go to /welcome; all others go to their portal
       const stored = localStorage.getItem('mio_session_user');
       const user = stored ? JSON.parse(stored) : null;
-      if (user?.role === 'owner') window.location.href = '/';
-      else if (user?.role === 'client') window.location.href = '/client-portal';
-      else window.location.href = '/staff';
+      const isNewSignup = localStorage.getItem('mio_new_signup') === '1';
+      if (user?.role === 'owner') {
+        window.location.href = '/';
+      } else if (user?.role === 'client' && isNewSignup) {
+        window.location.href = '/welcome';
+      } else if (user?.role === 'client') {
+        window.location.href = '/client-portal';
+      } else {
+        window.location.href = '/staff';
+      }
     } catch (err) {
       setError(err?.response?.data?.error || 'Something went wrong. Please try again.');
     } finally {

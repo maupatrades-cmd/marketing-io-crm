@@ -164,7 +164,6 @@
     },
     "unlock_token_expires_at": {
       "description": "When unlock_token expires (24h after lockout). Past this point the unlock link no longer works.",
-      "format": "date-time",
       "type": "string"
     },
     "security_question_1_answer_hash": {
@@ -205,6 +204,23 @@
     "recovery_token_expires_at": {
       "description": "When the recovery_token expires (15 minutes after issuance).",
       "format": "date-time",
+      "type": "string"
+    },
+    "welcome_seen_at": {
+      "description": "Timestamp when the user clicked 'Continue to dashboard' on the welcome page. Null means the welcome page has never been shown.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "city": {
+      "description": "User's city (collected at signup, saved to AppUser).",
+      "type": "string"
+    },
+    "street_address": {
+      "description": "User's street address (collected at signup, saved to AppUser).",
+      "type": "string"
+    },
+    "business_name": {
+      "description": "Denormalised business name for portal use (mirrors Client.business_name).",
       "type": "string"
     }
   },

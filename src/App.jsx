@@ -111,6 +111,7 @@ import CancelDeletion from './pages/CancelDeletion';
 import AccountUnlocked from './pages/AccountUnlocked';
 import SetSecurityQuestions from './pages/SetSecurityQuestions';
 import AccountRecovery from './pages/AccountRecovery';
+import Welcome from './pages/Welcome';
 
 
 
@@ -266,6 +267,7 @@ const AuthenticatedApp = () => {
       <Route path="/account-unlocked" element={<AccountUnlocked />} />
       <Route path="/set-security-questions" element={<SetSecurityQuestions />} />
       <Route path="/account-recovery" element={<AccountRecovery />} />
+      <Route path="/welcome" element={<Welcome />} />
       <Route path="/forgot" element={<Navigate to="/forgot-password" replace />} />
       <Route path="/reset" element={<Navigate to="/forgot-password" replace />} />
 
