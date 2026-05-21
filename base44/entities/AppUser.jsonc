@@ -2,20 +2,141 @@
   "name": "AppUser",
   "type": "object",
   "properties": {
+    "deletion_pending": {
+      "default": false,
+      "description": "True after the user requested account deletion. Account enters 30-day grace per POPIA before hard delete.",
+      "type": "boolean"
+    },
+    "deletion_requested_at": {
+      "description": "Timestamp the user clicked 'Delete account'. Hard delete eligible after deletion_requested_at + 30 days.",
+      "format": "date-time",
+      "type": "string"
+    },
     "email": {
-      "type": "string",
-      "description": "User email address"
+      "description": "User email address",
+      "type": "string"
+    },
+    "email_verified": {
+      "default": false,
+      "description": "Has email been verified",
+      "type": "boolean"
+    },
+    "failed_login_count": {
+      "default": 0,
+      "description": "Consecutive failed login attempts",
+      "type": "number"
+    },
+    "first_name": {
+      "description": "User first name (multi-step signup)",
+      "type": "string"
+    },
+    "force_logout_at": {
+      "description": "Server-side bump used by 'Sign out everywhere'. Sessions issued before this timestamp should be treated as invalid by auth-me.",
+      "format": "date-time",
+      "type": "string"
     },
     "full_name": {
-      "type": "string",
-      "description": "User full name"
+      "description": "User full name",
+      "type": "string"
+    },
+    "last_login_at": {
+      "description": "Last login timestamp",
+      "format": "date-time",
+      "type": "string"
+    },
+    "last_name": {
+      "description": "User last name (multi-step signup)",
+      "type": "string"
+    },
+    "lockdown_token": {
+      "description": "LB-031c: One-time token embedded in the 'wasn't me' link emailed after every successful password change. Consumed by emergency-account-lockdown.",
+      "type": "string"
+    },
+    "lockdown_token_expires_at": {
+      "description": "LB-031c: When lockdown_token expires (24h after password change). Past this point the 'wasn't me' link no longer works and the user must contact support.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "lockout_until": {
+      "description": "Account locked until this time",
+      "format": "date-time",
+      "type": "string"
+    },
+    "mobile_number": {
+      "description": "Mobile number, SA format (+27 or 0-prefixed, 10 digits if local)",
+      "type": "string"
+    },
+    "password_changed_at": {
+      "description": "When the password was last changed",
+      "format": "date-time",
+      "type": "string"
+    },
+    "password_expires_at": {
+      "description": "When the password expires (90 days after last change)",
+      "format": "date-time",
+      "type": "string"
     },
     "password_hash": {
-      "type": "string",
-      "description": "Bcrypt hashed password"
+      "description": "Bcrypt hashed password",
+      "type": "string"
+    },
+    "password_history": {
+      "description": "Last 10 bcrypt hashes \u2014 new passwords must not match any of these",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "password_reset_expires_at": {
+      "description": "When reset token expires",
+      "format": "date-time",
+      "type": "string"
+    },
+    "password_reset_required": {
+      "default": false,
+      "description": "LB-031c: Set true by emergency-account-lockdown. auth-login refuses to issue an OTP while this is true; cleared by reset-password on successful new-password submission.",
+      "type": "boolean"
+    },
+    "password_reset_token": {
+      "description": "Token for password reset email",
+      "type": "string"
+    },
+    "pending_otp_code": {
+      "description": "Current OTP code",
+      "type": "string"
+    },
+    "pending_otp_expires_at": {
+      "description": "When OTP expires",
+      "format": "date-time",
+      "type": "string"
+    },
+    "pending_otp_purpose": {
+      "description": "What the OTP is for",
+      "enum": [
+        "signup_verification",
+        "login_mfa",
+        "password_reset"
+      ],
+      "type": "string"
+    },
+    "pending_verification": {
+      "default": true,
+      "description": "Waiting for signup OTP verification",
+      "type": "boolean"
+    },
+    "popia_consent_at": {
+      "description": "When POPIA consent was given",
+      "format": "date-time",
+      "type": "string"
+    },
+    "popia_consent_given": {
+      "default": false,
+      "description": "POPIA marketing-communication consent flag",
+      "type": "boolean"
     },
     "role": {
-      "type": "string",
+      "default": "client",
+      "description": "User role in the app.",
       "enum": [
         "client",
         "staff",
@@ -26,137 +147,25 @@
         "head_of_tech",
         "driver"
       ],
-      "default": "client",
-      "description": "User role in the app. 'owner' is the business owner referenced by the RLS user_condition; 'admin' is retained for the legacy seed-test-staff-users path. Staff roles (field_agent, cpc, head_of_tech, driver) are written by seed-test-staff-users and the StaffHR hire form."
-    },
-    "email_verified": {
-      "type": "boolean",
-      "default": false,
-      "description": "Has email been verified"
-    },
-    "pending_verification": {
-      "type": "boolean",
-      "default": true,
-      "description": "Waiting for signup OTP verification"
-    },
-    "pending_otp_code": {
-      "type": "string",
-      "description": "Current OTP code"
-    },
-    "pending_otp_expires_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When OTP expires"
-    },
-    "pending_otp_purpose": {
-      "type": "string",
-      "enum": [
-        "signup_verification",
-        "login_mfa",
-        "password_reset"
-      ],
-      "description": "What the OTP is for"
-    },
-    "session_token": {
-      "type": "string",
-      "description": "Active session token"
+      "type": "string"
     },
     "session_expires_at": {
-      "type": "string",
+      "description": "When session expires",
       "format": "date-time",
-      "description": "When session expires"
+      "type": "string"
     },
-    "last_login_at": {
-      "type": "string",
+    "session_token": {
+      "description": "Active session token",
+      "type": "string"
+    },
+    "unlock_token": {
+      "description": "One-time token for the 'Unlock my account' email link. Generated on the 5th failed login attempt. Single-use, 24h expiry.",
+      "type": "string"
+    },
+    "unlock_token_expires_at": {
+      "description": "When unlock_token expires (24h after lockout). Past this point the unlock link no longer works.",
       "format": "date-time",
-      "description": "Last login timestamp"
-    },
-    "failed_login_count": {
-      "type": "number",
-      "default": 0,
-      "description": "Consecutive failed login attempts"
-    },
-    "lockout_until": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Account locked until this time"
-    },
-    "password_reset_token": {
-      "type": "string",
-      "description": "Token for password reset email"
-    },
-    "password_reset_expires_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When reset token expires"
-    },
-    "password_history": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Last 10 bcrypt hashes — new passwords must not match any of these"
-    },
-    "password_changed_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When the password was last changed"
-    },
-    "password_expires_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When the password expires (90 days after last change)"
-    },
-    "first_name": {
-      "type": "string",
-      "description": "User first name (multi-step signup)"
-    },
-    "last_name": {
-      "type": "string",
-      "description": "User last name (multi-step signup)"
-    },
-    "mobile_number": {
-      "type": "string",
-      "description": "Mobile number, SA format (+27 or 0-prefixed, 10 digits if local)"
-    },
-    "popia_consent_given": {
-      "type": "boolean",
-      "default": false,
-      "description": "POPIA marketing-communication consent flag"
-    },
-    "popia_consent_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When POPIA consent was given"
-    },
-    "deletion_pending": {
-      "type": "boolean",
-      "default": false,
-      "description": "True after the user requested account deletion. Account enters 30-day grace per POPIA before hard delete."
-    },
-    "deletion_requested_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp the user clicked 'Delete account'. Hard delete eligible after deletion_requested_at + 30 days."
-    },
-    "force_logout_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Server-side bump used by 'Sign out everywhere'. Sessions issued before this timestamp should be treated as invalid by auth-me."
-    },
-    "lockdown_token": {
-      "type": "string",
-      "description": "LB-031c: One-time token embedded in the 'wasn't me' link emailed after every successful password change. Consumed by emergency-account-lockdown."
-    },
-    "lockdown_token_expires_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "LB-031c: When lockdown_token expires (24h after password change). Past this point the 'wasn't me' link no longer works and the user must contact support."
-    },
-    "password_reset_required": {
-      "type": "boolean",
-      "default": false,
-      "description": "LB-031c: Set true by emergency-account-lockdown. auth-login refuses to issue an OTP while this is true; cleared by reset-password on successful new-password submission."
+      "type": "string"
     }
   },
   "required": [
@@ -164,24 +173,10 @@
     "password_hash"
   ],
   "rls": {
-    "create": {
-      "user_condition": { "role": "owner" }
-    },
-    "read": {
-      "$or": [
-        { "data.id":    "{{user.id}}" },
-        { "data.email": "{{user.email}}" },
-        { "user_condition": { "role": "owner" } }
-      ]
-    },
-    "update": {
-      "$or": [
-        { "data.id": "{{user.id}}" },
-        { "user_condition": { "role": "owner" } }
-      ]
-    },
     "delete": {
-      "user_condition": { "role": "owner" }
+      "user_condition": {
+        "role": "owner"
+      }
     }
   }
 }

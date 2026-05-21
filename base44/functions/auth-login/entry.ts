@@ -44,6 +44,35 @@ async function sendOtpEmail(to, fullName, otp) {
   if (result.error) { console.error('[auth-login] OTP email failed:', result.error); }
 }
 
+async function sendLockoutEmail(to, fullName, unlockLink) {
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  if (!apiKey) { console.error('[auth-login] RESEND_API_KEY missing for lockout email'); return; }
+
+  const bodyHtml = `
+    <p style="margin:0 0 16px 0;">Hi ${fullName},</p>
+    <p style="margin:0 0 16px 0;">Your Marketing iO account has been <strong>locked</strong> because of 5 failed login attempts. This may be you forgetting your password, or someone else trying to access your account.</p>
+    <p style="margin:0 0 12px 0;font-weight:600;">You have two options:</p>
+    <ol style="margin:0 0 16px 0;padding-left:20px;">
+      <li style="margin-bottom:8px;">Wait <strong>15 minutes</strong> and the lockout will clear automatically. Then try logging in again.</li>
+      <li style="margin-bottom:8px;">Click below to unlock now:</li>
+    </ol>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${unlockLink}" style="display:inline-block;background:linear-gradient(135deg,#a764e6,#ec4899);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;">🔓 Unlock my account now</a>
+    </div>
+    <p style="color:#64748b;font-size:14px;margin:0 0 8px 0;">If you didn't try to log in, someone may have your email and is guessing your password. We recommend you <a href="https://app.marketingio.co.za/forgot-password" style="color:#a764e6;">reset your password</a> as soon as you regain access.</p>
+    <p style="color:#94a3b8;font-size:14px;margin:0 0 8px 0;">If you can't click the unlock link, email us at <a href="mailto:info@marketingio.co.za" style="color:#a764e6;">info@marketingio.co.za</a>.</p>
+    <p style="color:#94a3b8;font-size:13px;margin:24px 0 0 0;border-top:1px solid #e2e8f0;padding-top:16px;">— The Marketing iO Team<br>Marketing iO (Pty) Ltd · <a href="https://marketingio.co.za" style="color:#a764e6;">marketingio.co.za</a> · info@marketingio.co.za</p>`;
+
+  const resend = new Resend(apiKey);
+  const result = await resend.emails.send({
+    from: 'Marketing iO Team <hello@marketingio.co.za>',
+    to,
+    subject: 'Your Marketing iO account has been locked',
+    html: wrapEmail(bodyHtml)
+  });
+  if (result.error) { console.error('[auth-login] Lockout email failed:', result.error); }
+}
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const { email, password } = await req.json();
@@ -54,8 +83,6 @@ Deno.serve(async (req) => {
 
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Look up account in AppUser (client portal) first, then fall back to User (staff/CRM directory).
-  // Each lookup wrapped in its own try so a transient AppUser error doesn't defeat the User fallback.
   let user;
   let userEntity;
   try {
@@ -68,22 +95,21 @@ Deno.serve(async (req) => {
     console.error('[auth-login] AppUser lookup failed:', err);
   }
 
-  // NOTE: Legacy User entity fallback removed — the built-in User entity
-  // cannot be queried via asServiceRole from backend functions on production.
-  // All users (clients, staff, owner) must be in AppUser.
-
   if (!user) {
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
+  // Lockout check — auto-clears after 15 min (lockout_until in the past = unlocked)
   if (user.lockout_until && new Date(user.lockout_until) > new Date()) {
-    return Response.json({ error: 'Account locked', lockout_until: user.lockout_until }, { status: 423 });
+    const msRemaining = new Date(user.lockout_until) - new Date();
+    const minutesRemaining = Math.ceil(msRemaining / 60000);
+    return Response.json({
+      error: `Account locked. Try again in ${minutesRemaining} minute${minutesRemaining === 1 ? '' : 's'} or check your email.`,
+      lockout_until: user.lockout_until
+    }, { status: 423 });
   }
 
-  // LB-031c: if the user clicked "this wasn't me" after a suspicious password
-  // change, refuse to issue an OTP until they reset their password via the
-  // public forgot-password flow. The reset-password function clears this flag
-  // on successful new-password submission.
+  // LB-031c: refuse login if emergency lockdown was triggered via "wasn't me" link
   if (user.password_reset_required) {
     return Response.json({
       error: 'password_reset_required',
@@ -93,7 +119,6 @@ Deno.serve(async (req) => {
   }
 
   if (user.pending_verification) {
-    // Re-generate OTP so they can verify
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     await base44.asServiceRole.entities.AppUser.update(user.id, {
@@ -110,12 +135,33 @@ Deno.serve(async (req) => {
   if (!valid) {
     const newCount = (user.failed_login_count || 0) + 1;
     const updateData = { failed_login_count: newCount };
+
+    // On 5th failure: lock for 15 min + generate one-time unlock token + send lockout email
     if (newCount >= 5) {
-      updateData.lockout_until = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      const lockUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      const unlockToken = crypto.randomUUID();
+      const unlockExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      updateData.lockout_until = lockUntil;
+      updateData.unlock_token = unlockToken;
+      updateData.unlock_token_expires_at = unlockExpires;
+
+      await base44.asServiceRole.entities.AppUser.update(user.id, updateData);
+
+      const unlockLink = `https://app.marketingio.co.za/account-unlocked?token=${unlockToken}`;
+      try { await sendLockoutEmail(normalizedEmail, user.full_name || 'there', unlockLink); } catch (_) {}
+
+      const msRemaining = new Date(lockUntil) - new Date();
+      const minutesRemaining = Math.ceil(msRemaining / 60000);
+      return Response.json({
+        error: `Account locked. Try again in ${minutesRemaining} minute${minutesRemaining === 1 ? '' : 's'} or check your email.`,
+        lockout_until: lockUntil
+      }, { status: 423 });
     }
+
     await base44.asServiceRole.entities.AppUser.update(user.id, updateData);
 
-    // Activity log — non-fatal, never block the response
+    // Activity log — non-fatal
     try {
       if (user.role === 'client') {
         const clientList = await base44.asServiceRole.entities.Client.filter({ client_user_id: user.id });
@@ -138,7 +184,7 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  // Valid password — generate MFA OTP stored on the matching entity's record
+  // Valid password — generate MFA OTP, reset failed count and any expired lockout state
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
@@ -146,7 +192,10 @@ Deno.serve(async (req) => {
     pending_otp_code: otp,
     pending_otp_expires_at: expires,
     pending_otp_purpose: 'login_mfa',
-    failed_login_count: 0
+    failed_login_count: 0,
+    lockout_until: null,
+    unlock_token: null,
+    unlock_token_expires_at: null
   });
 
   try { await sendOtpEmail(normalizedEmail, user.full_name || 'there', otp); } catch (_) {}

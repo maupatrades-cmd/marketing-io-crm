@@ -108,6 +108,7 @@ import StaffMyEarnings from './pages/StaffMyEarnings';
 import DebitOrderTracking from './pages/DebitOrderTracking';
 import KPITargetEditor from './pages/owner/KPITargetEditor';
 import CancelDeletion from './pages/CancelDeletion';
+import AccountUnlocked from './pages/AccountUnlocked';
 
 
 
@@ -260,6 +261,7 @@ const AuthenticatedApp = () => {
       <Route path="/sign-up" element={<Navigate to="/register" replace />} />
       <Route path="/verify-otp" element={<VerifyOTP />} />
       <Route path="/cancel-deletion" element={<CancelDeletion />} />
+      <Route path="/account-unlocked" element={<AccountUnlocked />} />
       <Route path="/forgot" element={<Navigate to="/forgot-password" replace />} />
       <Route path="/reset" element={<Navigate to="/forgot-password" replace />} />
 
