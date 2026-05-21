@@ -1,32 +1,8 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft, ArrowRight, Phone, Mail, MessageSquare, Smartphone } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { validatePassword, getPasswordStrength } from '@/lib/passwordValidator';
-
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-const TURNSTILE_SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-
-function loadTurnstileScript() {
-  if (typeof window === 'undefined') return Promise.resolve();
-  if (window.turnstile) return Promise.resolve();
-  const existing = document.querySelector(`script[src="${TURNSTILE_SCRIPT_SRC}"]`);
-  if (existing) {
-    return new Promise((resolve) => {
-      if (window.turnstile) return resolve();
-      existing.addEventListener('load', () => resolve(), { once: true });
-    });
-  }
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = TURNSTILE_SCRIPT_SRC;
-    s.async = true;
-    s.defer = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('turnstile_script_load_failed'));
-    document.head.appendChild(s);
-  });
-}
 
 const TOTAL_STEPS = 5;
 
@@ -262,9 +238,6 @@ export default function Register() {
   const [clientId, setClientId] = useState(null);
   const [userId, setUserId] = useState(null);
   const [verificationEmail, setVerificationEmail] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const turnstileContainerRef = useRef(null);
-  const turnstileWidgetIdRef = useRef(null);
 
   const [form, setForm] = useState({
     // Step 1
@@ -317,48 +290,6 @@ export default function Register() {
     }
   };
 
-  // Mount Turnstile only while step 1 is showing. The widget container only
-  // exists in the DOM during step 1; mounting on later steps would have no
-  // anchor and remounting on return keeps the token fresh.
-  useEffect(() => {
-    if (step !== 1) return undefined;
-    let cancelled = false;
-    loadTurnstileScript()
-      .then(() => {
-        if (cancelled) return;
-        if (!window.turnstile || !turnstileContainerRef.current) return;
-        if (turnstileWidgetIdRef.current) return;
-        if (!TURNSTILE_SITE_KEY) {
-          console.error('[Register] VITE_TURNSTILE_SITE_KEY missing');
-          return;
-        }
-        turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
-          sitekey: TURNSTILE_SITE_KEY,
-          theme: 'dark',
-          callback: (token) => setTurnstileToken(token || ''),
-          'error-callback': () => setTurnstileToken(''),
-          'expired-callback': () => setTurnstileToken(''),
-          'timeout-callback': () => setTurnstileToken(''),
-        });
-      })
-      .catch((err) => console.error('[Register] Turnstile load failed:', err?.message));
-    return () => {
-      cancelled = true;
-      if (window.turnstile && turnstileWidgetIdRef.current) {
-        try { window.turnstile.remove(turnstileWidgetIdRef.current); } catch { /* no-op */ }
-        turnstileWidgetIdRef.current = null;
-      }
-      setTurnstileToken('');
-    };
-  }, [step]);
-
-  const resetTurnstile = () => {
-    setTurnstileToken('');
-    if (window.turnstile && turnstileWidgetIdRef.current) {
-      try { window.turnstile.reset(turnstileWidgetIdRef.current); } catch { /* no-op */ }
-    }
-  };
-
   // ──────────────────── STEP 1 ────────────────────
   const submitStep1 = async (e) => {
     e?.preventDefault?.();
@@ -373,7 +304,6 @@ export default function Register() {
     if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
     if (parseInt(captchaInput) !== captcha.answer) { setError('Incorrect answer to the security question.'); return; }
     if (!form.agreed) { setError('Please agree to the Terms of Service to continue.'); return; }
-    if (!turnstileToken) { setError('Please complete the security check.'); return; }
 
     setLoading(true);
     try {
@@ -387,8 +317,7 @@ export default function Register() {
         city: form.city.trim(),
         street_address: form.street_address.trim(),
         province: form.province,
-        password: form.password,
-        turnstile_token: turnstileToken
+        password: form.password
       });
       const data = res.data;
       setClientId(data.client_id);
@@ -400,11 +329,7 @@ export default function Register() {
       const status = err?.response?.status;
       const detail = err?.response?.data?.error;
       if (status === 409) setError('Account already exists with this email. Please sign in instead.');
-      else if (status === 400 && (detail === 'captcha_failed' || detail === 'captcha_required')) {
-        setError('Please complete the security check and try again.');
-      }
       else setError(`Signup failed${detail ? ': ' + detail : '. Please try again.'}`);
-      resetTurnstile();
     } finally {
       setLoading(false);
     }
@@ -609,11 +534,9 @@ export default function Register() {
                 </span>
               </label>
 
-              <div ref={turnstileContainerRef} className="flex justify-center" />
-
               <button
                 type="submit"
-                disabled={loading || !turnstileToken}
+                disabled={loading}
                 className="w-full py-3 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60 flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
               >
