@@ -51,9 +51,8 @@ export default function SignIn() {
     if (!mascotLanded) return undefined;
 
     const PHASES = [
-      { text: 'Done hiding your Business?' },
-      { text: 'Same here...' },
-      { text: 'Login in Now and let us market it!!' },
+      { text: 'Tired of hiding? Same here.', bold: false },
+      { text: 'Sign in. Be seen.', bold: true },
     ];
     const CHAR_MS = 70;
     const HOLD_MS = 1100;
@@ -241,78 +240,64 @@ export default function SignIn() {
 
         {/* Speech bubble — sits NEXT TO the mascot, tail pointing left at its mouth.
             Stays below the logo/welcome line and to the right of the mascot. */}
-        {mascotLanded && (() => {
-          const phaseColor =
-            bubblePhase === 1 ? '#0A1F44' :
-            bubblePhase === 2 ? '#6B7280' :
-            '#E63946';
-          const phaseSize =
-            bubblePhase === 1 ? '22px' :
-            bubblePhase === 2 ? '18px' :
-            '24px';
-          const phaseWeight = bubblePhase === 2 ? 500 : 700;
-          return (
+        {mascotLanded && (
+          <>
+            {/* Desktop bubble — beside mascot, hidden on mobile */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.55, x: -10 }}
+              className="hidden sm:block"
+              initial={{ opacity: 0, scale: 0.6, x: -10 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               style={{
                 position: 'absolute',
-                top: '-40px',
-                left: 'calc(50% + 60px)',
-                width: '240px',
-                maxWidth: '60vw',
+                top: '-38px',
+                left: 'calc(50% + 62px)',
+                width: '172px',
                 background: '#ffffff',
-                borderRadius: '24px',
-                padding: '14px 18px',
-                boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+                borderRadius: '14px',
+                padding: '10px 13px',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
                 zIndex: 35,
                 pointerEvents: 'none',
               }}
               role="status"
               aria-live="polite"
             >
-              <div
-                style={{
-                  color: phaseColor,
-                  fontWeight: phaseWeight,
-                  fontSize: phaseSize,
-                  lineHeight: 1.2,
-                  minHeight: '46px',
-                }}
-              >
+              <div style={{ color: '#1a1a2e', fontWeight: bubblePhase === 2 ? 700 : 400, fontSize: bubblePhase === 2 ? '15px' : '13px', lineHeight: 1.35, minHeight: '32px' }}>
                 {bubbleText}
                 <span className="mio-bubble-caret" aria-hidden="true">|</span>
               </div>
-
-              {/* tail — triangle on the LEFT side pointing at the mascot's mouth */}
-              <span
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  top: '46px',
-                  left: '-13px',
-                  width: 0,
-                  height: 0,
-                  borderTop: '12px solid transparent',
-                  borderBottom: '12px solid transparent',
-                  borderRight: '14px solid #ffffff',
-                  filter: 'drop-shadow(-4px 4px 3px rgba(0,0,0,0.12))',
-                }}
-              />
-
-              <style>{`
-                @keyframes mio-bubble-caret-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
-                .mio-bubble-caret {
-                  display: inline-block;
-                  margin-left: 2px;
-                  color: ${phaseColor};
-                  animation: mio-bubble-caret-blink 0.85s steps(1) infinite;
-                }
-              `}</style>
+              <span aria-hidden="true" style={{ position: 'absolute', top: '28px', left: '-12px', width: 0, height: 0, borderTop: '10px solid transparent', borderBottom: '10px solid transparent', borderRight: '13px solid #ffffff', filter: 'drop-shadow(-3px 2px 2px rgba(0,0,0,0.08))' }} />
+              <style>{`@keyframes mio-bubble-caret-blink{0%,49%{opacity:1;}50%,100%{opacity:0;}} .mio-bubble-caret{display:inline-block;margin-left:2px;color:#1a1a2e;animation:mio-bubble-caret-blink 0.85s steps(1) infinite;}`}</style>
             </motion.div>
-          );
-        })()}
+
+            {/* Mobile bubble — below mascot, full width, hidden on sm+ */}
+            <motion.div
+              className="block sm:hidden"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              style={{
+                marginTop: '70px',
+                marginLeft: '12px',
+                marginRight: '12px',
+                background: '#ffffff',
+                borderRadius: '14px',
+                padding: '10px 14px',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+                zIndex: 35,
+                pointerEvents: 'none',
+              }}
+              role="status"
+              aria-live="polite"
+            >
+              <div style={{ color: '#1a1a2e', fontWeight: bubblePhase === 2 ? 700 : 400, fontSize: bubblePhase === 2 ? '15px' : '13px', lineHeight: 1.35 }}>
+                {bubbleText}
+                <span className="mio-bubble-caret" aria-hidden="true">|</span>
+              </div>
+            </motion.div>
+          </>
+        )}
 
         {/* Login card */}
         <motion.form
