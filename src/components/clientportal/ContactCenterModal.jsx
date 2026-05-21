@@ -68,7 +68,7 @@ export default function ContactCenterModal({ client, onClose }) {
             {view === 'main'
               ? `How can we help, ${firstName}?`
               : view === 'owner_fallback'
-                ? 'Contact the Founder'
+                ? 'Contact Marketing iO'
                 : 'Get in touch'}
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800">
@@ -94,8 +94,8 @@ export default function ContactCenterModal({ client, onClose }) {
                 className="group bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-primary rounded-xl p-6 text-left transition-all"
               >
                 <User className="w-8 h-8 text-primary mb-3" />
-                <p className="text-lg font-bold text-white mb-1">Contact Owner</p>
-                <p className="text-sm text-slate-400">Send a direct message to the founder. Replies within 24 hours.</p>
+                <p className="text-lg font-bold text-white mb-1">Contact Marketing iO</p>
+                <p className="text-sm text-slate-400">Send a direct message to Marketing iO. Replies within 24 hours.</p>
               </button>
 
               <button

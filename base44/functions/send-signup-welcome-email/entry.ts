@@ -225,8 +225,7 @@ ${heroBlock}
 </p>
 
 <p style="margin:8px 0 0 0;font-size:16px;font-weight:bold;color:#1e293b;">
-  Thapelo Maupa<br>
-  <span style="font-weight:normal;color:#475569;">Founder, Marketing iO</span>
+  The Marketing iO Team
 </p>
 `;
 

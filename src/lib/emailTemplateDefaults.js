@@ -238,7 +238,7 @@ If this WASN'T you:
     subject: 'Welcome to Marketing iO, {{business_name}}! 🎉',
     preheader: 'Your journey with Marketing iO starts here',
     sender_email: 'info@marketingio.co.za',
-    sender_name: 'Thapelo Maupa, Marketing iO',
+    sender_name: 'The Marketing iO Team',
     variables_used: JSON.stringify(['primary_contact_name', 'business_name', 'package_name', 'setup_fee', 'monthly_retainer', 'welcome_pack_pdf_url', 'onboarding_form_link', 'unsubscribe_link']),
     html_body: htmlWrapper(`
       <h1>Welcome to Marketing iO! 🎉</h1>
@@ -252,11 +252,10 @@ If this WASN'T you:
         ✓ <a href="{{onboarding_form_link}}" style="color: #a764e6;">Quick onboarding form</a> (15 minutes)<br>
         ✓ Monthly retainer of {{monthly_retainer}} kicks in once we go live
       </div>
-      <p>Have questions? Reply to this email — I read every one personally.</p>
+      <p>Have questions? Reply to this email — we read every one.</p>
       <p style="margin-top: 30px;">Looking forward to building something great together,</p>
       <div class="signature">
-        Thapelo Maupa<br>
-        Founder, Marketing iO<br>
+        The Marketing iO Team<br>
         <a href="mailto:info@marketingio.co.za" style="color: #a764e6;">info@marketingio.co.za</a> | marketingio.co.za
       </div>
     `),
@@ -279,8 +278,7 @@ Have questions? Reply to this email — I read every one personally.
 
 Looking forward to building something great together,
 
-Thapelo Maupa
-Founder, Marketing iO
+— The Marketing iO Team
 info@marketingio.co.za | marketingio.co.za`
   },
   {
@@ -344,7 +342,7 @@ accounts@marketingio.co.za`
     subject: 'Payment received — let\'s get to work, {{business_name}}!',
     preheader: 'Your setup fee has cleared. Onboarding begins.',
     sender_email: 'info@marketingio.co.za',
-    sender_name: 'Thapelo Maupa, Marketing iO',
+    sender_name: 'The Marketing iO Team',
     variables_used: JSON.stringify(['primary_contact_name', 'business_name', 'package_name', 'onboarding_form_link', 'unsubscribe_link']),
     html_body: htmlWrapper(`
       <h1>Payment Received! 🚀</h1>
@@ -358,10 +356,9 @@ accounts@marketingio.co.za`
         <span class="badge">⏳</span> Brand assets shared
       </div>
       <p>Once those four are green, we begin building your marketing for real.</p>
-      <p>Reach out anytime — I'm in your inbox.</p>
+      <p>Reach out anytime — we're in your inbox.</p>
       <div class="signature">
-        Thapelo Maupa<br>
-        Founder, Marketing iO
+        The Marketing iO Team
       </div>
     `),
     plain_text_body: `Payment Received!
@@ -379,10 +376,9 @@ Here's what happens next:
 
 Once those four are green, we begin building your marketing for real.
 
-Reach out anytime — I'm in your inbox.
+Reach out anytime — we're in your inbox.
 
-Thapelo Maupa
-Founder, Marketing iO`
+— The Marketing iO Team`
   },
   {
     code: 'onboarding_form_reminder',
@@ -436,7 +432,7 @@ Need help? Reply to this email.
     subject: '🚀 We\'re cleared for launch, {{business_name}}!',
     preheader: 'All systems green. Your campaign begins.',
     sender_email: 'info@marketingio.co.za',
-    sender_name: 'Thapelo Maupa, Marketing iO',
+    sender_name: 'The Marketing iO Team',
     variables_used: JSON.stringify(['primary_contact_name', 'business_name', 'package_name', 'target_go_live_date', 'first_deliverable_summary', 'unsubscribe_link']),
     html_body: htmlWrapper(`
       <h1>🚀 Ready for Launch!</h1>
@@ -455,8 +451,7 @@ Need help? Reply to this email.
       <p>We'll keep you in the loop every step of the way.</p>
       <p>Excited to make {{business_name}} too good to stay hidden,</p>
       <div class="signature">
-        Thapelo Maupa<br>
-        Founder, Marketing iO
+        The Marketing iO Team
       </div>
     `),
     plain_text_body: `Ready for Launch!
@@ -481,8 +476,7 @@ We'll keep you in the loop every step of the way.
 
 Excited to make {{business_name}} too good to stay hidden,
 
-Thapelo Maupa
-Founder, Marketing iO`
+— The Marketing iO Team`
   },
   {
     code: 'failed_debit_order',
