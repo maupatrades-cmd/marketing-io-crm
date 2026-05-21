@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft, ArrowRight, Phone, Mail, MessageSquare, Smartphone } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -272,6 +272,55 @@ export default function Register() {
   const pwStrength = useMemo(() => getPasswordStrength(form.password), [form.password]);
   const pwValidation = useMemo(() => validatePassword(form.password), [form.password]);
 
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const widgetIdRef = useRef(null);
+
+  const resetTurnstile = () => {
+    setTurnstileToken('');
+    if (widgetIdRef.current !== null && window.turnstile) {
+      try { window.turnstile.reset(widgetIdRef.current); } catch (_) {}
+    }
+  };
+
+  // Callback ref: renders the Turnstile widget when the Step 1 container mounts
+  // and cleans it up when the container unmounts (i.e. user advances past step 1).
+  const turnstileContainerRef = useCallback((node) => {
+    if (!node) {
+      if (widgetIdRef.current !== null && window.turnstile) {
+        try { window.turnstile.remove(widgetIdRef.current); } catch (_) {}
+        widgetIdRef.current = null;
+      }
+      setTurnstileToken('');
+      return;
+    }
+    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+    if (!siteKey) return;
+    const render = () => {
+      if (widgetIdRef.current !== null || !window.turnstile) return;
+      widgetIdRef.current = window.turnstile.render(node, {
+        sitekey: siteKey,
+        callback: (token) => setTurnstileToken(token),
+        'expired-callback': () => setTurnstileToken(''),
+        'error-callback': () => setTurnstileToken(''),
+      });
+    };
+    if (window.turnstile) {
+      render();
+    } else {
+      const scriptId = 'cf-turnstile-script';
+      if (!document.getElementById(scriptId)) {
+        const s = document.createElement('script');
+        s.id = scriptId;
+        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+        s.async = true; s.defer = true;
+        s.onload = render;
+        document.head.appendChild(s);
+      } else {
+        const timer = setInterval(() => { if (window.turnstile) { clearInterval(timer); render(); } }, 100);
+      }
+    }
+  }, []);
+
   // Persist whatever fields have values for steps 2-5 onto the existing Client record.
   // Skip silently if there's no client_id (shouldn't happen post-step-1).
   const saveClientPartial = async (extraFields, completedStep) => {
@@ -317,7 +366,8 @@ export default function Register() {
         city: form.city.trim(),
         street_address: form.street_address.trim(),
         province: form.province,
-        password: form.password
+        password: form.password,
+        turnstile_token: turnstileToken,
       });
       const data = res.data;
       setClientId(data.client_id);
@@ -325,6 +375,7 @@ export default function Register() {
       setVerificationEmail(data.email);
       setStep(2);
     } catch (err) {
+      resetTurnstile();
       console.error('[Register] Step 1 failed:', err?.response?.data || err);
       const status = err?.response?.status;
       const detail = err?.response?.data?.error;
@@ -526,6 +577,11 @@ export default function Register() {
                 placeholder="Answer"
               />
 
+              {/* Cloudflare Turnstile */}
+              <div>
+                <div ref={turnstileContainerRef} />
+              </div>
+
               <label className="flex items-start gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.agreed} onChange={set('agreed')} className="mt-0.5 accent-purple-500" />
                 <span className="text-xs text-slate-400">
@@ -536,7 +592,7 @@ export default function Register() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !turnstileToken}
                 className="w-full py-3 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60 flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
               >
