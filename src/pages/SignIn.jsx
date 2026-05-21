@@ -1,33 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Mascot from '@/components/Mascot';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
-
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-const TURNSTILE_SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-
-function loadTurnstileScript() {
-  if (typeof window === 'undefined') return Promise.resolve();
-  if (window.turnstile) return Promise.resolve();
-  const existing = document.querySelector(`script[src="${TURNSTILE_SCRIPT_SRC}"]`);
-  if (existing) {
-    return new Promise((resolve) => {
-      if (window.turnstile) return resolve();
-      existing.addEventListener('load', () => resolve(), { once: true });
-    });
-  }
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = TURNSTILE_SCRIPT_SRC;
-    s.async = true;
-    s.defer = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('turnstile_script_load_failed'));
-    document.head.appendChild(s);
-  });
-}
 
 function makeCaptcha() {
   const a = Math.floor(Math.random() * 10) + 1;
@@ -55,9 +31,6 @@ export default function SignIn() {
   const [captchaInput, setCaptchaInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const turnstileContainerRef = useRef(null);
-  const turnstileWidgetIdRef = useRef(null);
   const [welcomeText, setWelcomeText] = useState('');
   const [mascotLanded, setMascotLanded] = useState(false);
   const [bubbleText, setBubbleText] = useState('');
@@ -73,43 +46,6 @@ export default function SignIn() {
     }, 115);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadTurnstileScript()
-      .then(() => {
-        if (cancelled) return;
-        if (!window.turnstile || !turnstileContainerRef.current) return;
-        if (turnstileWidgetIdRef.current) return;
-        if (!TURNSTILE_SITE_KEY) {
-          console.error('[SignIn] VITE_TURNSTILE_SITE_KEY missing');
-          return;
-        }
-        turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
-          sitekey: TURNSTILE_SITE_KEY,
-          theme: 'dark',
-          callback: (token) => setTurnstileToken(token || ''),
-          'error-callback': () => setTurnstileToken(''),
-          'expired-callback': () => setTurnstileToken(''),
-          'timeout-callback': () => setTurnstileToken(''),
-        });
-      })
-      .catch((err) => console.error('[SignIn] Turnstile load failed:', err?.message));
-    return () => {
-      cancelled = true;
-      if (window.turnstile && turnstileWidgetIdRef.current) {
-        try { window.turnstile.remove(turnstileWidgetIdRef.current); } catch { /* no-op */ }
-        turnstileWidgetIdRef.current = null;
-      }
-    };
-  }, []);
-
-  const resetTurnstile = () => {
-    setTurnstileToken('');
-    if (window.turnstile && turnstileWidgetIdRef.current) {
-      try { window.turnstile.reset(turnstileWidgetIdRef.current); } catch { /* no-op */ }
-    }
-  };
 
   useEffect(() => {
     if (!mascotLanded) return undefined;
@@ -168,17 +104,11 @@ export default function SignIn() {
       return;
     }
 
-    if (!turnstileToken) {
-      setError('Please complete the security check.');
-      return;
-    }
-
     setLoading(true);
     try {
       const res = await base44.functions.invoke('auth-login', {
         email: email.toLowerCase().trim(),
         password,
-        turnstile_token: turnstileToken,
       });
       const data = res.data;
 
@@ -207,14 +137,11 @@ export default function SignIn() {
         return;
       } else if (status === 423) {
         setError('Account temporarily locked due to multiple failed attempts. Please try again later or reset your password.');
-      } else if (status === 400 && (detail === 'captcha_failed' || detail === 'captcha_required')) {
-        setError('Please complete the security check and try again.');
       } else if (status === 401 && detail?.includes('not found')) {
         setError('No account found with this email. Please sign up first.');
       } else {
         setError('Invalid email or password.');
       }
-      resetTurnstile();
     } finally {
       setLoading(false);
     }
@@ -457,11 +384,9 @@ export default function SignIn() {
             />
           </div>
 
-          <div ref={turnstileContainerRef} className="flex justify-center" />
-
           <button
             type="submit"
-            disabled={loading || !turnstileToken}
+            disabled={loading}
             className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60 hover:brightness-110"
             style={{
               background: '#0A1F44',

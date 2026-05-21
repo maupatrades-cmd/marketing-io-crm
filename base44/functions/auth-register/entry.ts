@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import bcrypt from 'npm:bcryptjs@2.4.3';
 import { Resend } from 'npm:resend@3.2.0';
-import { verifyTurnstileToken } from '../lib/verifyTurnstile.js';
 
 const LOGO_URL = 'https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png';
 
@@ -54,32 +53,12 @@ Deno.serve(async (req) => {
 
   // Step 1: Parse request
   console.log('[auth-register] Step: parsing request body');
-  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province, turnstile_token;
+  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province;
   try {
-    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province, turnstile_token } = await req.json());
+    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province } = await req.json());
   } catch (err) {
     console.error('[auth-register] request_parse_failed:', err.message);
     return Response.json({ error: 'request_parse_failed', detail: err.message }, { status: 500 });
-  }
-
-  // Turnstile CAPTCHA gate — runs BEFORE bcrypt, AppUser lookup, or any DB write.
-  if (!turnstile_token) {
-    return Response.json(
-      { error: 'captcha_required', message: 'Security check required.' },
-      { status: 400 }
-    );
-  }
-  {
-    const userIP = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
-      || req.headers.get('x-real-ip')
-      || '';
-    const captcha = await verifyTurnstileToken(turnstile_token, userIP);
-    if (!captcha.success) {
-      return Response.json(
-        { error: 'captcha_failed', message: 'Please complete the security check and try again.' },
-        { status: 400 }
-      );
-    }
   }
 
   // Step 2: Validate input
