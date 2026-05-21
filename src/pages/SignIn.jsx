@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Mascot from '@/components/Mascot';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
@@ -35,54 +35,6 @@ export default function SignIn() {
   const [mascotLanded, setMascotLanded] = useState(false);
   const [bubbleText, setBubbleText] = useState('');
   const [bubblePhase, setBubblePhase] = useState(0); // 0 idle, 1 question, 2 reply
-
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const widgetIdRef = useRef(null);
-
-  const resetTurnstile = () => {
-    setTurnstileToken('');
-    if (widgetIdRef.current !== null && window.turnstile) {
-      try { window.turnstile.reset(widgetIdRef.current); } catch (_) {}
-    }
-  };
-
-  // Callback ref: renders the Turnstile widget when the container div mounts,
-  // removes it when the div unmounts. Self-contained — no separate useEffect needed.
-  const turnstileContainerRef = useCallback((node) => {
-    if (!node) {
-      if (widgetIdRef.current !== null && window.turnstile) {
-        try { window.turnstile.remove(widgetIdRef.current); } catch (_) {}
-        widgetIdRef.current = null;
-      }
-      return;
-    }
-    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-    if (!siteKey) return;
-    const render = () => {
-      if (widgetIdRef.current !== null || !window.turnstile) return;
-      widgetIdRef.current = window.turnstile.render(node, {
-        sitekey: siteKey,
-        callback: (token) => setTurnstileToken(token),
-        'expired-callback': () => setTurnstileToken(''),
-        'error-callback': () => setTurnstileToken(''),
-      });
-    };
-    if (window.turnstile) {
-      render();
-    } else {
-      const scriptId = 'cf-turnstile-script';
-      if (!document.getElementById(scriptId)) {
-        const s = document.createElement('script');
-        s.id = scriptId;
-        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-        s.async = true; s.defer = true;
-        s.onload = render;
-        document.head.appendChild(s);
-      } else {
-        const timer = setInterval(() => { if (window.turnstile) { clearInterval(timer); render(); } }, 100);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     const full = 'Welcome back';
@@ -157,7 +109,6 @@ export default function SignIn() {
       const res = await base44.functions.invoke('auth-login', {
         email: email.toLowerCase().trim(),
         password,
-        turnstile_token: turnstileToken,
       });
       const data = res.data;
 
@@ -178,7 +129,6 @@ export default function SignIn() {
         return;
       }
     } catch (err) {
-      resetTurnstile();
       const status = err?.response?.status;
       const detail = err?.response?.data?.error;
       if (status === 423 && detail === 'password_reset_required') {
@@ -434,14 +384,9 @@ export default function SignIn() {
             />
           </div>
 
-          {/* Cloudflare Turnstile */}
-          <div>
-            <div ref={turnstileContainerRef} />
-          </div>
-
           <button
             type="submit"
-            disabled={loading || !turnstileToken}
+            disabled={loading}
             className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60 hover:brightness-110"
             style={{
               background: '#0A1F44',
