@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
   // Step 1: Parse request
   console.log('[auth-register] Step: parsing request body');
-  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address;
+  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province;
   try {
     ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province } = await req.json());
   } catch (err) {
