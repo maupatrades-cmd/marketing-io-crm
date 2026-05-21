@@ -166,6 +166,46 @@
       "description": "When unlock_token expires (24h after lockout). Past this point the unlock link no longer works.",
       "format": "date-time",
       "type": "string"
+    },
+    "security_question_1_answer_hash": {
+      "description": "Bcrypt hash of answer to Q1: What is your mother's maiden name? (trimmed + lowercased before hashing)",
+      "type": "string"
+    },
+    "security_question_2_answer_hash": {
+      "description": "Bcrypt hash of answer to Q2: What primary school did you attend? (trimmed + lowercased before hashing)",
+      "type": "string"
+    },
+    "security_question_3_answer_hash": {
+      "description": "Bcrypt hash of answer to Q3: What is your favourite car? (trimmed + lowercased before hashing)",
+      "type": "string"
+    },
+    "security_question_4_answer_hash": {
+      "description": "Bcrypt hash of answer to Q4: What town were you born in? (trimmed + lowercased before hashing)",
+      "type": "string"
+    },
+    "security_questions_set_at": {
+      "description": "When the user first set their security questions. Once set, cannot be changed via self-service.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "recovery_attempts_count": {
+      "default": 0,
+      "description": "Number of failed security-question recovery attempts in the current window.",
+      "type": "number"
+    },
+    "recovery_attempts_locked_until": {
+      "description": "Account recovery locked until this time (set after 3 failed recovery attempts).",
+      "format": "date-time",
+      "type": "string"
+    },
+    "recovery_token": {
+      "description": "One-time token issued after successful security-question verification. Used by complete-recovery to set a new password. 15-min expiry.",
+      "type": "string"
+    },
+    "recovery_token_expires_at": {
+      "description": "When the recovery_token expires (15 minutes after issuance).",
+      "format": "date-time",
+      "type": "string"
     }
   },
   "required": [

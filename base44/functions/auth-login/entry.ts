@@ -109,12 +109,14 @@ Deno.serve(async (req) => {
     }, { status: 423 });
   }
 
-  // LB-031c: refuse login if emergency lockdown was triggered via "wasn't me" link
+  // LB-031c: refuse login if emergency lockdown was triggered via "wasn't me" link.
+  // Frontend will redirect to /account-recovery for security-question-based recovery.
   if (user.password_reset_required) {
     return Response.json({
       error: 'password_reset_required',
+      needs_recovery: true,
       email: normalizedEmail,
-      message: 'Your account is locked. Please reset your password to continue.',
+      message: 'Your account is locked. Please answer your security questions to continue.',
     }, { status: 423 });
   }
 

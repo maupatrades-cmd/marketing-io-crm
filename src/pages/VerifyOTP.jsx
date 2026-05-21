@@ -63,6 +63,13 @@ export default function VerifyOTP() {
         localStorage.setItem('mio_show_welcome_mascot', '1');
       }
 
+      // Security questions gate — applies to all roles, both new signups and
+      // existing users who signed up before this feature shipped.
+      if (res.data.needs_security_questions) {
+        window.location.href = '/set-security-questions';
+        return;
+      }
+
       // ?next= overrides role-based default — only honoured if it passed
       // the whitelist check above (so it's safe to redirect to).
       if (nextParam) {

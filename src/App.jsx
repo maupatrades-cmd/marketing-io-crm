@@ -109,6 +109,8 @@ import DebitOrderTracking from './pages/DebitOrderTracking';
 import KPITargetEditor from './pages/owner/KPITargetEditor';
 import CancelDeletion from './pages/CancelDeletion';
 import AccountUnlocked from './pages/AccountUnlocked';
+import SetSecurityQuestions from './pages/SetSecurityQuestions';
+import AccountRecovery from './pages/AccountRecovery';
 
 
 
@@ -262,6 +264,8 @@ const AuthenticatedApp = () => {
       <Route path="/verify-otp" element={<VerifyOTP />} />
       <Route path="/cancel-deletion" element={<CancelDeletion />} />
       <Route path="/account-unlocked" element={<AccountUnlocked />} />
+      <Route path="/set-security-questions" element={<SetSecurityQuestions />} />
+      <Route path="/account-recovery" element={<AccountRecovery />} />
       <Route path="/forgot" element={<Navigate to="/forgot-password" replace />} />
       <Route path="/reset" element={<Navigate to="/forgot-password" replace />} />
 

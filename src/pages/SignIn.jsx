@@ -132,9 +132,8 @@ export default function SignIn() {
       const status = err?.response?.status;
       const detail = err?.response?.data?.error;
       if (status === 423 && detail === 'password_reset_required') {
-        // LB-031c: account is gated post-lockdown. Send the user through the
-        // existing forgot-password flow to set a new password and clear the flag.
-        navigate(`/forgot-password?email=${encodeURIComponent(email.toLowerCase().trim())}&locked=1`);
+        // Post-lockdown: route to security-question recovery flow.
+        navigate(`/account-recovery?email=${encodeURIComponent(email.toLowerCase().trim())}`);
         return;
       } else if (status === 423) {
         setError('Account temporarily locked due to multiple failed attempts. Please try again later or reset your password.');
