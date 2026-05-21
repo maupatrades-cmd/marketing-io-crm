@@ -48,41 +48,17 @@ async function sendSignupOtp(to, fullName, otp) {
   }
 }
 
-async function verifyTurnstileToken(token, userIP) {
-  const secret = Deno.env.get('TURNSTILE_SECRET_KEY');
-  if (!secret) return { success: false, error: 'configuration_error' };
-  try {
-    const body = new URLSearchParams({ secret, response: token });
-    if (userIP) body.append('remoteip', userIP);
-    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body });
-    const data = await res.json();
-    return data.success ? { success: true } : { success: false, error: (data['error-codes'] || [])[0] || 'invalid_token' };
-  } catch (_) {
-    return { success: false, error: 'verification_unavailable' };
-  }
-}
-
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
   // Step 1: Parse request
   console.log('[auth-register] Step: parsing request body');
-  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province, turnstile_token;
+  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province;
   try {
-    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province, turnstile_token } = await req.json());
+    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province } = await req.json());
   } catch (err) {
     console.error('[auth-register] request_parse_failed:', err.message);
     return Response.json({ error: 'request_parse_failed', detail: err.message }, { status: 500 });
-  }
-
-  // Turnstile verification — before any DB/bcrypt work
-  if (!turnstile_token) {
-    return Response.json({ error: 'captcha_required', message: 'Security check required.' }, { status: 400 });
-  }
-  const userIP = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || req.headers.get('x-real-ip') || '';
-  const turnstileResult = await verifyTurnstileToken(turnstile_token, userIP);
-  if (!turnstileResult.success) {
-    return Response.json({ error: 'captcha_failed', message: 'Please complete the security check and try again.' }, { status: 400 });
   }
 
   // Step 2: Validate input

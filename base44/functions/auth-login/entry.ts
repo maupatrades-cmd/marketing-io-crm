@@ -73,33 +73,9 @@ async function sendLockoutEmail(to, fullName, unlockLink) {
   if (result.error) { console.error('[auth-login] Lockout email failed:', result.error); }
 }
 
-async function verifyTurnstileToken(token, userIP) {
-  const secret = Deno.env.get('TURNSTILE_SECRET_KEY');
-  if (!secret) return { success: false, error: 'configuration_error' };
-  try {
-    const body = new URLSearchParams({ secret, response: token });
-    if (userIP) body.append('remoteip', userIP);
-    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body });
-    const data = await res.json();
-    return data.success ? { success: true } : { success: false, error: (data['error-codes'] || [])[0] || 'invalid_token' };
-  } catch (_) {
-    return { success: false, error: 'verification_unavailable' };
-  }
-}
-
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const { email, password, turnstile_token } = await req.json();
-
-  // Turnstile verification — must pass before any DB/bcrypt/lockout work
-  if (!turnstile_token) {
-    return Response.json({ error: 'captcha_required', message: 'Security check required.' }, { status: 400 });
-  }
-  const userIP = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || req.headers.get('x-real-ip') || '';
-  const turnstileResult = await verifyTurnstileToken(turnstile_token, userIP);
-  if (!turnstileResult.success) {
-    return Response.json({ error: 'captcha_failed', message: 'Please complete the security check and try again.' }, { status: 400 });
-  }
+  const { email, password } = await req.json();
 
   if (!email || !password) {
     return Response.json({ error: 'Email and password are required.' }, { status: 400 });
