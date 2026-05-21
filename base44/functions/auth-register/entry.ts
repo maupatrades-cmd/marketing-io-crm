@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
   console.log('[auth-register] Step: parsing request body');
   let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address;
   try {
-    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address } = await req.json());
+    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province } = await req.json());
   } catch (err) {
     console.error('[auth-register] request_parse_failed:', err.message);
     return Response.json({ error: 'request_parse_failed', detail: err.message }, { status: 500 });
@@ -151,6 +151,7 @@ Deno.serve(async (req) => {
    if (rawMobile) userPayload.mobile_number = rawMobile;
    if (trimmedCity) userPayload.city = trimmedCity;
    if (trimmedStreetAddress) userPayload.street_address = trimmedStreetAddress;
+   if (province) userPayload.province = (province || '').trim();
    try {
      newUser = await base44.asServiceRole.entities.AppUser.create(userPayload);
    } catch (err) {

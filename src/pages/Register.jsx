@@ -242,7 +242,7 @@ export default function Register() {
   const [form, setForm] = useState({
     // Step 1
     first_name: '', last_name: '', email: '', mobile_number: '',
-    city: '', street_address: '',
+    city: '', street_address: '', province: '',
     password: '', confirmPassword: '', agreed: false,
     // Step 2
     business_name: '', industry: '', years_in_business: '',
@@ -299,6 +299,7 @@ export default function Register() {
     if (!isValidSAMobile(form.mobile_number)) { setError('Mobile must be SA format: 0XXXXXXXXX or +27XXXXXXXXX.'); return; }
     if (!form.city.trim()) { setError('City is required.'); return; }
     if (!form.street_address.trim()) { setError('Street address is required.'); return; }
+    if (!form.province) { setError('Please select your province.'); return; }
     if (!pwValidation.valid) { setError(pwValidation.errors[0]); return; }
     if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
     if (parseInt(captchaInput) !== captcha.answer) { setError('Incorrect answer to the security question.'); return; }
@@ -315,6 +316,7 @@ export default function Register() {
         businessName: form.business_name.trim() || `${form.first_name.trim()}'s business`,
         city: form.city.trim(),
         street_address: form.street_address.trim(),
+        province: form.province,
         password: form.password
       });
       const data = res.data;
@@ -490,6 +492,7 @@ export default function Register() {
 
               <TextField label="City" required value={form.city} onChange={set('city')} placeholder="Johannesburg" autoComplete="address-level2" />
               <TextField label="Street address" required value={form.street_address} onChange={set('street_address')} placeholder="75 Marshall Street" autoComplete="street-address" />
+              <Select label="Province" required value={form.province} onChange={set('province')} options={PROVINCES} />
 
               <div>
                 <label className={labelClass}>Password *</label>

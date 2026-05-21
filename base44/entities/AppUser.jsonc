@@ -49,11 +49,11 @@
       "type": "string"
     },
     "lockdown_token": {
-      "description": "LB-031c: One-time token embedded in the 'wasn't me' link emailed after every successful password change. Consumed by emergency-account-lockdown.",
+      "description": "LB-031c: One-time token embedded in the 'wasn't me' link emailed after every successful password change.",
       "type": "string"
     },
     "lockdown_token_expires_at": {
-      "description": "LB-031c: When lockdown_token expires (24h after password change). Past this point the 'wasn't me' link no longer works and the user must contact support.",
+      "description": "LB-031c: When lockdown_token expires (24h after password change).",
       "format": "date-time",
       "type": "string"
     },
@@ -94,7 +94,7 @@
     },
     "password_reset_required": {
       "default": false,
-      "description": "LB-031c: Set true by emergency-account-lockdown. auth-login refuses to issue an OTP while this is true; cleared by reset-password on successful new-password submission.",
+      "description": "LB-031c: Set true by emergency-account-lockdown.",
       "type": "boolean"
     },
     "password_reset_token": {
@@ -159,31 +159,31 @@
       "type": "string"
     },
     "unlock_token": {
-      "description": "One-time token for the 'Unlock my account' email link. Generated on the 5th failed login attempt. Single-use, 24h expiry.",
+      "description": "One-time token for the 'Unlock my account' email link.",
       "type": "string"
     },
     "unlock_token_expires_at": {
-      "description": "When unlock_token expires (24h after lockout). Past this point the unlock link no longer works.",
+      "description": "When unlock_token expires (24h after lockout).",
       "type": "string"
     },
     "security_question_1_answer_hash": {
-      "description": "Bcrypt hash of answer to Q1: What is your mother's maiden name? (trimmed + lowercased before hashing)",
+      "description": "Bcrypt hash of answer to Q1: What is your mother's maiden name?",
       "type": "string"
     },
     "security_question_2_answer_hash": {
-      "description": "Bcrypt hash of answer to Q2: What primary school did you attend? (trimmed + lowercased before hashing)",
+      "description": "Bcrypt hash of answer to Q2: What primary school did you attend?",
       "type": "string"
     },
     "security_question_3_answer_hash": {
-      "description": "Bcrypt hash of answer to Q3: What is your favourite car? (trimmed + lowercased before hashing)",
+      "description": "Bcrypt hash of answer to Q3: What is your favourite car?",
       "type": "string"
     },
     "security_question_4_answer_hash": {
-      "description": "Bcrypt hash of answer to Q4: What town were you born in? (trimmed + lowercased before hashing)",
+      "description": "Bcrypt hash of answer to Q4: What town were you born in?",
       "type": "string"
     },
     "security_questions_set_at": {
-      "description": "When the user first set their security questions. Once set, cannot be changed via self-service.",
+      "description": "When the user first set their security questions.",
       "format": "date-time",
       "type": "string"
     },
@@ -198,7 +198,7 @@
       "type": "string"
     },
     "recovery_token": {
-      "description": "One-time token issued after successful security-question verification. Used by complete-recovery to set a new password. 15-min expiry.",
+      "description": "One-time token issued after successful security-question verification.",
       "type": "string"
     },
     "recovery_token_expires_at": {
@@ -207,16 +207,31 @@
       "type": "string"
     },
     "welcome_seen_at": {
-      "description": "Timestamp when the user clicked 'Continue to dashboard' on the welcome page. Null means the welcome page has never been shown.",
+      "description": "Timestamp when the user clicked 'Continue to dashboard' on the welcome page.",
       "format": "date-time",
       "type": "string"
     },
     "city": {
-      "description": "User's city (collected at signup, saved to AppUser).",
+      "description": "User's city (collected at signup).",
       "type": "string"
     },
     "street_address": {
-      "description": "User's street address (collected at signup, saved to AppUser).",
+      "description": "User's street address (collected at signup).",
+      "type": "string"
+    },
+    "province": {
+      "description": "User's South African province (collected at signup).",
+      "enum": [
+        "gauteng",
+        "western_cape",
+        "kwazulu_natal",
+        "eastern_cape",
+        "free_state",
+        "limpopo",
+        "mpumalanga",
+        "north_west",
+        "northern_cape"
+      ],
       "type": "string"
     },
     "business_name": {
