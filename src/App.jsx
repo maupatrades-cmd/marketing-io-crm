@@ -15,6 +15,8 @@ import Clients from './pages/Clients';
 import Deals from './pages/Deals';
 import Leads from './pages/Leads';
 import SalesOpportunities from './pages/SalesOpportunities';
+import Upsell from './pages/Upsell';
+import UpsellWorkspace from './pages/UpsellWorkspace';
 import Commissions from './pages/Commissions';
 import Invoices from './pages/Invoices';
 import Receipts from './pages/Receipts';
@@ -157,6 +159,8 @@ const AuthenticatedApp = () => {
       <Route path="/deals" element={<Deals />} />
       <Route path="/leads" element={<RouteGuard allowedRoles={["admin", "owner", "cpc", "field_agent"]} fallbackPath="/"><Leads /></RouteGuard>} />
       <Route path="/sales-opportunities" element={<RouteGuard allowedRoles={["owner", "admin", "cpc", "field_agent"]} fallbackPath="/"><SalesOpportunities /></RouteGuard>} />
+      <Route path="/upsell" element={<RouteGuard allowedRoles={["owner", "admin", "cpc", "field_agent"]} fallbackPath="/"><Upsell /></RouteGuard>} />
+      <Route path="/upsell/:clientId" element={<RouteGuard allowedRoles={["owner", "admin", "cpc", "field_agent"]} fallbackPath="/"><UpsellWorkspace /></RouteGuard>} />
       <Route path="/commissions" element={<Commissions />} />
       <Route path="/invoices" element={<Invoices />} />
       <Route path="/receipts" element={<Receipts />} />
