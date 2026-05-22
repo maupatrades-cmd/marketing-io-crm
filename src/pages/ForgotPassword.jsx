@@ -103,7 +103,6 @@ export default function ForgotPassword() {
             src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
             alt="Marketing iO"
             className="h-8 object-contain mx-auto"
-            style={{ filter: 'invert(1) brightness(2)', mixBlendMode: 'screen' }}
           />
           <h1 className="text-2xl font-bold mt-4">Forgot Your Password?</h1>
         </div>

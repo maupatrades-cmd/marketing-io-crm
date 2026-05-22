@@ -127,18 +127,18 @@ function isValidSAMobile(value) {
   return /^0\d{9}$/.test(v) || /^\+27\d{9}$/.test(v);
 }
 
-const inputClass = "w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500";
-const labelClass = "block text-xs font-medium text-slate-300 mb-1.5";
+const inputClass = "w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A1F44] placeholder-gray-400";
+const labelClass = "block text-xs font-medium text-gray-600 mb-1.5";
 
 function ProgressBar({ step }) {
   const pct = Math.round((step / TOTAL_STEPS) * 100);
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+      <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
         <span>Step {step} of {TOTAL_STEPS}</span>
         <span>{pct}% complete</span>
       </div>
-      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
           className="h-full transition-all duration-300"
           style={{ width: `${pct}%`, background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
@@ -455,7 +455,7 @@ export default function Register() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 py-10">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 py-10">
       <div className="w-full max-w-xl">
         <div className="text-center mb-6">
           <img
@@ -463,15 +463,15 @@ export default function Register() {
             alt="Marketing iO"
             className="h-12 mx-auto mb-4 object-contain"
           />
-          <h1 className="text-2xl font-bold text-white">Create your account</h1>
-          <p className="text-slate-400 mt-1 text-sm">Tell us about your business — even small answers help us help you.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
+          <p className="text-gray-500 mt-1 text-sm">Tell us about your business — even small answers help us help you.</p>
         </div>
 
-        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <ProgressBar step={step} />
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3 mb-4">
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">
               {error}
             </div>
           )}
@@ -479,7 +479,7 @@ export default function Register() {
           {/* ─────────── STEP 1 ─────────── */}
           {step === 1 && (
             <form onSubmit={submitStep1} className="space-y-4">
-              <h2 className="text-lg font-semibold text-white">Your account</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Your account</h2>
 
               <div className="grid grid-cols-2 gap-3">
                 <TextField label="First name" required value={form.first_name} onChange={set('first_name')} placeholder="Jane" autoComplete="given-name" />
@@ -528,7 +528,7 @@ export default function Register() {
 
               <label className="flex items-start gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.agreed} onChange={set('agreed')} className="mt-0.5 accent-purple-500" />
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-gray-500">
                   I agree to Marketing iO's{' '}
                   <a href="/terms" className="text-purple-400 hover:text-purple-300" target="_blank" rel="noopener noreferrer">Terms of Service</a>
                 </span>
@@ -543,9 +543,9 @@ export default function Register() {
                 {loading ? 'Creating account…' : <>Continue <ArrowRight className="w-4 h-4" /></>}
               </button>
 
-              <p className="text-center text-sm text-slate-400">
+              <p className="text-center text-sm text-gray-500">
                 Already have an account?{' '}
-                <Link to="/login" className="text-purple-400 hover:text-purple-300 font-medium">Sign in</Link>
+                <Link to="/login" className="text-[#0A1F44] hover:underline font-medium">Sign in</Link>
               </p>
             </form>
           )}
@@ -553,8 +553,8 @@ export default function Register() {
           {/* ─────────── STEP 2 ─────────── */}
           {step === 2 && (
             <form onSubmit={submitStep2} className="space-y-4">
-              <h2 className="text-lg font-semibold text-white">Your business</h2>
-              <p className="text-xs text-slate-400 -mt-2">Helps us tailor the pitch.</p>
+              <h2 className="text-lg font-semibold text-gray-900">Your business</h2>
+              <p className="text-xs text-gray-400 -mt-2">Helps us tailor the pitch.</p>
 
               <TextField label="Business name" required value={form.business_name} onChange={set('business_name')} placeholder="Acme Trading (Pty) Ltd" />
 
@@ -582,8 +582,8 @@ export default function Register() {
           {/* ─────────── STEP 3 ─────────── */}
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-white">Your story</h2>
-              <p className="text-xs text-slate-400 -mt-2">Help us understand your vision — skip if you'd rather we call you.</p>
+              <h2 className="text-lg font-semibold text-gray-900">Your story</h2>
+              <p className="text-xs text-gray-400 -mt-2">Help us understand your vision — skip if you'd rather we call you.</p>
 
               <Select label="Where do you want your business in 12 months?" value={form.twelve_month_goal} onChange={set('twelve_month_goal')} options={TWELVE_MONTH_GOALS} />
               <Select label="What's your BIGGEST challenge right now?" value={form.biggest_challenge} onChange={set('biggest_challenge')} options={CHALLENGES} />
@@ -605,8 +605,8 @@ export default function Register() {
           {/* ─────────── STEP 4 ─────────── */}
           {step === 4 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-white">Where you are now</h2>
-              <p className="text-xs text-slate-400 -mt-2">Help us tailor our pitch — skip and we'll ask on a call.</p>
+              <h2 className="text-lg font-semibold text-gray-900">Where you are now</h2>
+              <p className="text-xs text-gray-400 -mt-2">Help us tailor our pitch — skip and we'll ask on a call.</p>
 
               <Select label="Current monthly revenue range" value={form.monthly_revenue_range} onChange={set('monthly_revenue_range')} options={REVENUE_RANGES} />
               <Select label="How many NEW customers per month would change your life?" value={form.new_customers_target} onChange={set('new_customers_target')} options={NEW_CUSTOMER_TARGETS} />
@@ -631,8 +631,8 @@ export default function Register() {
           {/* ─────────── STEP 5 ─────────── */}
           {step === 5 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-white">How to reach you</h2>
-              <p className="text-xs text-slate-400 -mt-2">Last step — how should we follow up?</p>
+              <h2 className="text-lg font-semibold text-gray-900">How to reach you</h2>
+              <p className="text-xs text-gray-400 -mt-2">Last step — how should we follow up?</p>
 
               <Select label="If you were to invest in marketing, what monthly budget feels right?" value={form.monthly_marketing_budget} onChange={set('monthly_marketing_budget')} options={BUDGET_RANGES} />
               <CheckboxList label="How can we reach you?" values={form.preferred_contact_channels} options={CONTACT_CHANNELS} onToggle={v => toggleArray('preferred_contact_channels', v)} />
@@ -647,7 +647,7 @@ export default function Register() {
                   <input type="checkbox" checked={form.wants_personalized_proposal} onChange={set('wants_personalized_proposal')} className="mt-0.5 accent-purple-500" />
                   <span className="text-sm text-slate-200">Send me a personalized proposal</span>
                 </label>
-                <label className="flex items-start gap-2 cursor-pointer pt-2 border-t border-slate-700/60">
+                <label className="flex items-start gap-2 cursor-pointer pt-2 border-t border-gray-100">
                   <input type="checkbox" checked={form.popia_consent} onChange={set('popia_consent')} className="mt-1 accent-purple-500" />
                   <span className="text-xs text-slate-300">
                     <strong>Required:</strong> I agree to receive communication from Marketing iO. POPIA-compliant. Opt out anytime.
@@ -668,9 +668,9 @@ export default function Register() {
           )}
         </div>
 
-        <p className="text-center text-xs text-slate-600 mt-6">
+        <p className="text-center text-xs text-gray-400 mt-6">
           Need help?{' '}
-          <a href="mailto:support@marketingio.co.za" className="text-slate-500 hover:text-slate-400">support@marketingio.co.za</a>
+          <a href="mailto:support@marketingio.co.za" className="text-gray-500 hover:text-gray-700">support@marketingio.co.za</a>
         </p>
       </div>
     </div>

@@ -124,19 +124,19 @@ export default function ResetPassword() {
             alt="Marketing iO"
             className="h-12 mx-auto mb-4 object-contain"
           />
-          <h1 className="text-2xl font-bold text-white">Reset Password</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Reset Password</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 bg-slate-800/60 border border-slate-700 rounded-xl p-6">
+        <form onSubmit={handleSubmit} className="space-y-4 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           {error && (
-            <div className="flex gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
           <div>
-            <label className="block text-sm text-slate-300 mb-1">New Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
             <div className="relative">
               <Input
                 type={showPw ? 'text' : 'password'}
@@ -146,10 +146,10 @@ export default function ResetPassword() {
                 disabled={submitting}
                 required
                 autoFocus
-                className="bg-slate-700 border-slate-600 text-white pr-10"
+                className="bg-white border-gray-200 text-gray-900 pr-10"
               />
               <button type="button" onClick={() => setShowPw(v => !v)}
-                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200">
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
                 {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
@@ -161,7 +161,7 @@ export default function ResetPassword() {
           </div>
 
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Confirm Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
             <Input
               type="password"
               value={confirmPassword}
@@ -169,7 +169,7 @@ export default function ResetPassword() {
               placeholder="Repeat your new password"
               disabled={submitting}
               required
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-white border-gray-200 text-gray-900"
             />
           </div>
 
@@ -177,15 +177,15 @@ export default function ResetPassword() {
             type="submit"
             disabled={submitting}
             className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
-          >
+            style={{ background: '#0A1F44' }}
+            >
             {submitting ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Resetting…</span> : 'Reset Password'}
           </button>
 
           <button
             type="button"
             onClick={() => navigate('/login')}
-            className="w-full py-2.5 rounded-lg font-medium text-slate-400 text-sm hover:text-white transition border border-slate-600 hover:border-slate-400"
+            className="w-full py-2.5 rounded-lg font-medium text-gray-600 text-sm hover:text-gray-900 transition border border-gray-200 hover:border-gray-400"
           >
             Back to Login
           </button>

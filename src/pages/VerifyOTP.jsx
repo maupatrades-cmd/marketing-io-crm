@@ -111,7 +111,7 @@ export default function VerifyOTP() {
   const purposeLabel = purpose === 'signup_verification' ? 'verify your account' : 'complete your login';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img
@@ -119,21 +119,21 @@ export default function VerifyOTP() {
             alt="Marketing iO"
             className="h-12 mx-auto mb-4 object-contain"
           />
-          <h1 className="text-2xl font-bold text-white">Check your email</h1>
-          <p className="text-slate-400 mt-1 text-sm">
-            We sent a 6-digit code to <strong className="text-slate-200">{email}</strong> to {purposeLabel}.
+          <h1 className="text-2xl font-bold text-gray-900">Check your email</h1>
+          <p className="text-gray-500 mt-1 text-sm">
+            We sent a 6-digit code to <strong className="text-gray-800">{email}</strong> to {purposeLabel}.
           </p>
         </div>
 
-        <form onSubmit={handleVerify} className="space-y-4 bg-slate-800/60 border border-slate-700 rounded-xl p-6">
+        <form onSubmit={handleVerify} className="space-y-4 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3">
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm text-slate-300 mb-2 text-center">Enter your 6-digit code</label>
+            <label className="block text-sm text-gray-600 mb-2 text-center">Enter your 6-digit code</label>
             <input
               type="text"
               inputMode="numeric"
@@ -142,7 +142,7 @@ export default function VerifyOTP() {
               value={code}
               onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               required
-              className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 text-2xl text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-4 py-3 text-2xl text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-[#0A1F44]"
               placeholder="000000"
             />
           </div>
@@ -151,8 +151,8 @@ export default function VerifyOTP() {
             type="submit"
             disabled={loading || code.length !== 6}
             className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
-          >
+            style={{ background: '#0A1F44' }}
+            >
             {loading ? 'Verifying…' : 'Verify Code'}
           </button>
 
@@ -161,15 +161,15 @@ export default function VerifyOTP() {
               type="button"
               onClick={handleResend}
               disabled={resendCooldown > 0 || resendCount >= 3}
-              className="text-sm text-purple-400 hover:text-purple-300 disabled:text-slate-600 disabled:cursor-not-allowed transition"
+              className="text-sm text-[#0A1F44] hover:underline disabled:text-gray-300 disabled:cursor-not-allowed transition"
             >
               {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : resendCount >= 3 ? 'Max resends reached' : 'Resend code'}
             </button>
           </div>
 
-          <p className="text-center text-xs text-slate-500">
+          <p className="text-center text-xs text-gray-400">
             Wrong email?{' '}
-            <a href="/login" className="text-purple-400 hover:text-purple-300">Go back</a>
+            <a href="/login" className="text-[#0A1F44] hover:underline">Go back</a>
           </p>
         </form>
       </div>

@@ -17,8 +17,6 @@ function safeNext(raw) {
   return SAFE_NEXT_RE.test(v) ? v : '';
 }
 
-
-
 export default function SignIn() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -34,7 +32,7 @@ export default function SignIn() {
   const [welcomeText, setWelcomeText] = useState('');
   const [mascotLanded, setMascotLanded] = useState(false);
   const [bubbleText, setBubbleText] = useState('');
-  const [bubblePhase, setBubblePhase] = useState(0); // 0 idle, 1 question, 2 reply
+  const [bubblePhase, setBubblePhase] = useState(0);
 
   useEffect(() => {
     const full = 'Welcome back';
@@ -131,7 +129,6 @@ export default function SignIn() {
       const status = err?.response?.status;
       const detail = err?.response?.data?.error;
       if (status === 423 && detail === 'password_reset_required') {
-        // Post-lockdown: route to security-question recovery flow.
         navigate(`/account-recovery?email=${encodeURIComponent(email.toLowerCase().trim())}`);
         return;
       } else if (status === 423) {
@@ -146,22 +143,18 @@ export default function SignIn() {
     }
   };
 
+  const inputCls = "w-full bg-white border border-gray-200 text-gray-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A1F44] placeholder-gray-400";
+
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-6 relative overflow-hidden"
-      style={{
-        background: 'linear-gradient(135deg, #0A0F1C 0%, #1a0a2e 40%, #0d1a3a 100%)',
-      }}
-    >
-      {/* Ambient glows */}
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-6 relative overflow-hidden bg-white">
+      {/* Subtle brand hints */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full opacity-25 blur-3xl"
-          style={{ background: 'radial-gradient(circle, #7729FF 0%, #FF2994 50%, transparent 70%)' }} />
-        <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-15 blur-3xl"
-          style={{ background: 'radial-gradient(circle, #00CCFF 0%, transparent 70%)' }} />
+        <div className="absolute top-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, #0A1F44, #E63946)' }} />
+        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full opacity-[0.04] blur-3xl"
+          style={{ background: 'radial-gradient(circle, #0A1F44 0%, #E63946 70%, transparent 100%)' }} />
       </div>
 
-      {/* Logo — bigger */}
+      {/* Logo */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -169,129 +162,87 @@ export default function SignIn() {
         className="relative z-10 flex flex-col items-center mb-10"
       >
         <img
-          src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
+          src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
           alt="Marketing iO"
-          className="h-32 sm:h-40 object-contain"
-          style={{
-            filter: 'drop-shadow(0 0 14px rgba(119,41,255,0.7)) drop-shadow(0 0 28px rgba(255,41,148,0.5)) brightness(1.1)',
-          }}
+          className="h-20 sm:h-24 object-contain"
         />
-        {/* Tagline */}
         <p
           className="text-center font-semibold tracking-widest uppercase select-none mt-1"
-          style={{
-            fontSize: '13px',
-            letterSpacing: '3px',
-            color: '#E63946',
-            textShadow: '0 0 12px rgba(230,57,70,0.5)',
-          }}
+          style={{ fontSize: '12px', letterSpacing: '3px', color: '#E63946' }}
         >
           Too Good To Stay Hidden
         </p>
-
-        {/* Welcome back — typewriter */}
         <div
-          className="text-white font-bold select-none mt-2"
-          style={{
-            fontSize: '24px',
-            letterSpacing: '0.5px',
-            textShadow: '0 2px 14px rgba(119,41,255,0.45)',
-            minHeight: '38px',
-          }}
+          className="font-bold select-none mt-2 text-foreground"
+          style={{ fontSize: '22px', minHeight: '36px' }}
           aria-label="Welcome back"
         >
           {welcomeText}
           <span className="mio-caret" aria-hidden="true">|</span>
           <style>{`
             @keyframes mio-caret-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
-            .mio-caret {
-              display: inline-block;
-              margin-left: 2px;
-              color: #FF2994;
-              animation: mio-caret-blink 0.9s steps(1) infinite;
-            }
+            .mio-caret { display: inline-block; margin-left: 2px; color: #E63946; animation: mio-caret-blink 0.9s steps(1) infinite; }
           `}</style>
         </div>
       </motion.div>
 
-      {/* Card + mascot wrapper — mb reduced since welcome is now inside logo block */}
+      {/* Card + mascot wrapper */}
       <div className="relative w-full max-w-sm z-10">
 
-        {/* Mascot — rolls in from the left, lands centered, sitting low (just above the email) */}
+        {/* Mascot */}
         <motion.div
           initial={{ x: '-120vw', rotate: -720, opacity: 0 }}
           animate={{ x: 0, rotate: 0, opacity: 1 }}
           transition={{ delay: 1.5, duration: 1.9, ease: [0.22, 1, 0.36, 1] }}
           onAnimationComplete={() => setMascotLanded(true)}
           style={{
-            position: 'absolute',
-            top: '-55px',
-            left: '50%',
-            marginLeft: '-60px',
-            width: '120px',
-            height: '120px',
-            zIndex: 30,
-            pointerEvents: 'none',
-            background: 'transparent',
+            position: 'absolute', top: '-55px', left: '50%', marginLeft: '-60px',
+            width: '120px', height: '120px', zIndex: 30,
+            pointerEvents: 'none', background: 'transparent',
           }}
         >
           <Mascot size={120} style={{ background: 'transparent' }} />
         </motion.div>
 
-        {/* Speech bubble — sits NEXT TO the mascot, tail pointing left at its mouth.
-            Stays below the logo/welcome line and to the right of the mascot. */}
+        {/* Speech bubble — desktop */}
         {mascotLanded && (
           <>
-            {/* Desktop bubble — beside mascot, hidden on mobile */}
             <motion.div
               className="hidden sm:block"
               initial={{ opacity: 0, scale: 0.6, x: -10 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                position: 'absolute',
-                top: '-38px',
-                left: 'calc(50% + 62px)',
-                width: '172px',
-                background: '#ffffff',
-                borderRadius: '14px',
-                padding: '10px 13px',
-                boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
-                zIndex: 35,
-                pointerEvents: 'none',
+                position: 'absolute', top: '-38px', left: 'calc(50% + 62px)',
+                width: '172px', background: '#ffffff', borderRadius: '14px',
+                padding: '10px 13px', boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+                zIndex: 35, pointerEvents: 'none', border: '1px solid #E3E3E3',
               }}
-              role="status"
-              aria-live="polite"
+              role="status" aria-live="polite"
             >
-              <div style={{ color: '#1a1a2e', fontWeight: bubblePhase === 2 ? 700 : 400, fontSize: bubblePhase === 2 ? '15px' : '13px', lineHeight: 1.35, minHeight: '32px' }}>
+              <div style={{ color: '#0A0A0F', fontWeight: bubblePhase === 2 ? 700 : 400, fontSize: bubblePhase === 2 ? '15px' : '13px', lineHeight: 1.35, minHeight: '32px' }}>
                 {bubbleText}
                 <span className="mio-bubble-caret" aria-hidden="true">|</span>
               </div>
-              <span aria-hidden="true" style={{ position: 'absolute', top: '28px', left: '-12px', width: 0, height: 0, borderTop: '10px solid transparent', borderBottom: '10px solid transparent', borderRight: '13px solid #ffffff', filter: 'drop-shadow(-3px 2px 2px rgba(0,0,0,0.08))' }} />
-              <style>{`@keyframes mio-bubble-caret-blink{0%,49%{opacity:1;}50%,100%{opacity:0;}} .mio-bubble-caret{display:inline-block;margin-left:2px;color:#1a1a2e;animation:mio-bubble-caret-blink 0.85s steps(1) infinite;}`}</style>
+              <span aria-hidden="true" style={{ position: 'absolute', top: '28px', left: '-12px', width: 0, height: 0, borderTop: '10px solid transparent', borderBottom: '10px solid transparent', borderRight: '13px solid #ffffff', filter: 'drop-shadow(-3px 2px 2px rgba(0,0,0,0.06))' }} />
+              <style>{`@keyframes mio-bubble-caret-blink{0%,49%{opacity:1;}50%,100%{opacity:0;}} .mio-bubble-caret{display:inline-block;margin-left:2px;color:#0A0A0F;animation:mio-bubble-caret-blink 0.85s steps(1) infinite;}`}</style>
             </motion.div>
 
-            {/* Mobile bubble — below mascot, full width, hidden on sm+ */}
+            {/* Mobile bubble */}
             <motion.div
               className="block sm:hidden"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
               style={{
-                marginTop: '70px',
-                marginLeft: '12px',
-                marginRight: '12px',
-                background: '#ffffff',
-                borderRadius: '14px',
-                padding: '10px 14px',
-                boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
-                zIndex: 35,
-                pointerEvents: 'none',
+                marginTop: '70px', marginLeft: '12px', marginRight: '12px',
+                background: '#ffffff', borderRadius: '14px', padding: '10px 14px',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.10)', zIndex: 35,
+                pointerEvents: 'none', border: '1px solid #E3E3E3',
               }}
-              role="status"
-              aria-live="polite"
+              role="status" aria-live="polite"
             >
-              <div style={{ color: '#1a1a2e', fontWeight: bubblePhase === 2 ? 700 : 400, fontSize: bubblePhase === 2 ? '15px' : '13px', lineHeight: 1.35 }}>
+              <div style={{ color: '#0A0A0F', fontWeight: bubblePhase === 2 ? 700 : 400, fontSize: bubblePhase === 2 ? '15px' : '13px', lineHeight: 1.35 }}>
                 {bubbleText}
                 <span className="mio-bubble-caret" aria-hidden="true">|</span>
               </div>
@@ -305,96 +256,57 @@ export default function SignIn() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
           onSubmit={handleSubmit}
-          className="relative w-full rounded-2xl p-6 pt-10 space-y-4"
-          style={{
-            background:
-              'linear-gradient(135deg, rgba(119,41,255,0.92) 0%, rgba(255,41,148,0.88) 55%, rgba(0,204,255,0.80) 130%)',
-            border: '1px solid rgba(255,255,255,0.22)',
-            boxShadow:
-              '0 30px 70px -15px rgba(119,41,255,0.55), 0 0 0 1px rgba(255,255,255,0.08) inset',
-          }}
+          className="relative w-full rounded-2xl p-6 pt-10 space-y-4 bg-white"
+          style={{ border: '1px solid #E3E3E3', boxShadow: '0 4px 24px rgba(10,31,68,0.08)' }}
         >
           {error && (
-            <div className="bg-red-500/10 border border-red-500/40 text-red-400 text-sm rounded-lg px-4 py-3">
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm text-white/90 mb-1">Email address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF]"
-              placeholder="you@example.com"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputCls} placeholder="you@example.com" />
           </div>
 
           <div>
-            <label className="block text-sm text-white/90 mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <div className="relative">
-              <input
-                type={showPw ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF]"
-                placeholder="Your password"
-              />
-              <button type="button" onClick={() => setShowPw(v => !v)}
-                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200">
+              <input type={showPw ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required className={`${inputCls} pr-10`} placeholder="Your password" />
+              <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
                 {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             <div className="text-right mt-1">
-              <Link to="/forgot-password" className="text-xs text-white/90 hover:text-white underline transition-colors">
-                Forgot password?
-              </Link>
+              <Link to="/forgot-password" className="text-xs text-[#0A1F44] hover:underline font-medium">Forgot password?</Link>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm text-white/90 mb-1">
-              Security check: {captcha.question} = ?
-            </label>
-            <input
-              type="number"
-              value={captchaInput}
-              onChange={(e) => setCaptchaInput(e.target.value)}
-              required
-              className="w-full bg-[#1A2235] border border-[#7729FF]/20 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7729FF]"
-              placeholder="Answer"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Security check: {captcha.question} = ?</label>
+            <input type="number" value={captchaInput} onChange={(e) => setCaptchaInput(e.target.value)} required className={inputCls} placeholder="Answer" />
           </div>
 
           <button
             type="submit"
             disabled={loading}
             className="w-full py-2.5 rounded-lg font-semibold text-white text-sm transition disabled:opacity-60 hover:brightness-110"
-            style={{
-              background: '#0A1F44',
-              boxShadow: '0 10px 30px -10px rgba(10,31,68,0.7), 0 0 0 1px rgba(255,255,255,0.15) inset',
-            }}
+            style={{ background: '#0A1F44', boxShadow: '0 4px 14px rgba(10,31,68,0.25)' }}
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
 
-          <p className="text-center text-sm text-white/80">
+          <p className="text-center text-sm text-gray-600">
             Don't have an account?{' '}
-            <Link to="/register" className="text-white underline hover:text-white/90 transition-colors font-semibold">
-              Sign up
-            </Link>
+            <Link to="/register" className="text-[#0A1F44] font-semibold hover:underline">Sign up</Link>
           </p>
         </motion.form>
       </div>
 
-      <p className="text-center text-xs text-slate-600 mt-6 relative z-10">
+      <p className="text-center text-xs text-gray-400 mt-6 relative z-10">
         Need help?{' '}
-        <a href="mailto:support@marketingio.co.za" className="text-slate-500 hover:text-slate-400">
-          support@marketingio.co.za
-        </a>
+        <a href="mailto:support@marketingio.co.za" className="text-gray-500 hover:text-gray-700">support@marketingio.co.za</a>
       </p>
     </div>
   );

@@ -19,11 +19,12 @@ function shuffle(arr) {
   return a;
 }
 
+const inputCls = "w-full px-3 py-2.5 rounded-xl text-sm outline-none border border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-[#0A1F44] placeholder-gray-400";
+
 export default function AccountRecovery() {
   const params = new URLSearchParams(window.location.search);
   const email = decodeURIComponent(params.get('email') || '');
 
-  // Pick 3 random questions once on mount
   const selectedQuestions = useMemo(() => shuffle(ALL_QUESTIONS).slice(0, 3), []);
 
   const [answers, setAnswers] = useState({ 1: '', 2: '', 3: '', 4: '' });
@@ -32,7 +33,6 @@ export default function AccountRecovery() {
   const [loading, setLoading] = useState(false);
   const [fallback, setFallback] = useState(false);
 
-  // Stage 2 — password reset form
   const [recoveryToken, setRecoveryToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -56,9 +56,7 @@ export default function AccountRecovery() {
       setRecoveryToken(res.data.recovery_token);
     } catch (err) {
       const data = err?.response?.data || {};
-      if (data.fallback || data.attempts_exhausted) {
-        setFallback(true);
-      }
+      if (data.fallback || data.attempts_exhausted) setFallback(true);
       setAttemptsLeft(data.attempts_left ?? 0);
       setError(data.error || 'Incorrect answers. Please try again.');
     } finally {
@@ -87,45 +85,44 @@ export default function AccountRecovery() {
 
   if (!email) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0a0a14' }}>
+      <div className="min-h-screen flex items-center justify-center px-4 bg-white">
         <div className="text-center">
-          <p style={{ color: '#a8a8c0' }}>Invalid recovery link. <Link to="/login" style={{ color: '#a764e6' }}>Go back to login</Link></p>
+          <p className="text-gray-500">Invalid recovery link. <Link to="/login" className="text-[#0A1F44] font-medium hover:underline">Go back to login</Link></p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: '#0a0a14' }}>
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-gray-50">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <img
-            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
+            src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
             alt="Marketing iO"
             className="h-10 mx-auto mb-6 object-contain"
-            style={{ filter: 'invert(1) brightness(2)', mixBlendMode: 'screen' }}
           />
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)' }}>
-            <ShieldAlert className="w-7 h-7" style={{ color: '#ef4444' }} />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4 bg-red-50 border border-red-200">
+            <ShieldAlert className="w-7 h-7 text-red-500" />
           </div>
-          <h1 className="text-2xl font-bold mb-2" style={{ color: '#f4f4fa' }}>Account Recovery</h1>
-          <p className="text-sm" style={{ color: '#a8a8c0' }}>
+          <h1 className="text-2xl font-bold mb-2 text-gray-900">Account Recovery</h1>
+          <p className="text-sm text-gray-500">
             Your account was locked for security reasons. Answer 3 security questions to recover access.
           </p>
         </div>
 
-        <div className="rounded-2xl p-6" style={{ background: 'rgba(28,28,48,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="rounded-2xl p-6 bg-white border border-gray-200 shadow-sm">
 
           {/* Stage 1 — security questions */}
           {!recoveryToken && !done && (
             <>
               {fallback ? (
                 <div className="text-center py-4">
-                  <p className="text-sm mb-4" style={{ color: '#fca5a5' }}>You've used all 3 recovery attempts. Please reset your password via email instead.</p>
+                  <p className="text-sm mb-4 text-red-600">You've used all 3 recovery attempts. Please reset your password via email instead.</p>
                   <Link
                     to={`/forgot-password?email=${encodeURIComponent(email)}`}
                     className="inline-block px-6 py-2.5 rounded-xl font-semibold text-white text-sm"
-                    style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
+                    style={{ background: '#0A1F44' }}
                   >
                     Reset password via email →
                   </Link>
@@ -133,45 +130,38 @@ export default function AccountRecovery() {
               ) : (
                 <form onSubmit={handleVerify} className="space-y-4">
                   {error && (
-                    <div className="rounded-lg px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
-                      {error}
-                    </div>
+                    <div className="rounded-lg px-4 py-3 text-sm bg-red-50 border border-red-200 text-red-600">{error}</div>
                   )}
                   {attemptsLeft < 3 && attemptsLeft > 0 && (
-                    <p className="text-xs text-center" style={{ color: '#f59e0b' }}>{attemptsLeft} attempt{attemptsLeft === 1 ? '' : 's'} remaining</p>
+                    <p className="text-xs text-center text-amber-600">{attemptsLeft} attempt{attemptsLeft === 1 ? '' : 's'} remaining</p>
                   )}
 
                   {selectedQuestions.map((q, i) => (
                     <div key={q.index}>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: '#c4c4d4' }}>
-                        <span className="text-xs font-semibold mr-2 px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>{i + 1}</span>
+                      <label className="block text-sm font-medium mb-1.5 text-gray-700">
+                        <span className="text-xs font-semibold mr-2 px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100">{i + 1}</span>
                         {q.text}
                       </label>
                       <input
                         type="text"
                         value={answers[q.index] || ''}
                         onChange={e => setAnswers(prev => ({ ...prev, [q.index]: e.target.value }))}
-                        required
-                        autoComplete="off"
-                        className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#f4f4fa' }}
+                        required autoComplete="off"
+                        className={inputCls}
                         placeholder="Your answer"
                       />
                     </div>
                   ))}
 
-                  <button
-                    type="submit"
-                    disabled={loading || !allFilled}
+                  <button type="submit" disabled={loading || !allFilled}
                     className="w-full py-3 rounded-xl font-semibold text-white text-sm transition disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
-                  >
+                    style={{ background: '#0A1F44' }}>
                     {loading ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</span> : 'Verify answers →'}
                   </button>
 
-                  <p className="text-center text-xs" style={{ color: '#6b6b85' }}>
+                  <p className="text-center text-xs text-gray-400">
                     Can't remember your answers?{' '}
-                    <Link to={`/forgot-password?email=${encodeURIComponent(email)}`} style={{ color: '#a764e6' }}>Reset via email</Link>
+                    <Link to={`/forgot-password?email=${encodeURIComponent(email)}`} className="text-[#0A1F44] font-medium hover:underline">Reset via email</Link>
                   </p>
                 </form>
               )}
@@ -181,49 +171,30 @@ export default function AccountRecovery() {
           {/* Stage 2 — set new password */}
           {recoveryToken && !done && (
             <form onSubmit={handleSetPassword} className="space-y-4">
-              <div className="rounded-lg px-4 py-3 text-sm mb-2" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#6ee7b7' }}>
+              <div className="rounded-lg px-4 py-3 text-sm mb-2 bg-emerald-50 border border-emerald-200 text-emerald-700">
                 ✅ Identity verified. Now set a new password for your account.
               </div>
               {pwError && (
-                <div className="rounded-lg px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
-                  {pwError}
-                </div>
+                <div className="rounded-lg px-4 py-3 text-sm bg-red-50 border border-red-200 text-red-600">{pwError}</div>
               )}
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: '#c4c4d4' }}>New password</label>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700">New password</label>
                 <div className="relative">
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    required
-                    className="w-full px-3 py-2.5 pr-10 rounded-xl text-sm outline-none"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#f4f4fa' }}
-                    placeholder="At least 8 chars, 1 uppercase, 1 number"
-                  />
-                  <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-2.5" style={{ color: '#6b6b85' }}>
+                  <input type={showPw ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                    required className={`${inputCls} pr-10`} placeholder="At least 8 chars, 1 uppercase, 1 number" />
+                  <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: '#c4c4d4' }}>Confirm new password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#f4f4fa' }}
-                  placeholder="Repeat new password"
-                />
+                <label className="block text-sm font-medium mb-1.5 text-gray-700">Confirm new password</label>
+                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                  required className={inputCls} placeholder="Repeat new password" />
               </div>
-              <button
-                type="submit"
-                disabled={pwLoading}
+              <button type="submit" disabled={pwLoading}
                 className="w-full py-3 rounded-xl font-semibold text-white text-sm transition disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
-              >
+                style={{ background: '#0A1F44' }}>
                 {pwLoading ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Setting password…</span> : 'Set new password & log in →'}
               </button>
             </form>
@@ -232,14 +203,10 @@ export default function AccountRecovery() {
           {/* Stage 3 — done */}
           {done && (
             <div className="text-center py-4">
-              <CheckCircle2 className="w-12 h-12 mx-auto mb-4" style={{ color: '#10b981' }} />
-              <h2 className="text-lg font-bold mb-2" style={{ color: '#f4f4fa' }}>Password updated!</h2>
-              <p className="text-sm mb-6" style={{ color: '#a8a8c0' }}>A confirmation email has been sent. You can now log in with your new password.</p>
-              <Link
-                to="/login"
-                className="inline-block px-8 py-3 rounded-xl font-semibold text-white"
-                style={{ background: 'linear-gradient(135deg, #a764e6 0%, #ec4899 100%)' }}
-              >
+              <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-emerald-500" />
+              <h2 className="text-lg font-bold mb-2 text-gray-900">Password updated!</h2>
+              <p className="text-sm mb-6 text-gray-500">A confirmation email has been sent. You can now log in with your new password.</p>
+              <Link to="/login" className="inline-block px-8 py-3 rounded-xl font-semibold text-white" style={{ background: '#0A1F44' }}>
                 Log in now →
               </Link>
             </div>
