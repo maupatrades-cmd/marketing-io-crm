@@ -14,14 +14,13 @@ import {
   X,
   Bell,
   Search,
-  ArrowLeft
 } from 'lucide-react';
 import { destroySession } from '@/lib/customAuth';
 import { useState } from 'react';
 
-const SIDEBAR_BG = '#FAFAFA';
-const HOVER_BG = 'rgba(10,31,68,0.06)';
-const ACTIVE_BG = '#0A1F44';
+const SIDEBAR_BG = '#0d1424';
+const HOVER_BG = 'rgba(59,130,246,0.12)';
+const ACTIVE_BG = '#1d4ed8';
 
 const PRIMARY_NAV = [
   { path: '/client-portal',       label: 'Dashboard',           icon: Home },
@@ -47,7 +46,7 @@ function NavRow({ to, label, Icon, badge = 0, active, onNavigate, color }) {
       className="relative flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm transition"
       style={{
         background: active ? ACTIVE_BG : 'transparent',
-        color: color || (active ? '#FFFFFF' : '#525252')
+        color: color || (active ? '#FFFFFF' : '#c8d8f0')
       }}
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = HOVER_BG; }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
@@ -63,7 +62,7 @@ function NavRow({ to, label, Icon, badge = 0, active, onNavigate, color }) {
   );
 }
 
-function NavButton({ label, Icon, onClick, color = '#525252' }) {
+function NavButton({ label, Icon, onClick, color = '#c8d8f0' }) {
   return (
     <button
       type="button"
@@ -99,13 +98,6 @@ export default function ClientSidebar({
     window.location.href = '/login';
   };
 
-  const stage = client?.lifecycle_stage || 'lead';
-  const stageColor = stage === 'active'
-    ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-    : stage === 'qualified'
-      ? 'bg-amber-100 text-amber-700 border-amber-200'
-      : 'bg-gray-100 text-gray-600 border-gray-200';
-
   const closeOnNav = () => setMobileOpen(false);
 
   return (
@@ -115,7 +107,7 @@ export default function ClientSidebar({
         type="button"
         onClick={() => setMobileOpen(!mobileOpen)}
         className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg"
-        style={{ background: '#FFFFFF', color: '#0A0A0F', border: '1px solid #E3E3E3' }}
+        style={{ background: '#0d1424', color: '#c8d8f0', border: '1px solid #1f2d4a' }}
         aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
       >
         {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -124,7 +116,7 @@ export default function ClientSidebar({
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="md:hidden fixed inset-0 z-30 bg-black/40"
+          className="md:hidden fixed inset-0 z-30 bg-black/60"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -136,36 +128,36 @@ export default function ClientSidebar({
         style={{
           width: 240,
           background: SIDEBAR_BG,
-          borderRight: '1px solid #E3E3E3'
+          borderRight: '1px solid #1f2d4a'
         }}
       >
         {/* Logo + subtitle */}
         <div
           className="px-5 py-4 flex flex-col gap-3"
-          style={{ borderBottom: '1px solid #E3E3E3' }}
+          style={{ borderBottom: '1px solid #1f2d4a' }}
         >
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: '#0A1F44' }}
+              style={{ background: '#1d4ed8' }}
             >
               <Lightbulb className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-foreground leading-tight truncate">Marketing iO</p>
-              <p className="text-[11px] text-muted-foreground leading-tight">Client Portal</p>
+              <p className="text-sm font-bold leading-tight truncate" style={{ color: '#E63946' }}>Marketing iO</p>
+              <p className="text-[11px] leading-tight" style={{ color: '#8ab4d8' }}>Client Portal</p>
             </div>
           </div>
           {/* Search bar */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#8ab4d8' }} />
             <input
               type="text"
               placeholder="Search menu..."
               value={navSearch}
               onChange={e => setNavSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: "#FFFFFF", border: "1px solid #E3E3E3", color: "#0A0A0F" }}
+              style={{ background: "#141c32", border: "1px solid #1f2d4a", color: "#c8d8f0" }}
             />
           </div>
         </div>
@@ -186,7 +178,7 @@ export default function ClientSidebar({
             />
           ))}
 
-          <div className="my-3 mx-4" style={{ height: 0.5, background: '#E3E3E3' }} />
+          <div className="my-3 mx-4" style={{ height: 0.5, background: '#1f2d4a' }} />
 
           <NavButton label="Contact us" Icon={Phone} onClick={() => { onContact(); closeOnNav(); }} />
           <NavRow
@@ -200,23 +192,23 @@ export default function ClientSidebar({
         </nav>
 
         {/* Profile card */}
-        <div className="px-3 py-3" style={{ borderTop: '1px solid #E3E3E3' }}>
+        <div className="px-3 py-3" style={{ borderTop: '1px solid #1f2d4a' }}>
           <div
             className="flex items-center gap-3 px-2 py-2 rounded-xl"
-            style={{ background: 'rgba(10,31,68,0.04)' }}
+            style={{ background: 'rgba(59,130,246,0.08)' }}
           >
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white"
-              style={{ background: '#0A1F44' }}
+              style={{ background: '#1d4ed8' }}
             >
               {initials(client, user)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-foreground truncate">
+              <p className="text-xs font-semibold truncate" style={{ color: '#e2eaf8' }}>
                 {client?.business_name || user?.full_name || user?.email || '—'}
               </p>
-              <span className={`mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${stageColor}`}>
-                {stage}
+              <span className="mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border border-blue-500/40 text-blue-300">
+                {client?.lifecycle_stage || 'lead'}
               </span>
             </div>
           </div>
