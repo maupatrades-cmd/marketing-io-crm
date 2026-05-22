@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SoldActionForm from '@/components/sales/SoldActionForm';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Search, FileX, StickyNote, Plus, Loader2, CheckCircle2, XCircle, CalendarClock, UserCheck } from 'lucide-react';
@@ -357,16 +358,28 @@ export default function SalesOpportunities() {
                 </>
               )}
 
-              {selected && actionMode && (
+              {selected && actionMode === 'sold' && (
+                <SoldActionForm
+                  selected={selected}
+                  user={user}
+                  onSuccess={(clientId) => {
+                    setOpps(prev => prev.filter(o => o.id !== clientId));
+                    setSelected(null);
+                    setActionMode(null);
+                  }}
+                  onCancel={() => { setActionMode(null); }}
+                />
+              )}
+
+              {selected && actionMode && actionMode !== 'sold' && (
                 <div>
                   {/* Header */}
                   <div className="flex items-center justify-between mb-3">
                     <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wide ${
-                      actionMode === 'sold'           ? 'bg-green-100 text-green-700' :
                       actionMode === 'join_later'     ? 'bg-blue-100 text-blue-700' :
                                                         'bg-gray-100 text-gray-600'
                     }`}>
-                      {actionMode === 'sold' ? '🎉 Sold' : actionMode === 'join_later' ? '📅 Join Later' : '✗ Not Interested'}
+                      {actionMode === 'join_later' ? '📅 Join Later' : '✗ Not Interested'}
                     </span>
                     <button
                       type="button"
@@ -393,23 +406,12 @@ export default function SalesOpportunities() {
                     </div>
                   )}
 
-                  {/* Sold — staff assignment notice */}
-                  {actionMode === 'sold' && (
-                    <div className="mb-3 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                      <UserCheck className="w-4 h-4 text-green-600 shrink-0" />
-                      <p className="text-xs text-green-700">
-                        <strong>{user?.full_name || user?.email}</strong> will be assigned to this client.
-                      </p>
-                    </div>
-                  )}
-
                   {/* Notes */}
                   <label className="block text-xs text-gray-600 mb-1 font-medium">Notes (visible to all staff)</label>
                   <textarea
                     value={actionNotes}
                     onChange={e => setActionNotes(e.target.value)}
                     placeholder={
-                      actionMode === 'sold'           ? 'Add details about the sale…' :
                       actionMode === 'join_later'     ? 'Reason for follow-up, what was discussed…' :
                                                         'Reason they\'re not interested…'
                     }
@@ -422,15 +424,12 @@ export default function SalesOpportunities() {
                     onClick={submitAction}
                     disabled={submitting}
                     className={`w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition disabled:opacity-50 ${
-                      actionMode === 'sold'       ? 'bg-green-600 hover:brightness-110' :
                       actionMode === 'join_later' ? 'bg-blue-600 hover:brightness-110' :
                                                     'bg-gray-500 hover:bg-gray-600'
                     }`}
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                    {actionMode === 'sold'       ? 'Confirm Sale' :
-                     actionMode === 'join_later' ? 'Schedule Follow-up' :
-                                                   'Log Not Interested'}
+                    {actionMode === 'join_later' ? 'Schedule Follow-up' : 'Log Not Interested'}
                   </button>
                 </div>
               )}
