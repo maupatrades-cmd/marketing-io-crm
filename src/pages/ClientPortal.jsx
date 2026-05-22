@@ -439,8 +439,8 @@ export default function ClientPortal() {
       <div className="sticky top-0 z-10 border-b border-border bg-white">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Welcome back!</p>
-            <h1 className="text-xl font-bold flex items-center gap-2">
+            <p className="text-sm font-semibold" style={{ color: '#E63946' }}>Welcome back!</p>
+            <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: '#0A1F44' }}>
               🚀 {client.business_name}
               <Badge className="bg-primary/15 text-primary border-primary/30 text-xs capitalize">
                 {client.package?.replace(/_/g, " ") || "No Package"}
@@ -452,7 +452,7 @@ export default function ClientPortal() {
               variant="outline"
               size="sm"
               onClick={() => setContactOpen(true)}
-              className="text-xs"
+              className="text-xs border-[#E63946] text-[#E63946] hover:bg-[#E63946]/10"
             >
               <MessageSquare className="w-3.5 h-3.5 mr-1" /> Contact
             </Button>
@@ -460,7 +460,7 @@ export default function ClientPortal() {
               variant="outline"
               size="sm"
               onClick={() => window.location.href = '/client/subscription'}
-              className="text-xs"
+              className="text-xs border-[#E63946] text-[#E63946] hover:bg-[#E63946]/10"
             >
               💳 Billing
             </Button>
@@ -523,7 +523,7 @@ export default function ClientPortal() {
         {!isLead && pendingDeliverables.length > 0 && (
           <section className="space-y-4">
             <div className="space-y-1">
-              <h2 className="text-3xl font-bold text-foreground">Action Required</h2>
+              <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Action Required</h2>
               <p className="text-muted-foreground">Deliverables awaiting your approval</p>
             </div>
             <div className="h-1 w-20 gradient-bg rounded-full" />
@@ -593,7 +593,7 @@ export default function ClientPortal() {
         {!isLead && activeContract && (
           <section className="space-y-4">
             <div className="space-y-1">
-              <h2 className="text-3xl font-bold text-foreground">Your Contracts</h2>
+              <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Your Contracts</h2>
             </div>
             <div className="h-1 w-20 gradient-bg rounded-full" />
             <div className="glass rounded-lg p-6 mt-6">
@@ -637,7 +637,7 @@ export default function ClientPortal() {
         {!isLead && onboarding && (
           <section className="space-y-4">
             <div className="space-y-1">
-              <h2 className="text-3xl font-bold text-foreground">Your Project Journey</h2>
+              <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Your Project Journey</h2>
               <p className="text-muted-foreground">Track your onboarding progress</p>
             </div>
             <div className="h-1 w-20 gradient-bg rounded-full" />
@@ -684,7 +684,7 @@ export default function ClientPortal() {
         {!isLead && (
         <section className="space-y-4">
           <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-foreground">Quick Stats</h2>
+            <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Quick Stats</h2>
           </div>
           <div className="h-1 w-20 gradient-bg rounded-full" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
@@ -718,7 +718,7 @@ export default function ClientPortal() {
         {!isLead && (
         <section className="space-y-4">
           <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-foreground">Your Marketing iO Team</h2>
+            <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Your Marketing iO Team</h2>
           </div>
           <div className="h-1 w-20 gradient-bg rounded-full" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
@@ -752,7 +752,7 @@ export default function ClientPortal() {
         {/* SECTION 6 — PROFILE SNAPSHOT */}
         <section className="space-y-4">
           <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-foreground">Profile</h2>
+            <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Profile</h2>
           </div>
           <div className="h-1 w-20 gradient-bg rounded-full" />
           <div className="glass rounded-lg p-6 mt-6">
@@ -790,7 +790,7 @@ export default function ClientPortal() {
         {!isLead && (
         <section className="space-y-4">
           <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-foreground">Quick Links</h2>
+            <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Quick Links</h2>
           </div>
           <div className="h-1 w-20 gradient-bg rounded-full" />
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-6">
@@ -827,7 +827,7 @@ export default function ClientPortal() {
         {(client.package !== "dominate" && upgradeProducts.length > 0) && (
           <section className="space-y-4">
             <div className="space-y-1">
-              <h2 className="text-3xl font-bold text-foreground">{client.package === 'none' || !client.package ? 'Get Started' : 'Take it to the next level'}</h2>
+              <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>{client.package === 'none' || !client.package ? 'Get Started' : 'Take it to the next level'}</h2>
               <p className="text-muted-foreground">{client.package === 'none' || !client.package ? 'Choose your marketing foundation.' : "You're growing. Here's what comes next."}</p>
             </div>
             <div className="h-1 w-20 gradient-bg rounded-full" />
@@ -848,7 +848,7 @@ export default function ClientPortal() {
         {/* Section B — Add-Ons */}
         <section className="space-y-4">
           <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-foreground">Power Up With Add-Ons</h2>
+            <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Power Up With Add-Ons</h2>
             <p className="text-muted-foreground">Most successful clients add 3-5 of these. Pick what's missing.</p>
           </div>
           <div className="h-1 w-20 gradient-bg rounded-full" />
@@ -868,7 +868,7 @@ export default function ClientPortal() {
         {/* Section C — Physical Products */}
         <section className="space-y-4">
           <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-foreground">Be Seen In The Real World</h2>
+            <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Be Seen In The Real World</h2>
             <p className="text-muted-foreground">Online matters. So does walking past your shop.</p>
           </div>
           <div className="h-1 w-20 gradient-bg rounded-full" />
@@ -889,7 +889,7 @@ export default function ClientPortal() {
         {!isLead && (
         <section className="space-y-4">
           <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-foreground">Common Questions</h2>
+            <h2 className="text-3xl font-bold" style={{ color: '#E63946' }}>Common Questions</h2>
             <p className="text-muted-foreground">Quick answers. If yours isn't here, message your team.</p>
           </div>
           <div className="h-1 w-20 gradient-bg rounded-full" />

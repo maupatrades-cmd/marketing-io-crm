@@ -18,9 +18,9 @@ import {
 import { destroySession } from '@/lib/customAuth';
 import { useState } from 'react';
 
-const SIDEBAR_BG = '#0d1424';
-const HOVER_BG = 'rgba(59,130,246,0.12)';
-const ACTIVE_BG = '#1d4ed8';
+const SIDEBAR_BG = '#FFFFFF';
+const HOVER_BG = 'rgba(10,31,68,0.07)';
+const ACTIVE_BG = '#0A1F44';
 
 const PRIMARY_NAV = [
   { path: '/client-portal',       label: 'Dashboard',           icon: Home },
@@ -43,10 +43,10 @@ function NavRow({ to, label, Icon, badge = 0, active, onNavigate, color }) {
     <Link
       to={to}
       onClick={onNavigate}
-      className="relative flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm transition"
+      className="relative flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm font-medium transition"
       style={{
         background: active ? ACTIVE_BG : 'transparent',
-        color: color || (active ? '#FFFFFF' : '#c8d8f0')
+        color: color || (active ? '#FFFFFF' : '#0A1F44')
       }}
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = HOVER_BG; }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
@@ -62,12 +62,12 @@ function NavRow({ to, label, Icon, badge = 0, active, onNavigate, color }) {
   );
 }
 
-function NavButton({ label, Icon, onClick, color = '#c8d8f0' }) {
+function NavButton({ label, Icon, onClick, color = '#0A1F44' }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm transition text-left"
+      className="w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm font-medium transition text-left"
       style={{ background: 'transparent', color }}
       onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
@@ -107,7 +107,7 @@ export default function ClientSidebar({
         type="button"
         onClick={() => setMobileOpen(!mobileOpen)}
         className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg"
-        style={{ background: '#0d1424', color: '#c8d8f0', border: '1px solid #1f2d4a' }}
+        style={{ background: '#FFFFFF', color: '#0A1F44', border: '1px solid #E3E3E3' }}
         aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
       >
         {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -116,7 +116,7 @@ export default function ClientSidebar({
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="md:hidden fixed inset-0 z-30 bg-black/60"
+          className="md:hidden fixed inset-0 z-30 bg-black/40"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -128,36 +128,36 @@ export default function ClientSidebar({
         style={{
           width: 240,
           background: SIDEBAR_BG,
-          borderRight: '1px solid #1f2d4a'
+          borderRight: '1px solid #E3E3E3'
         }}
       >
         {/* Logo + subtitle */}
         <div
           className="px-5 py-4 flex flex-col gap-3"
-          style={{ borderBottom: '1px solid #1f2d4a' }}
+          style={{ borderBottom: '1px solid #E3E3E3' }}
         >
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: '#1d4ed8' }}
+              style={{ background: '#0A1F44' }}
             >
               <Lightbulb className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-bold leading-tight truncate" style={{ color: '#E63946' }}>Marketing iO</p>
-              <p className="text-[11px] leading-tight" style={{ color: '#8ab4d8' }}>Client Portal</p>
+              <p className="text-[11px] leading-tight" style={{ color: '#6b7280' }}>Client Portal</p>
             </div>
           </div>
           {/* Search bar */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#8ab4d8' }} />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#9ca3af' }} />
             <input
               type="text"
               placeholder="Search menu..."
               value={navSearch}
               onChange={e => setNavSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: "#141c32", border: "1px solid #1f2d4a", color: "#c8d8f0" }}
+              style={{ background: "#F9FAFB", border: "1px solid #E3E3E3", color: "#0A1F44" }}
             />
           </div>
         </div>
@@ -178,9 +178,9 @@ export default function ClientSidebar({
             />
           ))}
 
-          <div className="my-3 mx-4" style={{ height: 0.5, background: '#1f2d4a' }} />
+          <div className="my-3 mx-4" style={{ height: 1, background: '#E3E3E3' }} />
 
-          <NavButton label="Contact us" Icon={Phone} onClick={() => { onContact(); closeOnNav(); }} />
+          <NavButton label="Contact us" Icon={Phone} onClick={() => { onContact(); closeOnNav(); }} color="#E63946" />
           <NavRow
             to="/client/settings"
             label="Settings"
@@ -192,22 +192,22 @@ export default function ClientSidebar({
         </nav>
 
         {/* Profile card */}
-        <div className="px-3 py-3" style={{ borderTop: '1px solid #1f2d4a' }}>
+        <div className="px-3 py-3" style={{ borderTop: '1px solid #E3E3E3' }}>
           <div
             className="flex items-center gap-3 px-2 py-2 rounded-xl"
-            style={{ background: 'rgba(59,130,246,0.08)' }}
+            style={{ background: 'rgba(10,31,68,0.04)' }}
           >
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white"
-              style={{ background: '#1d4ed8' }}
+              style={{ background: '#0A1F44' }}
             >
               {initials(client, user)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold truncate" style={{ color: '#e2eaf8' }}>
+              <p className="text-xs font-semibold truncate" style={{ color: '#0A1F44' }}>
                 {client?.business_name || user?.full_name || user?.email || '—'}
               </p>
-              <span className="mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border border-blue-500/40 text-blue-300">
+              <span className="mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(230,57,70,0.1)', color: '#E63946', border: '1px solid rgba(230,57,70,0.25)' }}>
                 {client?.lifecycle_stage || 'lead'}
               </span>
             </div>
