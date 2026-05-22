@@ -244,13 +244,13 @@ export default function MyKPIs() {
                   <CardContent className="space-y-3">
                     {/* Actual vs Target */}
                     <div className="grid grid-cols-2 gap-2 text-center">
-                      <div className="bg-white/5 rounded-lg p-2">
+                      <div className="bg-secondary/30 rounded-lg p-2">
                         <p className="text-xs text-muted-foreground">Actual</p>
                         <p className="text-lg font-bold text-foreground">
                           {formatValue(metric.actual, metric.unit)}
                         </p>
                       </div>
-                      <div className="bg-white/5 rounded-lg p-2">
+                      <div className="bg-secondary/30 rounded-lg p-2">
                         <p className="text-xs text-muted-foreground">Target</p>
                         <p className="text-lg font-bold text-primary">
                           {formatValue(metric.target_value, metric.unit)}

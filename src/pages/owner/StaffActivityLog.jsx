@@ -37,7 +37,6 @@ export default function StaffActivityLog() {
         const userList = Array.isArray(users) ? users : [];
         setStaffUsers(userList);
         if (!selectedUserId && userList.length > 0) {
-          // Pre-select first CPC, or first user
           const firstCpc = userList.find(u => u.role === "cpc");
           setSelectedUserId((firstCpc || userList[0]).id);
         }
@@ -49,7 +48,6 @@ export default function StaffActivityLog() {
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  // Group users by role in display order
   const groupedUsers = ROLE_ORDER.reduce((acc, role) => {
     const inRole = staffUsers.filter(u => u.role === role);
     if (inRole.length > 0) acc.push({ role, users: inRole });
@@ -91,14 +89,14 @@ export default function StaffActivityLog() {
                           style={{
                             background: isActive ? col.bg : "transparent",
                             border: isActive ? `1px solid ${col.border}` : "1px solid transparent",
-                            color: isActive ? col.text : "#a8a8c0",
+                            color: isActive ? col.text : "#525252",
                           }}
                         >
                           <UserCircle className="w-4 h-4 shrink-0" />
                           <span className="flex-1 truncate">{u.full_name || u.email}</span>
                           {count > 0 && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                              style={{ background: isActive ? col.border : "rgba(255,255,255,0.08)", color: isActive ? "#fff" : "#6b6b85" }}>
+                              style={{ background: isActive ? col.border : "rgba(0,0,0,0.06)", color: isActive ? "#fff" : "#6B7280" }}>
                               {count > 99 ? "99+" : count}
                             </span>
                           )}
@@ -119,8 +117,8 @@ export default function StaffActivityLog() {
           <div className="flex-1 min-w-0">
             {!selectedUser ? (
               <div className="glass rounded-xl p-12 text-center">
-                <Users className="w-10 h-10 mx-auto mb-3" style={{ color: "#6b6b85" }} />
-                <p style={{ color: "#a8a8c0" }}>Select a staff member to view their activity</p>
+                <Users className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+                <p className="text-muted-foreground">Select a staff member to view their activity</p>
               </div>
             ) : (
               <>
@@ -131,8 +129,8 @@ export default function StaffActivityLog() {
                     {(selectedUser.full_name || selectedUser.email || "?")[0].toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold" style={{ color: "#f4f4fa" }}>{selectedUser.full_name || selectedUser.email}</p>
-                    <p className="text-xs" style={{ color: "#6b6b85" }}>{roleStyle.label} · {userActivities.length} events</p>
+                    <p className="font-semibold text-foreground">{selectedUser.full_name || selectedUser.email}</p>
+                    <p className="text-xs text-muted-foreground">{roleStyle.label} · {userActivities.length} events</p>
                   </div>
                   <span className="text-xs px-2.5 py-1 rounded-full font-medium"
                     style={{ background: roleStyle.bg, border: `1px solid ${roleStyle.border}`, color: roleStyle.text }}>
@@ -143,11 +141,11 @@ export default function StaffActivityLog() {
                 {/* Feed */}
                 {userActivities.length === 0 ? (
                   <div className="glass rounded-xl p-12 text-center">
-                    <p style={{ color: "#a8a8c0" }}>No activity recorded for {selectedUser.full_name || "this user"}</p>
+                    <p className="text-muted-foreground">No activity recorded for {selectedUser.full_name || "this user"}</p>
                   </div>
                 ) : (
                   <div className="relative">
-                    <div className="absolute left-5 top-0 bottom-0 w-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+                    <div className="absolute left-5 top-0 bottom-0 w-px" style={{ background: "#E5E7EB" }} />
                     <div className="space-y-1.5 pl-12">
                       {userActivities.map((a, i) => {
                         const icon = EVENT_ICONS[a.event_category] || "•";
@@ -155,21 +153,21 @@ export default function StaffActivityLog() {
                           <div key={a.id + i} className="relative">
                             <div className="absolute -left-7 top-4 w-2.5 h-2.5 rounded-full"
                               style={{ background: roleStyle.bg, border: `2px solid ${roleStyle.text}` }} />
-                            <div className="glass rounded-xl p-3.5 flex items-start gap-3 hover:border-white/15 transition-all">
+                            <div className="glass rounded-xl p-3.5 flex items-start gap-3 hover:border-border transition-all">
                               <span className="text-base mt-0.5 shrink-0">{icon}</span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium leading-snug" style={{ color: "#f4f4fa" }}>
+                                <p className="text-sm font-medium leading-snug text-foreground">
                                   {a.event_summary || a.title || a.event_type}
                                 </p>
                                 {a.client_name && (
-                                  <p className="text-xs mt-0.5" style={{ color: "#a8a8c0" }}>Client: {a.client_name}</p>
+                                  <p className="text-xs mt-0.5 text-muted-foreground">Client: {a.client_name}</p>
                                 )}
                               </div>
                               <div className="text-right shrink-0 ml-2">
-                                <p className="text-xs" style={{ color: "#a8a8c0" }}>
+                                <p className="text-xs text-muted-foreground">
                                   {format(new Date(a.created_date), "dd MMM yyyy")}
                                 </p>
-                                <p className="text-[11px]" style={{ color: "#6b6b85" }}>
+                                <p className="text-[11px] text-muted-foreground/70">
                                   {format(new Date(a.created_date), "HH:mm")}
                                 </p>
                               </div>

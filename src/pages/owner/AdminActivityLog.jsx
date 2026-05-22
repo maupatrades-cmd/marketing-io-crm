@@ -126,8 +126,8 @@ export default function AdminActivityLog() {
         <div className="space-y-3">{[...Array(8)].map((_, i) => <div key={i} className="h-14 bg-muted/20 rounded-xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
         <div className="glass rounded-xl p-16 text-center">
-          <MessageSquare className="w-12 h-12 mx-auto mb-3" style={{ color: "#6b6b85" }} />
-          <p style={{ color: "#a8a8c0" }}>No admin activity found</p>
+          <MessageSquare className="w-12 h-12 mx-auto mb-3 text-muted-foreground/40" />
+          <p className="text-muted-foreground">No admin activity found</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -135,7 +135,7 @@ export default function AdminActivityLog() {
             <div key={dateKey}>
               <Button
                 variant="ghost"
-                className="w-full justify-between px-4 py-3 h-auto text-left hover:bg-white/5"
+                className="w-full justify-between px-4 py-3 h-auto text-left hover:bg-secondary/40"
                 onClick={() => setExpandedDate(expandedDate === dateKey ? null : dateKey)}
               >
                 <span className="font-medium text-sm">{dateKey}</span>
@@ -150,19 +150,19 @@ export default function AdminActivityLog() {
                   {dateEvents.map((ev, i) => {
                     const col = EVENT_COLORS[ev.category] || EVENT_COLORS.default;
                     return (
-                      <div key={ev.id + i} className="glass rounded-lg p-3 flex items-center gap-3 hover:border-white/15 transition-all">
+                      <div key={ev.id + i} className="glass rounded-lg p-3 flex items-center gap-3 hover:border-border transition-all">
                         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: col.bg, border: `1px solid ${col.border}` }}>
                           <Clock className="w-3.5 h-3.5" style={{ color: col.text }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium" style={{ color: "#f4f4fa" }}>{ev.label}</p>
-                          <p className="text-xs" style={{ color: "#a8a8c0" }}>{ev.detail}</p>
+                          <p className="text-sm font-medium text-foreground">{ev.label}</p>
+                          <p className="text-xs text-muted-foreground">{ev.detail}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <Badge className="text-[10px] px-2 py-0.5 border capitalize" style={{ background: col.bg, color: col.text, borderColor: col.border }}>
                             {ev.category}
                           </Badge>
-                          <span className="text-xs" style={{ color: "#6b6b85" }}>{timeAgo(ev.time)}</span>
+                          <span className="text-xs text-muted-foreground/70">{timeAgo(ev.time)}</span>
                         </div>
                       </div>
                     );
