@@ -17,29 +17,27 @@ function unwrap(result) {
   return [];
 }
 
-async function deriveActor(base44, token) {
-  if (!token) return null;
-  let user = null;
-  try {
-    user = unwrap(await base44.asServiceRole.entities.AppUser.filter({ session_token: token }))[0] || null;
-  } catch { /* fall through to legacy User */ }
-  if (!user) {
-    try {
-      user = unwrap(await base44.asServiceRole.entities.User.filter({ session_token: token }))[0] || null;
-    } catch { return null; }
-  }
-  if (!user) return null;
-  if (!user.session_expires_at || new Date(user.session_expires_at) < new Date()) return null;
-  return { userId: String(user.id || ''), role: String(user.role || 'client') };
-}
-
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
   let body;
   try { body = await req.json(); } catch { return Response.json({ error: 'invalid_json' }, { status: 400 }); }
 
-  const actor = await deriveActor(base44, body?.token);
+  const token = body?.token;
+  if (!token) return Response.json({ error: 'token_required' }, { status: 401 });
+
+  // Validate session via the canonical auth-me function (avoids AppUser asServiceRole 401 issue).
+  let actor = null;
+  try {
+    const authRes = await base44.asServiceRole.functions.invoke('auth-me', { token });
+    const authData = authRes?.data ?? authRes;
+    if (authData?.user) {
+      actor = { userId: String(authData.user.id || ''), role: String(authData.user.role || 'client') };
+    }
+  } catch (err) {
+    console.error('[list-sales-opportunities] auth-me call failed:', err?.message);
+  }
+
   if (!actor) return Response.json({ error: 'invalid_session' }, { status: 401 });
   if (!ALLOWED_ROLES.includes(actor.role)) return Response.json({ error: 'forbidden' }, { status: 403 });
 
