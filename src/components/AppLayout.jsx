@@ -84,6 +84,7 @@ const STAFF_NAV = {
 
 const OWNER_NAV = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/my-sales", label: "My Sales", icon: Star },
   { path: "/owner/leads", label: "Lead Inbox", icon: UserPlus, badgeKey: "leadInbox" },
   { path: "/inbox", label: "Inbox", icon: MessageSquare },
   { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
