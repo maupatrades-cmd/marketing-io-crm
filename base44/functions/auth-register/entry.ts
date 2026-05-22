@@ -48,14 +48,63 @@ async function sendSignupOtp(to, fullName, otp) {
   }
 }
 
+// Upsell feature Step 2: map each staff_* dropdown value to an AppUser lookup.
+// email is tried first; on miss, the oldest user of that role is used.
+const STAFF_LOOKUP = {
+  staff_cpc1:    { email: 'cpc1@marketingio.co.za',  role: 'cpc' },
+  staff_cpc2:    { email: 'cpc2@marketingio.co.za',  role: 'cpc' },
+  staff_field1:  { email: 'field1@marketingio.co.za', role: 'field_agent' },
+  staff_field2:  { email: 'field2@marketingio.co.za', role: 'field_agent' },
+  staff_admin:   { email: 'admin@marketingio.co.za', role: 'admin' },
+  staff_thapelo: { role: 'owner' },
+};
+
+function unwrap(result) {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.data)) return result.data;
+  return [];
+}
+
+async function resolveStaffId(base44, value) {
+  const rule = STAFF_LOOKUP[value];
+  if (!rule) return null;
+  if (rule.email) {
+    try {
+      const byEmail = unwrap(await base44.asServiceRole.entities.AppUser.filter({ email: rule.email }));
+      if (byEmail[0]?.id) return byEmail[0].id;
+    } catch (err) { console.error('[auth-register] staff email lookup failed:', err?.message); }
+  }
+  try {
+    const byRole = unwrap(await base44.asServiceRole.entities.AppUser.filter({ role: rule.role }, 'created_date', 1));
+    if (byRole[0]?.id) return byRole[0].id;
+  } catch (err) { console.error('[auth-register] staff role lookup failed:', err?.message); }
+  return null;
+}
+
+// Returns the attribution triplet written onto the new Client record.
+async function resolveAttribution(base44, value) {
+  const v = String(value || '');
+  if (v.startsWith('staff_')) {
+    const id = await resolveStaffId(base44, v);
+    if (id) return { signed_up_by_id: id, signed_up_self: false, attribution_source: null };
+    console.warn('[auth-register] staff lookup failed for dropdown value:', v, '— flagging for manual allocation');
+    return { signed_up_by_id: null, signed_up_self: false, attribution_source: null };
+  }
+  if (v.startsWith('source_')) {
+    return { signed_up_by_id: null, signed_up_self: false, attribution_source: v };
+  }
+  // 'self_signup', blank, or any unknown value → self-service signup.
+  return { signed_up_by_id: null, signed_up_self: true, attribution_source: null };
+}
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
   // Step 1: Parse request
   console.log('[auth-register] Step: parsing request body');
-  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province;
+  let fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province, signed_up_by;
   try {
-    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province } = await req.json());
+    ({ fullName, first_name, last_name, email, phone, mobile_number, businessName, password, city, street_address, province, signed_up_by } = await req.json());
   } catch (err) {
     console.error('[auth-register] request_parse_failed:', err.message);
     return Response.json({ error: 'request_parse_failed', detail: err.message }, { status: 500 });
@@ -167,6 +216,9 @@ Deno.serve(async (req) => {
 
   // Step 6: Create client record
   console.log('[auth-register] Step: creating client record');
+  // Upsell feature Step 2: resolve signup attribution before creating the Client.
+  const attribution = await resolveAttribution(base44, signed_up_by);
+
   let createdClientId = null;
   try {
     const newClient = await base44.asServiceRole.entities.Client.create({
@@ -175,6 +227,10 @@ Deno.serve(async (req) => {
       email: normalizedEmail,
       phone: rawMobile || phone?.trim() || '',
       status: 'lead',
+      lifecycle_stage: 'lead',
+      signed_up_by_id: attribution.signed_up_by_id,
+      signed_up_self: attribution.signed_up_self,
+      attribution_source: attribution.attribution_source,
       client_user_id: newUser.id,
       portal_invitation_sent_at: new Date().toISOString(),
       signup_completed_steps: 1

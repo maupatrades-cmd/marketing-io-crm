@@ -43,6 +43,27 @@ const PROVINCES = [
   ['north_west', 'North West'],
   ['northern_cape', 'Northern Cape']
 ];
+
+// Step 2 (Upsell + Sales Opportunities feature): signup attribution dropdown.
+// staff_* values are resolved to an AppUser.id server-side in auth-register;
+// source_* values are stored on Client.attribution_source; self_signup /
+// blank mark the client as a self-service signup needing manual allocation.
+const SIGNUP_ATTRIBUTION_OPTIONS = [
+  ['staff_cpc1', 'cpc1'],
+  ['staff_cpc2', 'cpc2'],
+  ['staff_field1', 'field1'],
+  ['staff_field2', 'field2'],
+  ['staff_admin', 'admin'],
+  ['staff_thapelo', 'Thapelo'],
+  ['source_friend', 'Recommended by a friend'],
+  ['source_google', 'Google / online search'],
+  ['source_social', 'Social media (Facebook / Instagram / TikTok)'],
+  ['source_whatsapp', 'WhatsApp message'],
+  ['source_flyer', 'Saw a flyer or doorhanger'],
+  ['source_walkin', 'Walked into the office'],
+  ['source_other', 'Other'],
+  ['self_signup', 'I signed up myself']
+];
 const TWELVE_MONTH_GOALS = [
   ['same_steady', 'Stay where I am — steady and stable'],
   ['double_revenue', 'Double my revenue'],
@@ -242,7 +263,7 @@ export default function Register() {
   const [form, setForm] = useState({
     // Step 1
     first_name: '', last_name: '', email: '', mobile_number: '',
-    city: '', street_address: '', province: '',
+    city: '', street_address: '', province: '', signed_up_by: '',
     password: '', confirmPassword: '', agreed: false,
     // Step 2
     business_name: '', industry: '', years_in_business: '',
@@ -317,6 +338,7 @@ export default function Register() {
         city: form.city.trim(),
         street_address: form.street_address.trim(),
         province: form.province,
+        signed_up_by: form.signed_up_by || '',
         password: form.password
       });
       const data = res.data;
@@ -489,6 +511,14 @@ export default function Register() {
               <TextField label="Email address" type="email" required value={form.email} onChange={set('email')} placeholder="you@business.co.za" autoComplete="email" />
 
               <TextField label="Mobile number (SA: 0XXXXXXXXX or +27XXXXXXXXX)" type="tel" required value={form.mobile_number} onChange={set('mobile_number')} placeholder="082 123 4567" autoComplete="tel" />
+
+              <div>
+                <label className={labelClass}>Who signed you up? (optional)</label>
+                <select value={form.signed_up_by} onChange={set('signed_up_by')} className={inputClass}>
+                  <option value="">— Select if applicable —</option>
+                  {SIGNUP_ATTRIBUTION_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
 
               <TextField label="City" required value={form.city} onChange={set('city')} placeholder="Johannesburg" autoComplete="address-level2" />
               <TextField label="Street address" required value={form.street_address} onChange={set('street_address')} placeholder="75 Marshall Street" autoComplete="street-address" />
