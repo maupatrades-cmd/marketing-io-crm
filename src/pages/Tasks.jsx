@@ -171,7 +171,7 @@ export default function Tasks() {
            <div className="flex rounded-lg border border-border/50 overflow-hidden">
              {["mine", "all"].map(m => (
                <button key={m} onClick={() => setShowMode(m)}
-                 className={`px-3 py-1.5 text-sm transition-colors capitalize ${showMode === m ? "gradient-bg text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                 className={`px-3 py-1.5 text-sm transition-colors capitalize ${showMode === m ? "bg-[#0A1F44] text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
                  {m === "mine" ? "My Tasks" : "All Tasks"}
                </button>
              ))}
@@ -203,7 +203,7 @@ export default function Tasks() {
             </SelectContent>
           </Select>
         )}
-        <Button onClick={openNew} className="gradient-bg text-white hover:opacity-90">
+        <Button onClick={openNew} className="bg-[#0A1F44] text-white hover:opacity-90">
           <Plus className="w-4 h-4 mr-1" /> Add Task
         </Button>
       </div>

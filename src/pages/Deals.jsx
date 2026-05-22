@@ -257,7 +257,7 @@ export default function Deals() {
         {pipeline.map(p => (
           <button key={p.stage} onClick={() => setStageFilter(stageFilter === p.stage ? "all" : p.stage)}
             className={`flex-shrink-0 glass rounded-lg px-3 py-2 text-center cursor-pointer transition-all border ${
-              stageFilter === p.stage ? "border-primary/60 shadow-glow-purple" : "border-border/30 hover:border-border/60"
+              stageFilter === p.stage ? "border-primary/60 bg-primary/5" : "border-border/30 hover:border-border/60"
             }`}>
             <p className="text-lg font-bold text-foreground">{p.count}</p>
             <p className="text-xs text-muted-foreground capitalize whitespace-nowrap">{p.stage.replace(/_/g, " ")}</p>
@@ -270,7 +270,7 @@ export default function Deals() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search by client…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9 bg-secondary/50 border-border/50" />
         </div>
-        <Button onClick={openCreate} className="gradient-bg text-white hover:opacity-90">
+        <Button onClick={openCreate} className="bg-[#0A1F44] text-white hover:opacity-90">
           <Plus className="w-4 h-4 mr-1" /> Add Deal
         </Button>
       </div>
@@ -307,7 +307,7 @@ export default function Deals() {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="bg-card border-border/50 max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="gradient-text">{editing ? "Edit Deal" : "New Deal"}</DialogTitle>
+            <DialogTitle className="text-foreground font-bold">{editing ? "Edit Deal" : "New Deal"}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 mt-2">
             <div className="col-span-2">
@@ -406,15 +406,15 @@ export default function Deals() {
           <div className="flex items-center justify-between mt-4">
             <label className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setNotifyClient(n => !n)}>
               {notifyClient
-                ? <Bell className="w-4 h-4" style={{ color: "#a764e6" }} />
-                : <BellOff className="w-4 h-4" style={{ color: "#6b6b85" }} />}
-              <span className="text-xs" style={{ color: notifyClient ? "#a8a8c0" : "#6b6b85" }}>
+                ? <Bell className="w-4 h-4" style={{ color: "#0A1F44" }} />
+                : <BellOff className="w-4 h-4" style={{ color: "#9CA3AF" }} />}
+              <span className="text-xs" style={{ color: notifyClient ? "#525252" : "#9CA3AF" }}>
                 {notifyClient ? "Email client on stage change" : "No notification"}
               </span>
             </label>
             <div className="flex gap-2">
               <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button onClick={save} disabled={saving} className="gradient-bg text-white hover:opacity-90">{saving ? "Saving…" : "Save Deal"}</Button>
+              <Button onClick={save} disabled={saving} className="bg-[#0A1F44] text-white hover:opacity-90">{saving ? "Saving…" : "Save Deal"}</Button>
             </div>
           </div>
         </DialogContent>
@@ -424,7 +424,7 @@ export default function Deals() {
       <Dialog open={showDetail} onOpenChange={setShowDetail}>
         <DialogContent className="bg-card border-border/50 max-w-lg">
           <DialogHeader>
-            <DialogTitle className="gradient-text">Deal Details</DialogTitle>
+            <DialogTitle className="text-foreground font-bold">Deal Details</DialogTitle>
           </DialogHeader>
           {selectedDeal && (
             <div className="space-y-4 mt-4">
@@ -454,8 +454,8 @@ export default function Deals() {
                 <Button 
                   onClick={() => generateContract(selectedDeal)} 
                   disabled={generatingContract}
-                  className="gradient-bg text-white hover:opacity-90"
-                >
+                  className="bg-[#0A1F44] text-white hover:opacity-90"
+                  >
                   <FileText className="w-4 h-4 mr-2" />
                   {generatingContract ? "Generating..." : "Generate Contract"}
                 </Button>

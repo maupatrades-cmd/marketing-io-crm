@@ -244,17 +244,17 @@ export default function OwnerDashboard() {
               <AreaChart data={weeklyPaidSeries}>
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a764e6" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#a764e6" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#0A1F44" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#0A1F44" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="weekLabel" tick={{ fill: "#a8a8c0", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#6b6b85", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `R${(v/1000).toFixed(0)}k` : `R${v}`} />
+                <XAxis dataKey="weekLabel" tick={{ fill: "#525252", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#525252", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `R${(v/1000).toFixed(0)}k` : `R${v}`} />
                 <Tooltip
-                  contentStyle={{ background: "#1c1c30", border: "1px solid rgba(167,100,230,0.3)", borderRadius: 10, fontSize: 12, color: "#f4f4fa" }}
+                  contentStyle={{ background: "#ffffff", border: "1px solid #E3E3E3", borderRadius: 10, fontSize: 12, color: "#0A0A0F" }}
                   formatter={v => [`R${Number(v).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`, "Paid"]}
                 />
-                <Area type="monotone" dataKey="paid" stroke="#a764e6" strokeWidth={2.5} fill="url(#revGrad)" />
+                <Area type="monotone" dataKey="paid" stroke="#0A1F44" strokeWidth={2.5} fill="url(#revGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -264,16 +264,16 @@ export default function OwnerDashboard() {
             <h2 className="text-sm font-semibold text-foreground mb-4">Deal Pipeline</h2>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={pipelineData} layout="vertical">
-                <XAxis type="number" tick={{ fill: "#6b6b85", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="stage" tick={{ fill: "#a8a8c0", fontSize: 10 }} axisLine={false} tickLine={false} width={72} />
+                <XAxis type="number" tick={{ fill: "#525252", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="stage" tick={{ fill: "#525252", fontSize: 10 }} axisLine={false} tickLine={false} width={72} />
                 <Tooltip
-                  contentStyle={{ background: "#1c1c30", border: "1px solid rgba(167,100,230,0.3)", borderRadius: 10, fontSize: 12, color: "#f4f4fa" }}
+                  contentStyle={{ background: "#ffffff", border: "1px solid #E3E3E3", borderRadius: 10, fontSize: 12, color: "#0A0A0F" }}
                 />
                 <Bar dataKey="count" fill="url(#barGrad)" radius={[0, 6, 6, 0]} />
                 <defs>
                   <linearGradient id="barGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#a764e6" />
-                    <stop offset="100%" stopColor="#ec4899" />
+                    <stop offset="0%" stopColor="#0A1F44" />
+                    <stop offset="100%" stopColor="#E63946" />
                   </linearGradient>
                 </defs>
               </BarChart>

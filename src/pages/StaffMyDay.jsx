@@ -124,7 +124,7 @@ export default function StaffMyDay() {
         {/* CPC Quick Actions */}
         {user?.role === "cpc" && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Button className="h-14 flex-col gap-1 text-xs gradient-bg text-white shadow-glow-purple" onClick={() => setShowLogCallModal(true)}>
+            <Button className="h-14 flex-col gap-1 text-xs bg-[#0A1F44] text-white hover:bg-[#0A1F44]/90" onClick={() => setShowLogCallModal(true)}>
               <Phone className="w-5 h-5" />
               Log a Call
             </Button>
@@ -144,7 +144,7 @@ export default function StaffMyDay() {
         {/* Admin Quick Actions */}
         {user?.role === "admin" && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Button className="h-14 flex-col gap-1 text-xs gradient-bg text-white shadow-glow-purple" onClick={() => setShowLogCommModal(true)}>
+            <Button className="h-14 flex-col gap-1 text-xs bg-[#0A1F44] text-white hover:bg-[#0A1F44]/90" onClick={() => setShowLogCommModal(true)}>
               <Send className="w-5 h-5" />
               Log Communication
             </Button>
@@ -167,7 +167,7 @@ export default function StaffMyDay() {
         {user?.role === "field_agent" && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Button
-              className="h-14 flex-col gap-1 text-xs gradient-bg text-white shadow-glow-purple"
+              className="h-14 flex-col gap-1 text-xs bg-[#0A1F44] text-white hover:bg-[#0A1F44]/90"
               onClick={() => setShowVisitModal(true)}
             >
               <MapPin className="w-5 h-5" />

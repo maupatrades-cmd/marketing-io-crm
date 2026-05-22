@@ -420,7 +420,7 @@ export default function ClientPortal() {
   const phaseIndex = onboarding ? (PHASE_MAP[onboarding.current_phase] ?? -1) : -1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-foreground">
+    <div className="min-h-screen bg-white text-foreground">
       {/* Welcome mascot — fires once on first portal load after signup */}
       {showWelcomeMascot && (
         <MascotPlayer mode="overlay" onDismiss={dismissWelcomeMascot} />
@@ -436,7 +436,7 @@ export default function ClientPortal() {
       )}
 
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 border-b border-slate-700/40 backdrop-blur-md bg-slate-950/80">
+      <div className="sticky top-0 z-10 border-b border-border bg-white">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Welcome back!</p>
@@ -499,18 +499,18 @@ export default function ClientPortal() {
         )}
 
         {outstandingInvoices.length > 0 && (
-          <section className="rounded-2xl border-2 border-amber-500/40 bg-amber-950/20 p-6">
-            <h3 className="text-lg font-bold text-amber-200 mb-3">
+          <section className="rounded-2xl border-2 border-amber-400/40 bg-amber-50 p-6">
+            <h3 className="text-lg font-bold text-amber-700 mb-3">
               💳 You have {outstandingInvoices.length} unpaid invoice{outstandingInvoices.length > 1 ? 's' : ''}
             </h3>
             <div className="space-y-2">
               {outstandingInvoices.map(inv => {
                 const total = Number(inv.total ?? inv.total_amount ?? inv.amount ?? 0);
                 return (
-                  <div key={inv.id} className="flex items-center justify-between bg-slate-900/40 rounded-xl p-4">
+                  <div key={inv.id} className="flex items-center justify-between bg-amber-100/60 rounded-xl p-4">
                     <div>
-                      <p className="font-semibold text-white">Invoice {inv.invoice_number || inv.id}</p>
-                      <p className="text-sm text-slate-400">R{total.toLocaleString()} due</p>
+                      <p className="font-semibold text-foreground">Invoice {inv.invoice_number || inv.id}</p>
+                      <p className="text-sm text-muted-foreground">R{total.toLocaleString()} due</p>
                     </div>
                   </div>
                 );
@@ -1086,7 +1086,7 @@ export default function ClientPortal() {
             <Button
               onClick={handleTalkToConsultant}
               disabled={connectingConsultant}
-              className="gradient-bg text-white relative disabled:opacity-70"
+              className="bg-[#0A1F44] text-white relative disabled:opacity-70 hover:bg-[#0A1F44]/90"
             >
               {unreadMessages > 0 && !connectingConsultant && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-background">
@@ -1102,7 +1102,7 @@ export default function ClientPortal() {
         )}
 
         {/* Section D — Custom Packages */}
-        <section className="glass rounded-2xl p-8 border border-slate-700/40 text-center space-y-4">
+        <section className="glass rounded-2xl p-8 border border-border/40 text-center space-y-4">
           <h3 className="text-2xl font-bold text-foreground">Need Something Custom?</h3>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Don't see what you need? We build custom packages for serious growth. Reach out directly.
@@ -1116,7 +1116,7 @@ export default function ClientPortal() {
         </section>
 
         {/* Footer */}
-        <div className="text-center pt-8 border-t border-slate-700/40">
+        <div className="text-center pt-8 border-t border-border/40">
           <p className="text-sm text-muted-foreground">
             Questions? Reply to any email or{" "}
             <a href="mailto:info@marketingio.co.za" className="text-primary hover:underline">

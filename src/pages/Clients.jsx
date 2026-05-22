@@ -258,7 +258,7 @@ export default function Clients() {
             {Object.keys(STATUS_COLORS).map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, " ")}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button onClick={openCreate} className="gradient-bg text-white hover:opacity-90">
+        <Button onClick={openCreate} className="bg-[#0A1F44] text-white hover:opacity-90">
           <Plus className="w-4 h-4 mr-1" /> Add Client
         </Button>
       </div>
@@ -275,7 +275,7 @@ export default function Clients() {
            {filtered.map(c => (
              <div key={c.id} onClick={() => navigate(`/clients/${c.id}`)}
                className="glass rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-card-hover transition-all">
-              <div className="w-10 h-10 rounded-lg gradient-bg flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-[#0A1F44] flex items-center justify-center shrink-0">
                 <span className="text-white font-bold text-sm">{c.business_name?.charAt(0)}</span>
               </div>
               <div className="flex-1 min-w-0">
@@ -369,7 +369,7 @@ export default function Clients() {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="bg-card border-border/50 max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="gradient-text">{editing ? "Edit Client" : "Add Client"}</DialogTitle>
+            <DialogTitle className="text-foreground font-bold">{editing ? "Edit Client" : "Add Client"}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 mt-2">
             <div className="col-span-2"><FormField label="Business Name *" value={form.business_name} onChange={v => setForm(f => ({ ...f, business_name: v }))} /></div>
@@ -400,7 +400,7 @@ export default function Clients() {
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button onClick={save} disabled={saving} className="gradient-bg text-white hover:opacity-90">{saving ? "Saving…" : "Save Client"}</Button>
+            <Button onClick={save} disabled={saving} className="bg-[#0A1F44] text-white hover:opacity-90">{saving ? "Saving…" : "Save Client"}</Button>
           </div>
         </DialogContent>
       </Dialog>
