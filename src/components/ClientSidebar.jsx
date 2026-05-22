@@ -19,9 +19,9 @@ import {
 import { destroySession } from '@/lib/customAuth';
 import { useState } from 'react';
 
-const SIDEBAR_BG = '#0f172a';
-const HOVER_BG = 'rgba(255,255,255,0.04)';
-const ACTIVE_GRADIENT = 'linear-gradient(90deg, rgba(167,100,230,0.18), rgba(236,72,153,0.18))';
+const SIDEBAR_BG = '#FAFAFA';
+const HOVER_BG = 'rgba(10,31,68,0.06)';
+const ACTIVE_BG = '#0A1F44';
 
 const PRIMARY_NAV = [
   { path: '/client-portal',       label: 'Dashboard',           icon: Home },
@@ -46,8 +46,8 @@ function NavRow({ to, label, Icon, badge = 0, active, onNavigate, color }) {
       onClick={onNavigate}
       className="relative flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm transition"
       style={{
-        background: active ? ACTIVE_GRADIENT : 'transparent',
-        color: color || (active ? '#f4f4fa' : '#a8a8c0')
+        background: active ? ACTIVE_BG : 'transparent',
+        color: color || (active ? '#FFFFFF' : '#525252')
       }}
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = HOVER_BG; }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
@@ -55,7 +55,7 @@ function NavRow({ to, label, Icon, badge = 0, active, onNavigate, color }) {
       <Icon className="w-4 h-4 shrink-0" />
       <span className="flex-1 min-w-0 truncate">{label}</span>
       {badge > 0 && (
-        <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-rose-500 text-white">
+        <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-[#E63946] text-white">
           {badge > 99 ? '99+' : badge}
         </span>
       )}
@@ -63,7 +63,7 @@ function NavRow({ to, label, Icon, badge = 0, active, onNavigate, color }) {
   );
 }
 
-function NavButton({ label, Icon, onClick, color = '#a8a8c0' }) {
+function NavButton({ label, Icon, onClick, color = '#525252' }) {
   return (
     <button
       type="button"
@@ -101,10 +101,10 @@ export default function ClientSidebar({
 
   const stage = client?.lifecycle_stage || 'lead';
   const stageColor = stage === 'active'
-    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+    ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
     : stage === 'qualified'
-      ? 'bg-amber-500/20 text-amber-200 border-amber-500/30'
-      : 'bg-slate-700/50 text-slate-300 border-slate-600/40';
+      ? 'bg-amber-100 text-amber-700 border-amber-200'
+      : 'bg-gray-100 text-gray-600 border-gray-200';
 
   const closeOnNav = () => setMobileOpen(false);
 
@@ -115,7 +115,7 @@ export default function ClientSidebar({
         type="button"
         onClick={() => setMobileOpen(!mobileOpen)}
         className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg"
-        style={{ background: SIDEBAR_BG, color: '#f4f4fa', border: '1px solid rgba(255,255,255,0.07)' }}
+        style={{ background: '#FFFFFF', color: '#0A0A0F', border: '1px solid #E3E3E3' }}
         aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
       >
         {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -124,7 +124,7 @@ export default function ClientSidebar({
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="md:hidden fixed inset-0 z-30 bg-black/70"
+          className="md:hidden fixed inset-0 z-30 bg-black/40"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -136,36 +136,36 @@ export default function ClientSidebar({
         style={{
           width: 240,
           background: SIDEBAR_BG,
-          borderRight: '1px solid rgba(255,255,255,0.07)'
+          borderRight: '1px solid #E3E3E3'
         }}
       >
         {/* Logo + subtitle */}
         <div
           className="px-5 py-4 flex flex-col gap-3"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+          style={{ borderBottom: '1px solid #E3E3E3' }}
         >
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'linear-gradient(135deg,#a764e6 0%,#ec4899 100%)' }}
+              style={{ background: '#0A1F44' }}
             >
               <Lightbulb className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-white leading-tight truncate">Marketing iO</p>
-              <p className="text-[11px] text-slate-400 leading-tight">Client Portal</p>
+              <p className="text-sm font-bold text-foreground leading-tight truncate">Marketing iO</p>
+              <p className="text-[11px] text-muted-foreground leading-tight">Client Portal</p>
             </div>
           </div>
           {/* Search bar */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: "#6b6b85" }} />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none text-muted-foreground" />
             <input
               type="text"
               placeholder="Search menu..."
               value={navSearch}
               onChange={e => setNavSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", color: "#f4f4fa" }}
+              style={{ background: "#FFFFFF", border: "1px solid #E3E3E3", color: "#0A0A0F" }}
             />
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function ClientSidebar({
             />
           ))}
 
-          <div className="my-3 mx-4" style={{ height: 0.5, background: 'rgba(255,255,255,0.08)' }} />
+          <div className="my-3 mx-4" style={{ height: 0.5, background: '#E3E3E3' }} />
 
           <NavButton label="Contact us" Icon={Phone} onClick={() => { onContact(); closeOnNav(); }} />
           <NavRow
@@ -196,23 +196,23 @@ export default function ClientSidebar({
             active={location.pathname === '/client/settings'}
             onNavigate={closeOnNav}
           />
-          <NavButton label="Sign out" Icon={LogOut} onClick={handleSignOut} color="#f87171" />
+          <NavButton label="Sign out" Icon={LogOut} onClick={handleSignOut} color="#E63946" />
         </nav>
 
         {/* Profile card */}
-        <div className="px-3 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="px-3 py-3" style={{ borderTop: '1px solid #E3E3E3' }}>
           <div
             className="flex items-center gap-3 px-2 py-2 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.03)' }}
+            style={{ background: 'rgba(10,31,68,0.04)' }}
           >
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white"
-              style={{ background: 'linear-gradient(135deg,#a764e6,#ec4899)' }}
+              style={{ background: '#0A1F44' }}
             >
               {initials(client, user)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-white truncate">
+              <p className="text-xs font-semibold text-foreground truncate">
                 {client?.business_name || user?.full_name || user?.email || '—'}
               </p>
               <span className={`mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${stageColor}`}>

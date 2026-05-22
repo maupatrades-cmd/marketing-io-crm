@@ -117,7 +117,6 @@ export default function AppLayout({ children, title, subtitle }) {
     setSwitchedRole(stored);
   }, []);
 
-  // Owner-only: count of unallocated leads to badge the Lead Inbox sidebar item.
   useEffect(() => {
     if (user?.role !== "owner") return;
     let cancelled = false;
@@ -149,17 +148,17 @@ export default function AppLayout({ children, title, subtitle }) {
   // Client sidebar for client role
   if (user?.role === "client") {
     return (
-      <div className="min-h-screen flex font-inter" style={{ background: "transparent" }}>
+      <div className="min-h-screen flex font-inter bg-white">
         <ClientSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} user={user} />
         <div className="flex-1 flex flex-col min-w-0">
           <header className="px-4 lg:px-6 py-4 flex items-center gap-4"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(10,10,20,0.6)", backdropFilter: "blur(10px)" }}>
-            <button onClick={() => navigate(-1)} className="shrink-0 hover:text-white transition-colors" style={{ color: "#6b6b85" }} title="Go back">
+            style={{ borderBottom: "1px solid #E3E3E3", background: "#FFFFFF" }}>
+            <button onClick={() => navigate(-1)} className="shrink-0 hover:text-foreground transition-colors" style={{ color: "#525252" }} title="Go back">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-base font-bold" style={{ color: "#f4f4fa" }}>{title}</h1>
-              {subtitle && <p className="text-xs" style={{ color: "#6b6b85" }}>{subtitle}</p>}
+              <h1 className="text-base font-bold text-foreground">{title}</h1>
+              {subtitle && <p className="text-xs" style={{ color: "#525252" }}>{subtitle}</p>}
             </div>
           </header>
           <DeletionPendingBanner />
@@ -173,33 +172,33 @@ export default function AppLayout({ children, title, subtitle }) {
   }
 
   return (
-    <div className="min-h-screen flex font-inter" style={{ background: "transparent" }}>
+    <div className="min-h-screen flex font-inter bg-white">
       {/* Sidebar */}
       <aside className={`
         fixed inset-y-0 left-0 z-40 w-58 flex flex-col
         transition-transform duration-300
         ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0 lg:static lg:flex
-      `} style={{ width: 224, background: "rgba(10,10,20,0.95)", borderRight: "1px solid rgba(255,255,255,0.07)" }}>
+      `} style={{ width: 224, background: "#FAFAFA", borderRight: "1px solid #E3E3E3" }}>
 
         {/* Logo */}
-        <div className="px-4 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+        <div className="px-4 py-4 border-b" style={{ borderColor: "#E3E3E3" }}>
           <img
             src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
             alt="Marketing iO"
             className="w-full max-w-[168px] object-contain"
-            style={{ filter: "invert(1) brightness(2)", mixBlendMode: "screen" }}
+            style={{ height: 32 }}
           />
           {/* Search bar */}
           <div className="mt-3 relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: "#6b6b85" }} />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none text-muted-foreground" />
             <input
               type="text"
               placeholder="Search menu..."
               value={navSearch}
               onChange={e => setNavSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", color: "#f4f4fa" }}
+              style={{ background: "#FFFFFF", border: "1px solid #E3E3E3", color: "#0A0A0F" }}
             />
           </div>
         </div>
@@ -213,10 +212,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/team-kpis"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/team-kpis" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/team-kpis" ? {} : { color: "#525252" }}
               >
                 <BarChart2 className="w-4 h-4 shrink-0" />
                 Team KPIs
@@ -226,10 +225,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/onboarding-submissions"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/onboarding-submissions" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/onboarding-submissions" ? {} : { color: "#525252" }}
               >
                 <FormInput className="w-4 h-4 shrink-0" />
                 Onboarding Forms
@@ -239,10 +238,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/monthly-reports"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/monthly-reports" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/monthly-reports" ? {} : { color: "#525252" }}
               >
                 <LineChart className="w-4 h-4 shrink-0" />
                 Monthly Reports
@@ -252,10 +251,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/team-oversight"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/team-oversight" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/team-oversight" ? {} : { color: "#525252" }}
               >
                 <Eye className="w-4 h-4 shrink-0" />
                 Team Performance
@@ -265,10 +264,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/email-templates"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/email-templates" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/email-templates" ? {} : { color: "#525252" }}
               >
                 <MailIcon className="w-4 h-4 shrink-0" />
                 Email Templates
@@ -278,10 +277,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/financials"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/financials" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/financials" ? {} : { color: "#525252" }}
               >
                 <DollarSign className="w-4 h-4 shrink-0" />
                 Financials
@@ -291,10 +290,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/reports"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/reports" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/reports" ? {} : { color: "#525252" }}
               >
                 <BarChart2 className="w-4 h-4 shrink-0" />
                 Reports
@@ -304,10 +303,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/settings"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/settings" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/settings" ? {} : { color: "#525252" }}
               >
                 <Settings className="w-4 h-4 shrink-0" />
                 Settings
@@ -317,10 +316,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/debit-orders"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/debit-orders" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/debit-orders" ? {} : { color: "#525252" }}
               >
                 <CreditCard className="w-4 h-4 shrink-0" />
                 Debit Orders
@@ -330,10 +329,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/staff-productivity"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/staff-productivity" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/staff-productivity" ? {} : { color: "#525252" }}
               >
                 <Timer className="w-4 h-4 shrink-0" />
                 Staff Productivity
@@ -343,10 +342,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/admin-activity"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/admin-activity" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/admin-activity" ? {} : { color: "#525252" }}
               >
                 <BarChart2 className="w-4 h-4 shrink-0" />
                 Admin Activity
@@ -356,10 +355,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/staff-activity"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/staff-activity" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/staff-activity" ? {} : { color: "#525252" }}
               >
                 <Users className="w-4 h-4 shrink-0" />
                 Staff Activity
@@ -369,10 +368,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/client-activity"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/client-activity" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/client-activity" ? {} : { color: "#525252" }}
               >
                 <Users className="w-4 h-4 shrink-0" />
                 Client Activity
@@ -382,10 +381,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/admin-activity-log"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/admin-activity-log" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/admin-activity-log" ? {} : { color: "#525252" }}
               >
                 <Users className="w-4 h-4 shrink-0" />
                 Admin Activity
@@ -395,10 +394,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/cpc-activity"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/cpc-activity" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/cpc-activity" ? {} : { color: "#525252" }}
               >
                 <Users className="w-4 h-4 shrink-0" />
                 CPC Activity
@@ -408,10 +407,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/field-activity"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/field-activity" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/field-activity" ? {} : { color: "#525252" }}
               >
                 <Users className="w-4 h-4 shrink-0" />
                 Field Agent Activity
@@ -421,10 +420,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/owner/campaigns"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/owner/campaigns" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/owner/campaigns" ? {} : { color: "#525252" }}
               >
                 <Megaphone className="w-4 h-4 shrink-0" />
                 Campaign Manager
@@ -434,10 +433,10 @@ export default function AppLayout({ children, title, subtitle }) {
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/deliverable-quality"
-                    ? "gradient-bg text-white shadow-glow-purple"
-                    : "hover:bg-white/5"
+                    ? "bg-[#0A1F44] text-white"
+                    : "hover:bg-gray-100"
                 }`}
-                style={location.pathname === "/deliverable-quality" ? {} : { color: "#a8a8c0" }}
+                style={location.pathname === "/deliverable-quality" ? {} : { color: "#525252" }}
               >
                 <Star className="w-4 h-4 shrink-0" />
                 Deliverable Quality
@@ -478,15 +477,15 @@ export default function AppLayout({ children, title, subtitle }) {
                   onClick={() => { setMobileOpen(false); setNavSearch(""); }}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     active
-                      ? "gradient-bg text-white shadow-glow-purple"
-                      : "hover:bg-white/5"
+                      ? "bg-[#0A1F44] text-white"
+                      : "hover:bg-gray-100"
                   }`}
-                  style={active ? {} : { color: "#a8a8c0" }}
+                  style={active ? {} : { color: "#525252" }}
                 >
                   {Icon && <Icon className="w-4 h-4 shrink-0" />}
                   <span className="flex-1 min-w-0 truncate">{label}</span>
                   {badge > 0 && (
-                    <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-rose-500 text-white">
+                    <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-[#E63946] text-white">
                       {badge > 99 ? '99+' : badge}
                     </span>
                   )}
@@ -497,7 +496,7 @@ export default function AppLayout({ children, title, subtitle }) {
         </nav>
 
         {/* Owner Switch View + Client Portal */}
-        <div className="p-3 border-t space-y-2" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+        <div className="p-3 border-t space-y-2" style={{ borderColor: "#E3E3E3" }}>
           {user?.role === "owner" && (
             <div className="bg-primary/10 rounded-lg p-2">
               <p className="text-xs text-muted-foreground mb-2 font-semibold">View as:</p>
@@ -537,15 +536,15 @@ export default function AppLayout({ children, title, subtitle }) {
             </div>
           )}
           <Link to="/client-portal"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs hover:bg-white/5 transition-all"
-            style={{ color: "#6b6b85" }}>
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs hover:bg-gray-100 transition-all"
+            style={{ color: "#525252" }}>
             <BarChart2 className="w-4 h-4 shrink-0" />
             Client Portal
           </Link>
           <button
             onClick={logout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs hover:bg-destructive/10 hover:text-destructive transition-all w-full"
-            style={{ color: "#6b6b85" }}>
+            style={{ color: "#525252" }}>
             <LogOut className="w-4 h-4 shrink-0" />
             Sign Out
           </button>
@@ -554,22 +553,22 @@ export default function AppLayout({ children, title, subtitle }) {
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-30 bg-black/70 lg:hidden" onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="px-4 lg:px-6 py-4 flex items-center gap-4"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(10,10,20,0.6)", backdropFilter: "blur(10px)" }}>
-          <button className="lg:hidden hover:text-white transition-colors" style={{ color: "#6b6b85" }} onClick={() => setMobileOpen(o => !o)}>
+          style={{ borderBottom: "1px solid #E3E3E3", background: "#FFFFFF" }}>
+          <button className="lg:hidden hover:text-foreground transition-colors" style={{ color: "#525252" }} onClick={() => setMobileOpen(o => !o)}>
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <button onClick={() => navigate(-1)} className="shrink-0 hover:text-white transition-colors" style={{ color: "#6b6b85" }} title="Go back">
+          <button onClick={() => navigate(-1)} className="shrink-0 hover:text-foreground transition-colors" style={{ color: "#525252" }} title="Go back">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-bold" style={{ color: "#f4f4fa" }}>{title}</h1>
-            {subtitle && <p className="text-xs" style={{ color: "#6b6b85" }}>{subtitle}</p>}
+            <h1 className="text-base font-bold text-foreground">{title}</h1>
+            {subtitle && <p className="text-xs" style={{ color: "#525252" }}>{subtitle}</p>}
           </div>
           <AdminNotificationBell />
         </header>
