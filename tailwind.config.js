@@ -67,12 +67,13 @@ module.exports = {
           ring: 'hsl(var(--sidebar-ring))',
         },
         brand: {
-          purple: '#a764e6',    // kept for faded accent use only
-          pink: '#ec4899',      // kept for faded accent use only
-          cyan: '#3b82f6',
-          navy: '#0A1F44',      // primary brand navy
+          blue: '#3b82f6',      // primary brand blue
           red: '#E63946',       // primary brand red
-          surface: '#F4F4F5',   // light grey surface
+          navy: '#080d1a',      // darkest background
+          surface: '#141c32',   // card surface
+          cyan: '#06b6d4',
+          purple: '#a764e6',
+          pink: '#ec4899',
         },
       },
       backgroundImage: {

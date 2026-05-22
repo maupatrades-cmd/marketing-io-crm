@@ -6,31 +6,31 @@
 
 @layer base {
   :root {
-    /* ── Marketing iO · Light Mode Brand Tokens ── */
+    /* ── Marketing iO · Dark Navy + Blue + Red Theme ── */
 
     /* Backgrounds */
-    --background: 0 0% 100%;           /* #FFFFFF */
-    --foreground: 220 10% 6%;          /* #0A0A0F near-black */
+    --background: 224 71% 6%;          /* #080d1a deep navy */
+    --foreground: 213 31% 91%;         /* #dce7f5 near-white */
 
-    --card: 0 0% 98%;                  /* #FAFAFA off-white */
-    --card-foreground: 220 10% 6%;
+    --card: 221 56% 9%;                /* #0d1424 dark card */
+    --card-foreground: 213 31% 91%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 10% 6%;
+    --popover: 221 56% 9%;
+    --popover-foreground: 213 31% 91%;
 
-    /* Primary = navy blue #0A1F44 */
-    --primary: 218 74% 17%;
+    /* Primary = bright blue */
+    --primary: 217 91% 60%;            /* #3b82f6 */
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary = light grey surface */
-    --secondary: 0 0% 95%;             /* #F2F2F2 */
-    --secondary-foreground: 220 10% 6%;
+    /* Secondary = medium dark surface */
+    --secondary: 224 44% 14%;          /* #141c32 */
+    --secondary-foreground: 213 31% 91%;
 
     /* Muted */
-    --muted: 0 0% 95%;                 /* #F4F4F5 */
-    --muted-foreground: 0 0% 32%;      /* #525252 */
+    --muted: 224 43% 18%;              /* #1a2240 */
+    --muted-foreground: 226 24% 62%;   /* #8892b0 */
 
-    /* Accent = red #E63946 */
+    /* Accent = red */
     --accent: 356 77% 56%;             /* #E63946 */
     --accent-foreground: 0 0% 100%;
 
@@ -38,40 +38,39 @@
     --destructive: 356 77% 56%;        /* #E63946 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 89%;                /* #E3E3E3 soft grey */
-    --input: 0 0% 93%;                 /* #EDEDED */
-    --ring: 218 74% 17%;               /* navy */
+    --border: 221 40% 21%;             /* #1f2d4a */
+    --input: 224 44% 14%;              /* #141c32 */
+    --ring: 217 91% 60%;               /* blue */
 
     --radius: 0.75rem;
 
     /* Charts */
-    --chart-1: 218 74% 17%;            /* navy */
+    --chart-1: 217 91% 60%;            /* blue */
     --chart-2: 356 77% 56%;            /* red */
-    --chart-3: 199 89% 40%;            /* teal */
-    --chart-4: 158 64% 38%;            /* green */
-    --chart-5: 38 92% 50%;             /* amber */
+    --chart-3: 199 89% 48%;            /* teal */
+    --chart-4: 158 64% 52%;            /* green */
+    --chart-5: 38 92% 56%;             /* amber */
 
     /* Sidebar */
-    --sidebar-background: 0 0% 98%;    /* #FAFAFA */
-    --sidebar-foreground: 220 10% 20%; /* dark grey */
-    --sidebar-primary: 218 74% 17%;    /* navy */
+    --sidebar-background: 221 56% 8%;  /* very dark navy */
+    --sidebar-foreground: 213 31% 85%;
+    --sidebar-primary: 217 91% 60%;    /* blue */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 95%;        /* light grey hover */
-    --sidebar-accent-foreground: 220 10% 6%;
-    --sidebar-border: 0 0% 89%;        /* soft grey border */
-    --sidebar-ring: 218 74% 17%;
+    --sidebar-accent: 224 44% 14%;     /* hover surface */
+    --sidebar-accent-foreground: 213 31% 91%;
+    --sidebar-border: 221 40% 21%;
+    --sidebar-ring: 217 91% 60%;
 
     /* Status */
-    --success: 158 64% 36%;            /* #16a34a */
-    --warning: 38 92% 44%;             /* #d97706 */
-    --info: 217 91% 50%;               /* #2563eb */
+    --success: 158 64% 46%;            /* #22c55e */
+    --warning: 38 92% 50%;             /* #f59e0b */
+    --info: 199 89% 48%;               /* #06b6d4 */
 
     /* Raw brand values for inline use */
-    --brand-purple: #a764e6;           /* kept for faded accent only */
-    --brand-pink: #ec4899;             /* kept for faded accent only */
-    --brand-cyan: #3b82f6;
-    --brand-navy: #0A1F44;
-    --brand-surface: #F4F4F5;
+    --brand-blue: #3b82f6;
+    --brand-red: #E63946;
+    --brand-navy: #080d1a;
+    --brand-surface: #141c32;
   }
 }
 
@@ -81,38 +80,37 @@
   }
 
   body {
-    background-color: #FFFFFF;
-    color: #0A0A0F;
+    background-color: #080d1a;
+    color: #dce7f5;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    /* very subtle brand accent glows at low opacity */
     background-image:
-      radial-gradient(circle 800px at 0% 0%, rgba(167, 100, 230, 0.04) 0%, transparent 60%),
-      radial-gradient(circle 800px at 100% 100%, rgba(236, 72, 153, 0.03) 0%, transparent 60%);
+      radial-gradient(circle 800px at 0% 0%, rgba(59, 130, 246, 0.06) 0%, transparent 60%),
+      radial-gradient(circle 800px at 100% 100%, rgba(230, 57, 70, 0.05) 0%, transparent 60%);
     background-attachment: fixed;
   }
 
   ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: #F4F4F5; }
-  ::-webkit-scrollbar-thumb { background: rgba(10,31,68,0.2); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(10,31,68,0.4); }
+  ::-webkit-scrollbar-track { background: #0d1424; }
+  ::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(59,130,246,0.6); }
 }
 
 @layer utilities {
-  /* Primary gradient — navy-to-red brand gradient */
+  /* Primary gradient — blue-to-red brand gradient */
   .gradient-text {
-    background: linear-gradient(135deg, #0A1F44 0%, #E63946 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #E63946 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .gradient-bg {
-    background: linear-gradient(135deg, #0A1F44 0%, #1a3a6e 100%);
+    background: linear-gradient(135deg, #1d4ed8 0%, #E63946 100%);
   }
 
   .gradient-bg-subtle {
-    background: linear-gradient(135deg, rgba(10,31,68,0.06) 0%, rgba(230,57,70,0.04) 100%);
+    background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(230,57,70,0.06) 100%);
   }
 
   /* Purple/pink accent gradient — used only for faded decorative elements */
@@ -120,29 +118,29 @@
     background: linear-gradient(135deg, rgba(167,100,230,0.10) 0%, rgba(236,72,153,0.07) 100%);
   }
 
-  /* Glass card — light mode */
+  /* Glass card — dark mode */
   .glass {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(13, 20, 36, 0.80);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.15);
     transition: border-color 0.2s ease;
   }
   .glass:hover {
-    border-color: rgba(0, 0, 0, 0.15);
+    border-color: rgba(59, 130, 246, 0.30);
   }
 
-  /* Glows — navy/red for light mode */
+  /* Glows — blue/red */
   .glow-purple {
-    box-shadow: 0 0 24px rgba(10, 31, 68, 0.15), 0 0 48px rgba(10, 31, 68, 0.06);
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.35), 0 0 48px rgba(59, 130, 246, 0.15);
   }
   .glow-pink {
-    box-shadow: 0 0 24px rgba(230, 57, 70, 0.15), 0 0 48px rgba(230, 57, 70, 0.06);
+    box-shadow: 0 0 24px rgba(230, 57, 70, 0.35), 0 0 48px rgba(230, 57, 70, 0.15);
   }
 
   /* Status utils */
-  .text-success  { color: #16a34a; }
-  .bg-success    { background-color: #16a34a; }
+  .text-success  { color: #22c55e; }
+  .bg-success    { background-color: #22c55e; }
   .text-warning  { color: #d97706; }
   .bg-warning    { background-color: #d97706; }
   .text-info     { color: #2563eb; }
