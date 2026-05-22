@@ -164,7 +164,7 @@ export default function SignIn() {
         <img
           src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
           alt="Marketing iO"
-          className="h-20 sm:h-24 object-contain"
+          className="h-32 sm:h-40 object-contain"
           style={{ filter: 'drop-shadow(0 0 18px rgba(10,31,68,0.55)) drop-shadow(0 0 36px rgba(230,57,70,0.40)) brightness(1.05)' }}
         />
         <p
