@@ -41,13 +41,23 @@ Deno.serve(async (req) => {
   if (!actor) return Response.json({ error: 'invalid_session' }, { status: 401 });
   if (!ALLOWED_ROLES.includes(actor.role)) return Response.json({ error: 'forbidden' }, { status: 403 });
 
-  // Clients in a non-active sales stage — one filter per stage (bounded).
+  // Fetch ALL clients, then filter in memory.
+  // lifecycle_stage defaults to 'no_package' on NEW records only;
+  // legacy records may have null/undefined — treat those as 'no_package'.
+  // Also cross-check 'status' field so old-schema clients aren't missed.
   let clients = [];
   try {
-    for (const stage of OPPORTUNITY_STAGES) {
-      const rows = unwrap(await base44.asServiceRole.entities.Client.filter({ lifecycle_stage: stage }, '-created_date', 500));
-      clients = clients.concat(rows);
-    }
+    const allClients = unwrap(await base44.asServiceRole.entities.Client.list('-created_date', 2000));
+    clients = allClients.filter(c => {
+      const stage = c.lifecycle_stage || null;
+      const status = c.status || null;
+      // Explicit non-active lifecycle stages
+      if (stage && OPPORTUNITY_STAGES.includes(stage)) return true;
+      // Legacy: no lifecycle_stage set AND not active
+      if (!stage && status !== 'active') return true;
+      return false;
+    });
+    console.log(`[list-sales-opportunities] total=${allClients.length} opportunities=${clients.length}`);
   } catch (err) {
     console.error('[list-sales-opportunities] client lookup failed:', err);
     return Response.json({ error: 'client_lookup_failed' }, { status: 500 });
@@ -85,7 +95,7 @@ Deno.serve(async (req) => {
     business_name: c.business_name || '',
     contact_person: c.contact_person || '',
     phone: c.phone || '',
-    lifecycle_stage: c.lifecycle_stage || '',
+    lifecycle_stage: c.lifecycle_stage || (c.status === 'active' ? 'active' : 'no_package'),
     created_date: c.created_date || c.created_at || null,
     cancelled_invoice_count: cancelledCount[c.id] || 0,
     last_contact_at: lastContact[c.id] || null,
