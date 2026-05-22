@@ -98,13 +98,27 @@ export default function Leads() {
   const [form, setForm] = useState(EMPTY_BASE);
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [staffOptions, setStaffOptions] = useState([]);
   const { toast } = useToast();
 
   const heading = useMemo(() => headingForRole(role), [role]);
 
+  // Admin/owner can reassign the lead salesperson
+  useEffect(() => {
+    if (!['admin','owner'].includes(role)) return;
+    base44.entities.AppUser.filter({})
+      .then(rows => {
+        const list = Array.isArray(rows) ? rows : [];
+        setStaffOptions(list.filter(u => ['field_agent','cpc','admin','owner'].includes(u.role)));
+      })
+      .catch(() => {});
+  }, [role]);
+
   const buildEmptyForm = () => ({
     ...EMPTY_BASE,
     source: defaultSourceForRole(role),
+    salesperson_id:   user?.id || '',
+    salesperson_name: user?.full_name || user?.email || '',
   });
 
   const load = () => base44.entities.Lead.list("-created_date", 200)
@@ -139,6 +153,8 @@ export default function Leads() {
       ...l,
       urgency: l.urgency || "normal",
       warm_lead_criteria: { ...EMPTY_BASE.warm_lead_criteria, ...(l.warm_lead_criteria || {}) },
+      salesperson_id:   l.submitted_by || user?.id || '',
+      salesperson_name: l.submitted_by_name || user?.full_name || user?.email || '',
     });
     setShowForm(true);
   };
@@ -162,8 +178,8 @@ export default function Leads() {
 
       const payload = {
         ...form,
-        submitted_by: user?.id || "",
-        submitted_by_name: user?.full_name || user?.email || "",
+        submitted_by:      form.salesperson_id   || user?.id || '',
+        submitted_by_name: form.salesperson_name || user?.full_name || user?.email || '',
         status: "pending_verification",
         urgency: form.urgency || "normal",
         // Admins should never qualify the lead — strip the criteria object so
@@ -367,6 +383,32 @@ export default function Leads() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 mt-2">
             <div className="col-span-2"><LField label="Business Name *" value={form.business_name} onChange={v => setForm(f => ({ ...f, business_name: v }))} /></div>
+            {/* Salesperson field */}
+            <div className="col-span-2">
+              <Label className="text-xs text-muted-foreground mb-1 block">Salesperson</Label>
+              {['admin','owner'].includes(role) && staffOptions.length > 0 ? (
+                <Select
+                  value={form.salesperson_id}
+                  onValueChange={v => {
+                    const s = staffOptions.find(u => u.id === v);
+                    setForm(f => ({ ...f, salesperson_id: v, salesperson_name: s?.full_name || s?.email || '' }));
+                  }}
+                >
+                  <SelectTrigger className="bg-secondary/50 border-border/50"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {staffOptions.map(s => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.full_name || s.email} ({(s.role || '').replace(/_/g,' ')})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="bg-secondary/30 border border-border/50 rounded-md px-3 py-2 text-sm text-foreground">
+                  {form.salesperson_name || user?.full_name || user?.email || 'You'}
+                </div>
+              )}
+            </div>
             <LField label="Contact Person *" value={form.contact_person} onChange={v => setForm(f => ({ ...f, contact_person: v }))} />
             <LField label="Phone *" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} />
             <LField label="Email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
