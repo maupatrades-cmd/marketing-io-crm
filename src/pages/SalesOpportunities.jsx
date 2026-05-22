@@ -462,14 +462,20 @@ export default function SalesOpportunities() {
 
                   {!notesLoading && notes.length > 0 && (
                     <div className="space-y-2 mb-3 max-h-64 overflow-y-auto">
-                      {notes.map(n => (
-                        <div key={n.id} className="rounded border border-gray-100 bg-gray-50 px-3 py-2">
-                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{n.content}</p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {n.author_name || 'Staff'}{fmtDate(n.created_date) ? ` · ${fmtDate(n.created_date)}` : ''}
-                          </p>
-                        </div>
-                      ))}
+                      {notes.map(n => {
+                        const authorDisplay = n.author_name || n.created_by || 'Staff';
+                        const noteDate = n.created_date || n.created_at;
+                        const dateStr = noteDate ? new Date(noteDate).toLocaleString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+                        return (
+                          <div key={n.id} className="rounded border border-gray-100 bg-gray-50 px-3 py-2">
+                            <p className="text-sm text-gray-800 whitespace-pre-wrap">{n.content}</p>
+                            <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              <span className="text-xs font-medium text-gray-600">{authorDisplay}</span>
+                              {dateStr && <span className="text-xs text-gray-400">· {dateStr}</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
