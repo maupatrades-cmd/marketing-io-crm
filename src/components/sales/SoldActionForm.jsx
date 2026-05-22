@@ -84,20 +84,23 @@ export default function SoldActionForm({ selected, user, onSuccess, onCancel }) 
   const [submitting, setSubmitting]     = useState(false);
 
   useEffect(() => {
-    base44.entities.AppUser.filter({})
-      .then(rows => {
-        const list = Array.isArray(rows) ? rows : [];
-        const staff = list.filter(u => ['field_agent','cpc','admin','owner'].includes(u.role));
-        setStaffList(staff);
-        const me = staff.find(u => u.id === user?.id);
-        if (me) {
-          setAssignedId(me.id);
-          setAssignedName(me.full_name || me.email || '');
-          setAssignedRole(me.role || 'field_agent');
-        }
-      })
-      .catch(() => {});
-  }, []);
+    // Only admin/owner can list all users — field agents/CPCs just assign to themselves
+    if (['admin','owner'].includes(user?.role)) {
+      base44.entities.AppUser.filter({})
+        .then(rows => {
+          const list = Array.isArray(rows) ? rows : [];
+          const staff = list.filter(u => ['field_agent','cpc','admin','owner'].includes(u.role));
+          setStaffList(staff);
+          const me = staff.find(u => u.id === user?.id);
+          if (me) {
+            setAssignedId(me.id);
+            setAssignedName(me.full_name || me.email || '');
+            setAssignedRole(me.role || 'field_agent');
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user?.role]);
 
   const handlePkgChange = (val) => {
     const found = PACKAGES.find(p => p.value === val);
@@ -185,18 +188,16 @@ export default function SoldActionForm({ selected, user, onSuccess, onCancel }) 
         });
       }
 
-      // 5. Activity log
-      await base44.entities.ClientActivityLog.create({
-        client_id:      selected.id,
-        client_name:    selected.business_name,
-        actor_id:       user?.id || '',
-        actor_role:     user?.role || '',
-        event_type:     'sales_sold',
-        event_category: 'lead',
-        event_summary:  `Deal closed — ${pkgLabel} by ${assignedName}`,
-        logged_by:      user?.id || '',
-        logged_by_name: user?.full_name || user?.email || 'Staff',
-      });
+      // 5. Activity log (best-effort — don't fail the deal if this errors)
+      try {
+        await base44.functions.invoke('log-client-activity', {
+          client_id:   selected.id,
+          event_type:  'sales_sold',
+          summary:     `Deal closed — ${pkgLabel} by ${assignedName}`,
+          actor_name:  user?.full_name || user?.email || 'Staff',
+          actor_role:  user?.role || '',
+        });
+      } catch (_) {}
 
       toast.success(`${selected.business_name} closed! Invoices & commissions created.`);
       onSuccess(selected.id);
