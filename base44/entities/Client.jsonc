@@ -200,6 +200,27 @@
       "type": "string",
       "format": "date-time",
       "description": "LB-024: Set when process-pending-deletions has anonymised this Client row. PII fields (business_name, contact_person, email, phone, address, id_reg_number, notes) are replaced with [deleted] placeholders. Row is kept (not deleted) so financial records (Invoice/Payment/Commission/Contract) retain a valid client_id reference for SARS 5-year retention."
+    },
+    "lifecycle_stage": {
+      "type": "string",
+      "enum": [
+        "lead",
+        "active",
+        "cancelled",
+        "churned",
+        "no_package"
+      ],
+      "default": "no_package",
+      "description": "Sales lifecycle stage of the client. Used to route them into Sales Opportunities (lead/no_package/cancelled/churned) vs Upsell (active) pages."
+    },
+    "signed_up_by_id": {
+      "type": "string",
+      "description": "AppUser.id of the staff member who signed up this client. Null if client signed up themselves via website self-service."
+    },
+    "signed_up_self": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if client signed up via website self-service without a staff member attributed. Used by owner to identify clients needing manual allocation."
     }
   },
   "required": [
