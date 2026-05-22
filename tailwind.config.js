@@ -67,11 +67,12 @@ module.exports = {
           ring: 'hsl(var(--sidebar-ring))',
         },
         brand: {
-          purple: '#a764e6',
-          pink: '#ec4899',
+          purple: '#a764e6',    // kept for faded accent use only
+          pink: '#ec4899',      // kept for faded accent use only
           cyan: '#3b82f6',
-          navy: '#0a0a14',
-          surface: '#1c1c30',
+          navy: '#0A1F44',      // primary brand navy
+          red: '#E63946',       // primary brand red
+          surface: '#F4F4F5',   // light grey surface
         },
       },
       backgroundImage: {
@@ -79,10 +80,10 @@ module.exports = {
         'gradient-brand-subtle': 'linear-gradient(135deg, rgba(167,100,230,0.12) 0%, rgba(236,72,153,0.08) 100%)',
       },
       boxShadow: {
-        'glow-purple': '0 0 24px rgba(167,100,230,0.35), 0 0 48px rgba(167,100,230,0.12)',
-        'glow-pink': '0 0 24px rgba(236,72,153,0.3), 0 0 48px rgba(236,72,153,0.1)',
-        'card': '0 4px 24px rgba(0,0,0,0.5)',
-        'card-hover': '0 8px 32px rgba(167,100,230,0.2)',
+        'glow-purple': '0 0 24px rgba(10,31,68,0.12), 0 0 48px rgba(10,31,68,0.06)',
+        'glow-pink': '0 0 24px rgba(230,57,70,0.12), 0 0 48px rgba(230,57,70,0.06)',
+        'card': '0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)',
+        'card-hover': '0 4px 16px rgba(10,31,68,0.12)',
       },
       keyframes: {
         'accordion-down': {

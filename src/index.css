@@ -6,72 +6,72 @@
 
 @layer base {
   :root {
-    /* ── Marketing iO · Updated Brand Tokens ── */
+    /* ── Marketing iO · Light Mode Brand Tokens ── */
 
     /* Backgrounds */
-    --background: 210 100% 99%;          /* #0a0a14 */
-    --foreground: 240 67% 97%;         /* #f4f4fa */
+    --background: 0 0% 100%;           /* #FFFFFF */
+    --foreground: 220 10% 6%;          /* #0A0A0F near-black */
 
-    --card: 240 26% 15%;               /* #1c1c30 ~70% */
-    --card-foreground: 240 67% 97%;
+    --card: 0 0% 98%;                  /* #FAFAFA off-white */
+    --card-foreground: 220 10% 6%;
 
-    --popover: 240 26% 12%;
-    --popover-foreground: 240 67% 97%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10% 6%;
 
-    /* Primary = purple #a764e6 */
-    --primary: 276 74% 65%;
+    /* Primary = navy blue #0A1F44 */
+    --primary: 218 74% 17%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary = surface */
-    --secondary: 240 26% 18%;
-    --secondary-foreground: 240 67% 97%;
+    /* Secondary = light grey surface */
+    --secondary: 0 0% 95%;             /* #F2F2F2 */
+    --secondary-foreground: 220 10% 6%;
 
     /* Muted */
-    --muted: 240 26% 14%;
-    --muted-foreground: 240 14% 53%;   /* #a8a8c0 */
+    --muted: 0 0% 95%;                 /* #F4F4F5 */
+    --muted-foreground: 0 0% 32%;      /* #525252 */
 
-    /* Accent = pink #ec4899 */
-    --accent: 360 72% 47%;
+    /* Accent = red #E63946 */
+    --accent: 356 77% 56%;             /* #E63946 */
     --accent-foreground: 0 0% 100%;
 
     /* Destructive */
-    --destructive: 0 72% 59%;          /* #ef4444 */
+    --destructive: 356 77% 56%;        /* #E63946 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 26% 22%;
-    --input: 240 26% 18%;
-    --ring: 276 74% 65%;
+    --border: 0 0% 89%;                /* #E3E3E3 soft grey */
+    --input: 0 0% 93%;                 /* #EDEDED */
+    --ring: 218 74% 17%;               /* navy */
 
     --radius: 0.75rem;
 
     /* Charts */
-    --chart-1: 276 74% 65%;
-    --chart-2: 330 81% 60%;
-    --chart-3: 199 89% 48%;
-    --chart-4: 158 64% 52%;            /* #10b981 */
-    --chart-5: 38 92% 50%;
+    --chart-1: 218 74% 17%;            /* navy */
+    --chart-2: 356 77% 56%;            /* red */
+    --chart-3: 199 89% 40%;            /* teal */
+    --chart-4: 158 64% 38%;            /* green */
+    --chart-5: 38 92% 50%;             /* amber */
 
     /* Sidebar */
-    --sidebar-background: 240 43% 5%;
-    --sidebar-foreground: 240 30% 82%;
-    --sidebar-primary: 276 74% 65%;
+    --sidebar-background: 0 0% 98%;    /* #FAFAFA */
+    --sidebar-foreground: 220 10% 20%; /* dark grey */
+    --sidebar-primary: 218 74% 17%;    /* navy */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 26% 14%;
-    --sidebar-accent-foreground: 240 67% 97%;
-    --sidebar-border: 240 26% 14%;
-    --sidebar-ring: 276 74% 65%;
+    --sidebar-accent: 0 0% 95%;        /* light grey hover */
+    --sidebar-accent-foreground: 220 10% 6%;
+    --sidebar-border: 0 0% 89%;        /* soft grey border */
+    --sidebar-ring: 218 74% 17%;
 
     /* Status */
-    --success: 158 64% 52%;            /* #10b981 */
-    --warning: 38 92% 50%;             /* #f59e0b */
-    --info: 217 91% 60%;               /* #3b82f6 */
+    --success: 158 64% 36%;            /* #16a34a */
+    --warning: 38 92% 44%;             /* #d97706 */
+    --info: 217 91% 50%;               /* #2563eb */
 
     /* Raw brand values for inline use */
-    --brand-purple: #a764e6;
-    --brand-pink: #ec4899;
+    --brand-purple: #a764e6;           /* kept for faded accent only */
+    --brand-pink: #ec4899;             /* kept for faded accent only */
     --brand-cyan: #3b82f6;
-    --brand-navy: #0a0a14;
-    --brand-surface: #1c1c30;
+    --brand-navy: #0A1F44;
+    --brand-surface: #F4F4F5;
   }
 }
 
@@ -81,68 +81,73 @@
   }
 
   body {
-    background-color: #0a0a14;
-    color: #f4f4fa;
+    background-color: #FFFFFF;
+    color: #0A0A0F;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    /* ambient glows */
+    /* very subtle brand accent glows at low opacity */
     background-image:
-      radial-gradient(circle 800px at 0% 0%, rgba(167, 100, 230, 0.18) 0%, transparent 60%),
-      radial-gradient(circle 800px at 100% 100%, rgba(236, 72, 153, 0.12) 0%, transparent 60%);
+      radial-gradient(circle 800px at 0% 0%, rgba(167, 100, 230, 0.04) 0%, transparent 60%),
+      radial-gradient(circle 800px at 100% 100%, rgba(236, 72, 153, 0.03) 0%, transparent 60%);
     background-attachment: fixed;
   }
 
   ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: #0a0a14; }
-  ::-webkit-scrollbar-thumb { background: rgba(167,100,230,0.35); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(167,100,230,0.6); }
+  ::-webkit-scrollbar-track { background: #F4F4F5; }
+  ::-webkit-scrollbar-thumb { background: rgba(10,31,68,0.2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(10,31,68,0.4); }
 }
 
 @layer utilities {
-  /* Primary gradient */
+  /* Primary gradient — navy-to-red brand gradient */
   .gradient-text {
-    background: linear-gradient(135deg, #a764e6 0%, #ec4899 100%);
+    background: linear-gradient(135deg, #0A1F44 0%, #E63946 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .gradient-bg {
-    background: linear-gradient(135deg, #a764e6 0%, #ec4899 100%);
+    background: linear-gradient(135deg, #0A1F44 0%, #1a3a6e 100%);
   }
 
   .gradient-bg-subtle {
-    background: linear-gradient(135deg, rgba(167,100,230,0.12) 0%, rgba(236,72,153,0.08) 100%);
+    background: linear-gradient(135deg, rgba(10,31,68,0.06) 0%, rgba(230,57,70,0.04) 100%);
   }
 
-  /* Glass card */
+  /* Purple/pink accent gradient — used only for faded decorative elements */
+  .gradient-bg-accent {
+    background: linear-gradient(135deg, rgba(167,100,230,0.10) 0%, rgba(236,72,153,0.07) 100%);
+  }
+
+  /* Glass card — light mode */
   .glass {
-    background: rgba(28, 28, 48, 0.7);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     transition: border-color 0.2s ease;
   }
   .glass:hover {
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 0, 0, 0.15);
   }
 
-  /* Glows */
+  /* Glows — navy/red for light mode */
   .glow-purple {
-    box-shadow: 0 0 24px rgba(167, 100, 230, 0.35), 0 0 48px rgba(167, 100, 230, 0.12);
+    box-shadow: 0 0 24px rgba(10, 31, 68, 0.15), 0 0 48px rgba(10, 31, 68, 0.06);
   }
   .glow-pink {
-    box-shadow: 0 0 24px rgba(236, 72, 153, 0.3), 0 0 48px rgba(236, 72, 153, 0.1);
+    box-shadow: 0 0 24px rgba(230, 57, 70, 0.15), 0 0 48px rgba(230, 57, 70, 0.06);
   }
 
   /* Status utils */
-  .text-success  { color: #10b981; }
-  .bg-success    { background-color: #10b981; }
-  .text-warning  { color: #f59e0b; }
-  .bg-warning    { background-color: #f59e0b; }
-  .text-info     { color: #3b82f6; }
-  .bg-info       { background-color: #3b82f6; }
-  .border-success { border-color: #10b981; }
-  .border-warning { border-color: #f59e0b; }
-  .border-info    { border-color: #3b82f6; }
+  .text-success  { color: #16a34a; }
+  .bg-success    { background-color: #16a34a; }
+  .text-warning  { color: #d97706; }
+  .bg-warning    { background-color: #d97706; }
+  .text-info     { color: #2563eb; }
+  .bg-info       { background-color: #2563eb; }
+  .border-success { border-color: #16a34a; }
+  .border-warning { border-color: #d97706; }
+  .border-info    { border-color: #2563eb; }
 }
