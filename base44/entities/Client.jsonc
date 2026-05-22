@@ -221,6 +221,19 @@
       "type": "boolean",
       "default": false,
       "description": "True if client signed up via website self-service without a staff member attributed. Used by owner to identify clients needing manual allocation."
+    },
+    "attribution_source": {
+      "type": "string",
+      "enum": [
+        "source_friend",
+        "source_google",
+        "source_social",
+        "source_whatsapp",
+        "source_flyer",
+        "source_walkin",
+        "source_other"
+      ],
+      "description": "Marketing source the client selected at signup ('How did you find us?'). Null when a staff member or self-signup was attributed instead."
     }
   },
   "required": [
