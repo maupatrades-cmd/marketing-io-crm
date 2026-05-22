@@ -235,7 +235,7 @@ export default function OwnerDashboard() {
           {/* Revenue Chart */}
           <div className="lg:col-span-2 glass rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-foreground">Paid invoices · last 12 weeks</h2>
+              <h2 className="text-sm font-semibold" style={{ color: '#E63946' }}>Paid invoices · last 12 weeks</h2>
               <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs">
                 Total: R{totalPaid12Weeks.toLocaleString("en-ZA", { maximumFractionDigits: 0 })}
               </Badge>
@@ -261,7 +261,7 @@ export default function OwnerDashboard() {
 
           {/* Pipeline */}
           <div className="glass rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-foreground mb-4">Deal Pipeline</h2>
+            <h2 className="text-sm font-semibold mb-4" style={{ color: '#E63946' }}>Deal Pipeline</h2>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={pipelineData} layout="vertical">
                 <XAxis type="number" tick={{ fill: "#525252", fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -285,7 +285,7 @@ export default function OwnerDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Recent Activity */}
           <div className="glass rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-foreground mb-4">Recent Activity</h2>
+            <h2 className="text-sm font-semibold mb-4" style={{ color: '#E63946' }}>Recent Activity</h2>
             {loading ? (
               <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-8 bg-muted/40 rounded animate-pulse" />)}</div>
             ) : recentActivity.length === 0 ? (
@@ -308,7 +308,7 @@ export default function OwnerDashboard() {
 
           {/* Quick Actions */}
           <div className="glass rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-foreground mb-4">Quick Actions</h2>
+            <h2 className="text-sm font-semibold mb-4" style={{ color: '#E63946' }}>Quick Actions</h2>
             <div className="space-y-2">
               <Link to="/leads"><QuickAction icon={Zap} label="Review Pending Leads" count={pendingLeads} /></Link>
               <Link to="/deals"><QuickAction icon={Target} label="Update Deal Stages" count={openDeals} /></Link>
@@ -329,7 +329,7 @@ function KpiCard({ icon: Icon, label, value, sub, color }) {
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
+            <p className="text-xs uppercase tracking-widest mb-1 font-semibold" style={{ color: '#E63946' }}>{label}</p>
             <p className="text-2xl font-bold text-foreground">{value}</p>
             {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
           </div>

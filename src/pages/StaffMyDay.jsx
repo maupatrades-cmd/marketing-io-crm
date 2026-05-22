@@ -117,7 +117,7 @@ export default function StaffMyDay() {
     <AppLayout title="My Day" subtitle={new Date().toLocaleDateString()}>
       <div className="space-y-6">
         {/* Greeting */}
-        <div className="text-xl font-semibold text-foreground">
+        <div className="text-xl font-semibold" style={{ color: '#E63946' }}>
           Good {greeting}, {user?.full_name || "there"}
         </div>
 

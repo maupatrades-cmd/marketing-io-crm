@@ -28,7 +28,7 @@
 
     /* Muted */
     --muted: 224 43% 18%;              /* #1a2240 */
-    --muted-foreground: 226 24% 62%;   /* #8892b0 */
+    --muted-foreground: 217 91% 73%;   /* #7db8fc bright blue */
 
     /* Accent = red */
     --accent: 356 77% 56%;             /* #E63946 */
@@ -77,6 +77,10 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+
+  h1, h2, h3 {
+    color: #E63946;
   }
 
   body {
