@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { X, AlertCircle, Check, UserCheck, UserX } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 
 const ALLOCATION_WINDOW_DAYS = 7;
@@ -12,7 +11,6 @@ function fmtZAR(n) {
 }
 
 export default function AllocateModal({ lead, isOpen, onClose, onAllocated }) {
-  const { user: ownerUser } = useAuth();
   const [agents, setAgents] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [paidAggregate, setPaidAggregate] = useState({ totalPaid: 0, recentInvoiceIds: [] });
@@ -103,7 +101,7 @@ export default function AllocateModal({ lead, isOpen, onClose, onAllocated }) {
           const res = await base44.functions.invoke('update-commission-attribution', {
             client_id: lead.id,
             new_closer_id: selectedAgentId,
-            triggered_by_user_id: ownerUser?.id || null
+            token: localStorage.getItem('mio_session_token')
           });
           const count = res?.count_reassigned ?? res?.data?.count_reassigned ?? 0;
           if (count > 0) {

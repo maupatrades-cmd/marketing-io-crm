@@ -15,13 +15,50 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const ALLOCATION_WINDOW_DAYS = 7;
 
+function unwrapList(result: any): any[] {
+  if (!result) return [];
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.data)) return result.data;
+  if (result?.data?.id) return [result.data];
+  if (typeof result === 'object' && result.id) return [result];
+  return [];
+}
+
+// LB-012: validate the caller's session token and resolve their role.
+async function deriveActor(base44: any, token: string) {
+  if (!token) return null;
+  let user: any = null;
+  try {
+    const list = await base44.asServiceRole.entities.AppUser.filter({ session_token: token });
+    user = unwrapList(list)[0] || null;
+  } catch { /* try legacy */ }
+  if (!user) {
+    try {
+      const list = await base44.asServiceRole.entities.User.filter({ session_token: token });
+      user = unwrapList(list)[0] || null;
+    } catch { return null; }
+  }
+  if (!user) return null;
+  if (!user.session_expires_at || new Date(user.session_expires_at) < new Date()) return null;
+  return { userId: String(user.id || ''), role: String(user.role || 'client') };
+}
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
   let body: any;
   try { body = await req.json(); } catch { return Response.json({ error: 'invalid_json' }, { status: 400 }); }
 
-  const { client_id, new_closer_id, triggered_by_user_id } = body || {};
+  const { client_id, new_closer_id, token } = body || {};
+
+  // LB-012: reattributing commissions is an owner-only money operation.
+  // Previously this endpoint had no auth at all — anyone could rewrite
+  // commission attribution on any client. Require a valid owner session;
+  // the actor id is derived from the session, never trusted from the body.
+  const actor = await deriveActor(base44, token);
+  if (!actor) return Response.json({ error: 'invalid_session' }, { status: 401 });
+  if (actor.role !== 'owner') return Response.json({ error: 'forbidden' }, { status: 403 });
+
   if (!client_id) return Response.json({ error: 'client_id required' }, { status: 400 });
   if (!new_closer_id) return Response.json({ error: 'new_closer_id required' }, { status: 400 });
 
@@ -89,7 +126,7 @@ Deno.serve(async (req) => {
         // Audit trail.
         reattributed_at: nowIso,
         reattributed_from: originalUserId || null,
-        reattributed_by: triggered_by_user_id || null
+        reattributed_by: actor.userId
       });
       count += 1;
       totalAmount += amount;
@@ -101,7 +138,7 @@ Deno.serve(async (req) => {
   console.log('[update-commission-attribution] reattributed', {
     client_id,
     new_closer_id: newCloser.id,
-    triggered_by_user_id: triggered_by_user_id || null,
+    triggered_by_user_id: actor.userId,
     count_reassigned: count,
     total_amount_reassigned: totalAmount,
     out_of_window: outOfWindow,
