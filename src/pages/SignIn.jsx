@@ -174,8 +174,8 @@ export default function SignIn() {
           Too Good To Stay Hidden
         </p>
         <div
-          className="font-bold select-none mt-2 text-foreground"
-          style={{ fontSize: '22px', minHeight: '36px' }}
+          className="font-bold select-none mt-2"
+          style={{ fontSize: '22px', minHeight: '36px', color: '#0A1F44' }}
           aria-label="Welcome back"
         >
           {welcomeText}
