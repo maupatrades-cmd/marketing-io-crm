@@ -150,7 +150,7 @@ export default function SignIn() {
       {/* Subtle brand hints */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, #0A1F44, #E63946)' }} />
-        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full opacity-[0.04] blur-3xl"
+        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full opacity-[0.14] blur-3xl"
           style={{ background: 'radial-gradient(circle, #0A1F44 0%, #E63946 70%, transparent 100%)' }} />
       </div>
 
@@ -162,9 +162,10 @@ export default function SignIn() {
         className="relative z-10 flex flex-col items-center mb-10"
       >
         <img
-          src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/d623fa72e_marketingiomainlogo.png"
+          src="https://media.base44.com/images/public/69f52863b2b733d922d90b62/ce0ebdea2_marketing_io_main_logo-removebg-preview.png"
           alt="Marketing iO"
           className="h-20 sm:h-24 object-contain"
+          style={{ filter: 'drop-shadow(0 0 18px rgba(10,31,68,0.55)) drop-shadow(0 0 36px rgba(230,57,70,0.40)) brightness(1.05)' }}
         />
         <p
           className="text-center font-semibold tracking-widest uppercase select-none mt-1"
