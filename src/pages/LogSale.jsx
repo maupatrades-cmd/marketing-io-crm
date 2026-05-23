@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, DollarSign, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -237,6 +237,9 @@ export default function LogSale() {
     });
 
     // 6. Setup fee invoice
+    // closer_id + lead_source_user_id attribute this sale to the right
+    // salesperson so it appears in their My Sales tab and so calculate-commission
+    // can resolve the closer without falling back to the owner default (LB-097).
     const invoice = await base44.entities.Invoice.create({
       client_id: clientId,
       client_name: clientName,
@@ -248,6 +251,8 @@ export default function LogSale() {
       issue_date: d,
       due_date: plusDays(7),
       status: "sent",
+      closer_id: closerId,
+      lead_source_user_id: cpcId || null,
     });
     // Notify client of new invoice
     if (invoice?.id && clientId) {

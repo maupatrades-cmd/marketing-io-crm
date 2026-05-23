@@ -137,6 +137,8 @@ Deno.serve(async (req) => {
     status: 'sent',
     contract_id: contract_id || null,
     deal_id: deal_id || null,
+    // closer_id + lead_source_user_id are now declared in Invoice.jsonc, so these
+    // writes persist (they were silently dropped until the LB-097 schema add).
     closer_id: resolvedCloserId,
     lead_source_user_id: lead_source_user_id || null,
     lead_source_type: lead_source_type || 'self_signup'
