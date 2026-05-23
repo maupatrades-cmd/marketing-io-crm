@@ -82,7 +82,7 @@ export default function LogSale() {
   useEffect(() => {
     Promise.all([
       base44.entities.Client.list("-created_date", 200),
-      base44.entities.User.list(),
+      base44.entities.AppUser.filter({}),
       getCurrentUser(),
     ]).then(([c, u, me]) => {
       if (!me) { window.location.href = '/login'; return; }

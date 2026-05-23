@@ -146,6 +146,7 @@ export default function SoldActionForm({ selected, user, onSuccess, onCancel }) 
           status:       'draft',
           issue_date:   today,
           debit_run_date: debitDate === '1st' ? `${today.slice(0,7)}-01` : `${today.slice(0,7)}-15`,
+          closer_id:    assignedId,
           ...(assignedRole === 'field_agent' ? { assigned_field_agent_id: assignedId, assigned_field_agent_name: assignedName } : {}),
           ...(assignedRole === 'cpc'         ? { assigned_cpc_id: assignedId, assigned_cpc_name: assignedName } : {}),
         });
@@ -162,6 +163,7 @@ export default function SoldActionForm({ selected, user, onSuccess, onCancel }) 
           total_amount: monthly,
           status:       'draft',
           issue_date:   today,
+          closer_id:    assignedId,
           ...(assignedRole === 'field_agent' ? { assigned_field_agent_id: assignedId, assigned_field_agent_name: assignedName } : {}),
           ...(assignedRole === 'cpc'         ? { assigned_cpc_id: assignedId, assigned_cpc_name: assignedName } : {}),
         });
