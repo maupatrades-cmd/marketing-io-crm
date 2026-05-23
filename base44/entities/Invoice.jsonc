@@ -127,6 +127,14 @@
     },
     "assigned_field_agent_name": {
       "type": "string"
+    },
+    "closer_id": {
+      "type": "string",
+      "description": "AppUser.id of the salesperson who closed this sale. Sourced from Deal.closer_id on initial signups (LogSale) and from the caller's session on upsells (add-product-to-client). Drives 'My Sales' attribution and the closer lookup in calculate-commission. Closes LB-097."
+    },
+    "lead_source_user_id": {
+      "type": "string",
+      "description": "AppUser.id of the CPC/staff member who generated the lead, if different from the closer. Used by calculate-commission to attribute lead-fee bonuses. Closes LB-097."
     }
   },
   "required": [
