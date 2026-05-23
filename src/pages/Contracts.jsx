@@ -39,8 +39,6 @@ const STATUS_ICONS = {
 export default function Contracts() {
   const navigate = useNavigate();
   const [contracts, setContracts] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedContract, setSelectedContract] = useState(null);
@@ -48,39 +46,50 @@ export default function Contracts() {
   const [updating, setUpdating] = useState(false);
   const { toast } = useToast();
 
-  const load = () => Promise.all([
-    base44.entities.Contract.list("-created_date", 100),
-    base44.entities.Client.list(),
-    base44.entities.Deal.list(),
-  ]).then(([c, cl, d]) => {
-    setContracts(c);
-    setClients(cl);
-    setDeals(d);
-    setLoading(false);
-  });
+  // Data loads via list-contracts (LB-281 pattern). The function returns
+  // contracts enriched with Client.business_name / contact_person / phone,
+  // so the page no longer needs separate clients/deals state arrays —
+  // c.client_name and c.package come straight off each enriched row.
+  const load = () =>
+    base44.functions
+      .invoke("list-contracts", { token: localStorage.getItem("mio_session_token") })
+      .then((res) => {
+        const data = res?.data ?? res;
+        setContracts(Array.isArray(data?.contracts) ? data.contracts : []);
+      })
+      .catch((err) => {
+        console.error("[Contracts] list-contracts failed:", err);
+        setContracts([]);
+        toast({
+          title: "Could not load contracts",
+          description: err?.message || "Please refresh.",
+          variant: "destructive",
+        });
+      })
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     load();
   }, []);
 
-  const filtered = contracts.filter(c => {
-    const client = clients.find(cl => cl.id === c.client_id);
-    const matchSearch = !search || 
-      c.client_name?.toLowerCase().includes(search.toLowerCase()) ||
-      client?.business_name?.toLowerCase().includes(search.toLowerCase());
-    return matchSearch;
+  const filtered = contracts.filter((c) => {
+    if (!search) return true;
+    return c.client_name?.toLowerCase().includes(search.toLowerCase());
   });
 
   const handleMarkSigned = async (contract) => {
     setUpdating(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
-      await base44.entities.Contract.update(contract.id, {
-        status: "signed",
-        signed_date: today,
-        signed_by_client: true,
+      const res = await base44.functions.invoke("contract-mark-signed", {
+        token: localStorage.getItem("mio_session_token"),
+        contract_id: contract.id,
       });
-      toast({ title: "Contract marked as signed", description: "Status updated successfully." });
+      const data = res?.data ?? res;
+      if (!data?.success) throw new Error(data?.error || "mark_signed_failed");
+      toast({
+        title: data.skipped ? "Already signed" : "Contract marked as signed",
+        description: data.skipped ? "No change applied." : "Status updated.",
+      });
       setShowDetail(false);
       load();
     } catch (err) {
@@ -92,19 +101,31 @@ export default function Contracts() {
   const handleSendForSignature = async (contract) => {
     setUpdating(true);
     try {
-      await base44.entities.Contract.update(contract.id, { status: "sent" });
-      // Fire signing email (non-fatal)
-      try {
-        await base44.functions.invoke("send-contract-for-signature", { contract_id: contract.id });
-        toast({ title: "Contract sent", description: "Signing email dispatched to client." });
-      } catch (emailErr) {
-        console.warn("[Contracts] signing email failed (non-fatal):", emailErr);
-        toast({ title: "Contract sent", description: "Status updated. Email send failed — check Resend logs.", variant: "destructive" });
+      const res = await base44.functions.invoke("contract-send-for-signature-wrapped", {
+        token: localStorage.getItem("mio_session_token"),
+        contract_id: contract.id,
+      });
+      const data = res?.data ?? res;
+      if (data?.success && data?.skipped) {
+        toast({
+          title: "Skipped",
+          description:
+            data.reason === "no_client_email"
+              ? "Client has no email on file — fix the Client record first."
+              : "Already sent within the last 24h.",
+        });
+      } else if (data?.success) {
+        toast({
+          title: "Contract sent",
+          description: `Signing email dispatched to ${data.email_sent_to}.`,
+        });
+      } else {
+        throw new Error(data?.detail || data?.error || "send_failed");
       }
       setShowDetail(false);
       load();
     } catch (err) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Send failed", description: err.message, variant: "destructive" });
     }
     setUpdating(false);
   };
@@ -133,12 +154,10 @@ export default function Contracts() {
       ) : (
         <div className="space-y-2">
           {filtered.map(c => {
-            const client = clients.find(cl => cl.id === c.client_id);
-            const deal = deals.find(d => d.id === c.deal_id);
             const StatusIcon = STATUS_ICONS[c.status] || FileText;
             return (
-              <div 
-                key={c.id} 
+              <div
+                key={c.id}
                 className="glass rounded-xl p-4 flex items-center gap-4 hover:shadow-card-hover transition-all cursor-pointer"
                 onClick={() => {
                   setSelectedContract(c);
@@ -146,9 +165,9 @@ export default function Contracts() {
                 }}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground truncate">{client?.business_name || c.client_name}</p>
+                  <p className="font-semibold text-foreground truncate">{c.client_name}</p>
                   <p className="text-xs text-muted-foreground capitalize">
-                    {deal?.package || c.package} · {c.id}
+                    {c.package} · {c.id}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
