@@ -12,6 +12,7 @@ const STAFF_NAV = {
   field_agent: [
     { path: "/staff", label: "My Day", icon: Clock },
     { path: "/my-sales", label: "My Sales", icon: Star },
+    { path: "/my-invoices", label: "My Invoices", icon: FileText },
     { path: "/staff/pipeline", label: "My Pipeline", icon: TrendingUp },
     { path: "/cancelled-contracts", label: "Cancelled Invoices", icon: XCircle },
     { path: "/staff/clients", label: "My Clients", icon: Users },
@@ -31,6 +32,7 @@ const STAFF_NAV = {
   cpc: [
     { path: "/staff", label: "My Day", icon: Clock },
     { path: "/my-sales", label: "My Sales", icon: Star },
+    { path: "/my-invoices", label: "My Invoices", icon: FileText },
     { path: "/staff/pipeline", label: "My Pipeline", icon: TrendingUp },
     { path: "/cancelled-contracts", label: "Cancelled Invoices", icon: XCircle },
     { path: "/leads", label: "My Leads", icon: Zap },
@@ -49,6 +51,7 @@ const STAFF_NAV = {
   admin: [
     { path: "/staff", label: "My Day", icon: Clock },
     { path: "/my-sales", label: "My Sales", icon: Star },
+    { path: "/my-invoices", label: "My Invoices", icon: FileText },
     { path: "/admin/invoices", label: "Invoice Chase", icon: FileText },
     { path: "/cancelled-contracts", label: "Cancelled Invoices", icon: XCircle },
     { path: "/onboarding-submissions", label: "Onboarding Queue", icon: ListChecks },
@@ -85,6 +88,7 @@ const STAFF_NAV = {
 const OWNER_NAV = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/my-sales", label: "My Sales", icon: Star },
+  { path: "/my-invoices", label: "My Invoices", icon: FileText },
   { path: "/owner/leads", label: "Lead Inbox", icon: UserPlus, badgeKey: "leadInbox" },
   { path: "/inbox", label: "Inbox", icon: MessageSquare },
   { path: "/my-kpis", label: "My KPIs", icon: BarChart2 },
