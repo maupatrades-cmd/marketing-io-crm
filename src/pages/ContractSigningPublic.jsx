@@ -9,11 +9,13 @@ import { toast } from "sonner";
 export default function ContractSigningPublic() {
   const [loading, setLoading] = useState(true);
   const [contract, setContract] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState(null);
   const [error, setError] = useState(null);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
-  
+
   const [fullName, setFullName] = useState("");
+  const [capacity, setCapacity] = useState("");
   const [idNumber, setIdNumber] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [signatureMethod, setSignatureMethod] = useState("typed");
@@ -26,53 +28,60 @@ export default function ContractSigningPublic() {
 
   useEffect(() => {
     async function loadContract() {
+      if (!token) {
+        setError("No signing token provided. Invalid signing link.");
+        setLoading(false);
+        return;
+      }
       try {
-        if (!token) {
-          setError("No signing token provided. Invalid signing link.");
+        // LB-281 fix: the page is intentionally unauthenticated (client arrives
+        // from an email link with no session). Direct base44.entities.Contract
+        // .filter() fails RLS for anonymous callers, so we route through a
+        // public token-validating function that runs asServiceRole server-side.
+        const res = await base44.functions.invoke("get-contract-for-signing", { token });
+        const data = res?.data ?? res;
+
+        if (!data?.success) {
+          // Generic message for missing / malformed / expired / not-found.
+          // Backend deliberately doesn't distinguish the cases (no info leak).
+          setError("Contract signing link not found or has expired.");
           setLoading(false);
           return;
         }
 
-        // Find contract by signing_token
-         let contracts = [];
-         try {
-           contracts = await base44.entities.Contract.filter({ signing_token: token });
-         } catch (e) {
-           console.error("Filter error:", e);
-         }
+        setContract(data.contract);
+        // Client metadata is in data.client; the PDF already shows it on
+        // the Parties page so we don't separately render it here.
 
-         if (!contracts || (Array.isArray(contracts) && contracts.length === 0)) {
-           setError("Contract signing link not found or has expired.");
-           setLoading(false);
-           return;
-         }
-
-         if (!Array.isArray(contracts)) {
-           contracts = [contracts];
-         }
-
-        const contractData = contracts[0];
-        
-        // Check expiration
-        if (contractData.signing_link_expires_at) {
-          const expiryDate = new Date(contractData.signing_link_expires_at);
-          if (expiryDate < new Date()) {
-            setError("This signing link has expired. Please request a new one from Marketing iO.");
-            setLoading(false);
-            return;
+        // base64 → Blob → object URL → iframe src
+        if (data.pdf_base64) {
+          try {
+            const bytes = Uint8Array.from(atob(data.pdf_base64), (c) => c.charCodeAt(0));
+            const blob = new Blob([bytes], { type: "application/pdf" });
+            setPdfUrl(URL.createObjectURL(blob));
+          } catch (e) {
+            console.error("[ContractSigningPublic] PDF decode failed:", e);
           }
         }
-
-        setContract(contractData);
         setLoading(false);
       } catch (err) {
-        setError(`Error loading contract: ${err.message}`);
+        console.error("[ContractSigningPublic] load failed:", err);
+        // Generic — never echo the raw error message (LB-239).
+        setError("Contract signing link not found or has expired.");
         setLoading(false);
       }
     }
 
     loadContract();
   }, [token]);
+
+  // Revoke Blob URL on unmount / when the URL changes, so the browser
+  // can free the in-memory PDF (typical ~200-400 KB per render).
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
 
   const handleCanvasStart = (e) => {
     if (signatureMethod !== "drawn") return;
@@ -115,6 +124,10 @@ export default function ContractSigningPublic() {
 
     if (!fullName.trim()) {
       toast.error("Please enter your full name");
+      return;
+    }
+    if (!capacity.trim()) {
+      toast.error("Please enter your capacity / position");
       return;
     }
     if (!idNumber.trim()) {
@@ -242,24 +255,31 @@ export default function ContractSigningPublic() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* PDF Preview */}
+          {/* MSA V3.0 PDF preview — full 22-page document, generated server-side. */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">
-                  {contract.package ? contract.package.toUpperCase() : "AGREEMENT"} - Master Service Agreement
+                  Master Service Agreement — please review all 22 pages before signing
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted aspect-video rounded border border-border flex items-center justify-center">
-                  <p className="text-muted-foreground text-center">
-                    📄 PDF Preview<br/>
-                    <span className="text-sm">(Full contract embedded viewer would display here)</span>
-                  </p>
-                </div>
+                {pdfUrl ? (
+                  <iframe
+                    src={pdfUrl}
+                    title="Marketing iO Master Service Agreement V3.0"
+                    className="w-full rounded border border-border"
+                    style={{ height: "800px" }}
+                  />
+                ) : (
+                  <div className="bg-muted aspect-video rounded border border-border flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Preparing your agreement…</p>
+                  </div>
+                )}
                 <div className="mt-4 p-4 bg-card rounded border border-border">
                   <p className="text-sm text-muted-foreground mb-2">
-                    <strong>Contract Details:</strong>
+                    <strong>Contract summary</strong>
                   </p>
                   <div className="space-y-1 text-sm">
                     <p>Setup Fee: R{(contract.setup_fee || 0).toLocaleString()}</p>
@@ -301,6 +321,17 @@ export default function ContractSigningPublic() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Enter your full name"
+                      disabled={signing}
+                    />
+                  </div>
+
+                  {/* Capacity / Position — populates the MSA Parties + Execution pages. */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Capacity / Position *</label>
+                    <Input
+                      value={capacity}
+                      onChange={(e) => setCapacity(e.target.value)}
+                      placeholder="e.g. Director, Sole Proprietor"
                       disabled={signing}
                     />
                   </div>
