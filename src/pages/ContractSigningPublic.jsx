@@ -15,6 +15,7 @@ export default function ContractSigningPublic() {
   const [signed, setSigned] = useState(false);
 
   const [fullName, setFullName] = useState("");
+  const [signerEmail, setSignerEmail] = useState("");
   const [capacity, setCapacity] = useState("");
   const [idNumber, setIdNumber] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -53,15 +54,11 @@ export default function ContractSigningPublic() {
         // Client metadata is in data.client; the PDF already shows it on
         // the Parties page so we don't separately render it here.
 
-        // base64 → Blob → object URL → iframe src
-        if (data.pdf_base64) {
-          try {
-            const bytes = Uint8Array.from(atob(data.pdf_base64), (c) => c.charCodeAt(0));
-            const blob = new Blob([bytes], { type: "application/pdf" });
-            setPdfUrl(URL.createObjectURL(blob));
-          } catch (e) {
-            console.error("[ContractSigningPublic] PDF decode failed:", e);
-          }
+        // PDF transport switched to UploadFile-backed HTTPS URL — sidesteps
+        // the megabyte-base64 response that was causing 502s on the chained
+        // get-contract-for-signing invoke.
+        if (data.pdf_url) {
+          setPdfUrl(String(data.pdf_url));
         }
         setLoading(false);
       } catch (err) {
@@ -74,14 +71,6 @@ export default function ContractSigningPublic() {
 
     loadContract();
   }, [token]);
-
-  // Revoke Blob URL on unmount / when the URL changes, so the browser
-  // can free the in-memory PDF (typical ~200-400 KB per render).
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    };
-  }, [pdfUrl]);
 
   const handleCanvasStart = (e) => {
     if (signatureMethod !== "drawn") return;
@@ -126,6 +115,10 @@ export default function ContractSigningPublic() {
       toast.error("Please enter your full name");
       return;
     }
+    if (!signerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
     if (!capacity.trim()) {
       toast.error("Please enter your capacity / position");
       return;
@@ -149,33 +142,42 @@ export default function ContractSigningPublic() {
 
     setSigning(true);
 
+    // LB-281 fix on the write side: the page is unauthenticated, so direct
+    // ContractSignature.create + Contract.update from the browser were
+    // rejected by RLS ("permission denied for update operation on Contract").
+    // Route through the public submit function which validates the
+    // signing_token server-side and does both writes via asServiceRole.
     try {
-      // Create ContractSignature record (triggering automation)
-      await base44.entities.ContractSignature.create({
-        contract_id: contract.id,
-        signer_role: "client",
-        signer_full_name: fullName,
-        signer_id_number: idNumber,
-        typed_signature: signatureMethod === "typed" ? typedSignature : fullName,
-        signature_method: signatureMethod,
-        drawn_signature_data_url: drawnSignature,
-        signed_date: new Date().toISOString(),
-        signed_user_agent: navigator.userAgent
+      const res = await base44.functions.invoke("submit-contract-signature", {
+        signing_token:            token,
+        signer_full_name:         fullName.trim(),
+        signer_email:             signerEmail.trim().toLowerCase(),
+        signer_capacity:          capacity.trim(),
+        signer_id_number:         idNumber.trim(),
+        signature_method:         signatureMethod,
+        typed_signature:          signatureMethod === "typed" ? typedSignature.trim() : "",
+        drawn_signature_data_url: signatureMethod === "drawn" ? drawnSignature : "",
       });
+      const data = res?.data ?? res;
 
-      // Update Contract status
-      await base44.entities.Contract.update(contract.id, {
-        signing_status: "fully_signed",
-        client_signed_at: new Date().toISOString(),
-        signed_by_client: true,
-        signed_date: new Date().toISOString().split('T')[0]
-      });
+      if (data?.success) {
+        setSigned(true);
+        toast.success("Contract signed successfully! A copy has been sent to your email.");
+        return;
+      }
 
-      setSigned(true);
-      toast.success("Contract signed successfully! A copy has been sent to your email.");
+      // Map the backend error codes to user-friendly messages.
+      const code = data?.error || "submit_failed";
+      const friendly = {
+        already_signed:       "This contract has already been signed.",
+        not_found_or_expired: "Signing link not found or has expired.",
+        invalid_signature:    "Please check your signature details and try again.",
+        rate_limited:         "Too many attempts. Please try again in a few minutes.",
+      }[code] || `Could not sign the contract (${code}).`;
+      toast.error(friendly);
     } catch (err) {
       console.error("Contract signing error:", err);
-      toast.error(`Error signing contract: ${err.message}`);
+      toast.error("Could not sign the contract. Please try again.");
     } finally {
       setSigning(false);
     }
@@ -321,6 +323,18 @@ export default function ContractSigningPublic() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Enter your full name"
+                      disabled={signing}
+                    />
+                  </div>
+
+                  {/* Email Address — used for the audit trail + signed-copy delivery. */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Email Address *</label>
+                    <Input
+                      type="email"
+                      value={signerEmail}
+                      onChange={(e) => setSignerEmail(e.target.value)}
+                      placeholder="you@example.co.za"
                       disabled={signing}
                     />
                   </div>

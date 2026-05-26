@@ -45,11 +45,12 @@ function notFound() {
   return Response.json({ success: false, error: 'not_found_or_expired' }, { status: 404 });
 }
 
-function uint8ToBase64(bytes: Uint8Array): string {
-  let s = '';
-  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-  return btoa(s);
-}
+// PDF transport: the rendered Uint8Array is wrapped in a Blob/File and
+// pushed to Base44's UploadFile integration. We return the resulting HTTPS
+// file_url instead of base64. Earlier base64-in-JSON transport caused
+// suspected 502 gateway timeouts on the chained get-contract-for-signing
+// invoke (megabyte response + byte-by-byte string encode); UploadFile keeps
+// the response small (~100-byte URL string).
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'use POST' }, { status: 405 });
@@ -168,17 +169,35 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'render_failed', detail: (err as any)?.message }, { status: 500 });
   }
 
-  const pdfBase64 = uint8ToBase64(bytes);
+  // Upload to Base44 storage to get an HTTPS URL — replaces the megabyte
+  // base64-in-JSON transport that was causing 502s on the chained call from
+  // get-contract-for-signing.
+  const contractRef = String(contract.id || '').slice(-8).toUpperCase();
+  const filename    = `MSA-${contractRef}-${Date.now()}.pdf`;
+  let pdfUrl: string | null = null;
+  try {
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const file = new File([blob], filename, { type: 'application/pdf' });
+    const uploaded: any = await (base44 as any).asServiceRole.integrations.Core.UploadFile({ file });
+    pdfUrl = uploaded?.file_url || uploaded?.url || uploaded?.data?.file_url || null;
+    if (!pdfUrl) throw new Error('UploadFile returned no file_url');
+  } catch (err) {
+    console.error('[generate-msa-pdf] UploadFile failed:', (err as any)?.message);
+    return Response.json({
+      error:  'upload_failed',
+      detail: (err as any)?.message,
+    }, { status: 500 });
+  }
 
   console.log(
-    `[generate-msa-pdf] rendered actor=${actorLabel} contract=${String(contract.id || '').slice(-8)} bytes=${bytes.length}`,
+    `[generate-msa-pdf] rendered+uploaded actor=${actorLabel} contract=${contractRef} bytes=${bytes.length} url=${pdfUrl}`,
   );
 
   return Response.json({
-    success: true,
+    success:            true,
     contract_id:        String(contract.id || ''),
-    contract_reference: String(contract.id || '').slice(-8).toUpperCase(),
-    pdf_base64:         pdfBase64,
+    contract_reference: contractRef,
+    pdf_url:            pdfUrl,
   });
 });
 
