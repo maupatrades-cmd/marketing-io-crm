@@ -93,25 +93,42 @@ Deno.serve(async (req) => {
   }
   if (!client) return notFound();
 
-  // Generate the PDF by delegating to the function that owns the template.
-  let pdfBase64: string | null = null;
-  try {
-    const res = await base44.asServiceRole.functions.invoke('generate-msa-pdf', {
-      signing_token: token,
-    });
-    const data = res?.data ?? res;
-    if (data?.success && data?.pdf_base64) {
-      pdfBase64 = data.pdf_base64;
-    } else {
-      console.error('[get-contract-for-signing] generate-msa-pdf returned non-success:', data?.error);
+  // PDF transport — switched from base64-in-JSON to HTTPS file_url via
+  // UploadFile. Cache the URL on Contract.document_url so repeat opens of
+  // the same signing link skip the slow render path. Cache is invalidated
+  // by submit-contract-signature on successful sign.
+  let pdfUrl: string | null = null;
+
+  // Fast path — return cached URL if present.
+  if (typeof contract.document_url === 'string' && contract.document_url.trim()) {
+    pdfUrl = contract.document_url.trim();
+  } else {
+    // Slow path — generate once, cache, return.
+    try {
+      const res = await base44.asServiceRole.functions.invoke('generate-msa-pdf', {
+        signing_token: token,
+      });
+      const data = res?.data ?? res;
+      if (data?.success && data?.pdf_url) {
+        pdfUrl = String(data.pdf_url);
+        // Cache for next request — non-fatal if it fails.
+        try {
+          await base44.asServiceRole.entities.Contract.update(String(contract.id), {
+            document_url: pdfUrl,
+          });
+        } catch (cacheErr) {
+          console.error('[get-contract-for-signing] document_url cache write failed (non-fatal):', (cacheErr as any)?.message);
+        }
+      } else {
+        console.error('[get-contract-for-signing] generate-msa-pdf returned non-success:', data?.error);
+      }
+    } catch (err) {
+      console.error('[get-contract-for-signing] generate-msa-pdf invoke failed:', (err as any)?.message);
     }
-  } catch (err) {
-    console.error('[get-contract-for-signing] generate-msa-pdf invoke failed:', (err as any)?.message);
   }
 
-  // PDF failure isn't fatal — signing page can still display the form and
-  // re-render. But we surface the missing PDF in the response so the
-  // frontend can show a degraded state if needed.
+  // PDF failure isn't fatal — the signing page can still display the form.
+  // pdf_url will be null and the frontend shows a degraded state.
   return Response.json({
     success: true,
     contract: {
@@ -135,6 +152,6 @@ Deno.serve(async (req) => {
       address:        client.address || '',
       id_reg_number:  client.id_reg_number || '',
     },
-    pdf_base64: pdfBase64,
+    pdf_url: pdfUrl,
   });
 });
