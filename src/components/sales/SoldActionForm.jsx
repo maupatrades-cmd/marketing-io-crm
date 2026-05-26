@@ -122,87 +122,49 @@ export default function SoldActionForm({ selected, user, onSuccess, onCancel }) 
     if (submitting) return;
     setSubmitting(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const pkgLabel = PACKAGES.find(p => p.value === pkg)?.label || pkg;
-
-      // 1. Update client to active
-      await base44.entities.Client.update(selected.id, {
-        lifecycle_stage: 'active',
-        status:          'active',
-        signed_up_by_id: assignedId,
-        ...(assignedRole === 'field_agent' ? { assigned_field_agent: assignedId } : {}),
-        ...(assignedRole === 'cpc'         ? { assigned_cpc: assignedId }         : {}),
+      // LB-281 fix on the write side: Invoice / Commission .create from an
+      // unauthenticated-RLS browser session were being rejected as "permission
+      // denied for create operation on Invoice entity". The new
+      // close-sales-opportunity backend function validates the session via
+      // auth-me and does all four writes (Client.update + 2× Invoice.create +
+      // Commission.create) via asServiceRole, plus a canonical activity log.
+      // It also recomputes the commission amount server-side so a tampered
+      // comm.total can't inflate payroll.
+      const res = await base44.functions.invoke('close-sales-opportunity', {
+        token:                    localStorage.getItem('mio_session_token'),
+        client_id:                selected.id,
+        assigned_id:              assignedId,
+        package:                  pkg,
+        setup_fee:                setupFee,
+        monthly:                  monthly,
+        debit_date:               debitDate,
+        notes:                    notes || '',
+        signed_commission_amount: comm.total,
       });
+      const data = res?.data ?? res;
 
-      // 2. Setup invoice (skip if no setup fee)
-      if (setupFee > 0) {
-        await base44.entities.Invoice.create({
-          client_id:    selected.id,
-          client_name:  selected.business_name,
-          invoice_type: 'setup_fee',
-          description:  `${pkgLabel} – Setup Fee`,
-          amount:       setupFee,
-          total_amount: setupFee,
-          status:       'draft',
-          issue_date:   today,
-          debit_run_date: debitDate === '1st' ? `${today.slice(0,7)}-01` : `${today.slice(0,7)}-15`,
-          closer_id:    assignedId,
-          ...(assignedRole === 'field_agent' ? { assigned_field_agent_id: assignedId, assigned_field_agent_name: assignedName } : {}),
-          ...(assignedRole === 'cpc'         ? { assigned_cpc_id: assignedId, assigned_cpc_name: assignedName } : {}),
-        });
+      if (data?.success) {
+        toast.success(`${selected.business_name} closed! Invoices & commissions created.`);
+        onSuccess(selected.id);
+        return;
       }
 
-      // 3. Monthly retainer invoice (skip if no monthly)
-      if (monthly > 0) {
-        await base44.entities.Invoice.create({
-          client_id:    selected.id,
-          client_name:  selected.business_name,
-          invoice_type: 'monthly_retainer',
-          description:  `${pkgLabel} – Monthly Retainer`,
-          amount:       monthly,
-          total_amount: monthly,
-          status:       'draft',
-          issue_date:   today,
-          closer_id:    assignedId,
-          ...(assignedRole === 'field_agent' ? { assigned_field_agent_id: assignedId, assigned_field_agent_name: assignedName } : {}),
-          ...(assignedRole === 'cpc'         ? { assigned_cpc_id: assignedId, assigned_cpc_name: assignedName } : {}),
-        });
+      const code = String(data?.error || 'submit_failed');
+      const friendly =
+        code === 'client_not_found'                ? 'Client record not found. Refresh and try again.'
+      : code === 'forbidden'                       ? "You don't have permission to close this deal."
+      : code === 'invalid_session'                 ? 'Your session expired. Please log in again.'
+      : code === 'assigned_id_not_found'           ? 'Selected staff member no longer exists. Refresh and try again.'
+      : code === 'assigned_role_invalid'           ? 'Selected staff member has an invalid role.'
+      : code === 'invoice_setup_create_failed'     ? `Partial close: setup invoice failed (${data?.detail || 'unknown'}). Contact admin — client is active but missing invoice.`
+      : code === 'invoice_monthly_create_failed'   ? `Partial close: monthly invoice failed (${data?.detail || 'unknown'}). Contact admin — invoice ${data?.partial_state?.setup_invoice_id || '?'} was created.`
+      : code === 'commission_create_failed'        ? `Partial close: commission record failed (${data?.detail || 'unknown'}). Contact admin — invoices were created.`
+      :                                              'Failed to close deal. Please try again.';
+
+      if (code.startsWith('invoice_') || code === 'commission_create_failed') {
+        console.error('[SoldActionForm] partial close', data);
       }
-
-      // 4. Commission record (single pending entry with correct amount)
-      if (comm.total > 0) {
-        const commType = assignedRole === 'cpc'   ? 'cpc_closure_bonus' :
-                         assignedRole === 'admin'  ? 'admin_contract_load' :
-                                                     'setup_commission';
-        await base44.entities.Commission.create({
-          staff_id:         assignedId,
-          staff_name:       assignedName,
-          staff_role:       assignedRole,
-          commission_type:  commType,
-          client_id:        selected.id,
-          client_name:      selected.business_name,
-          package_or_addon: pkgLabel,
-          base_amount:      setupFee || monthly,
-          commission_amount: comm.total,
-          qualifying_event: 'deal_closed_won',
-          qualifying_event_date: today,
-          status: 'pending',
-        });
-      }
-
-      // 5. Activity log (best-effort — don't fail the deal if this errors)
-      try {
-        await base44.functions.invoke('log-client-activity', {
-          client_id:   selected.id,
-          event_type:  'sales_sold',
-          summary:     `Deal closed — ${pkgLabel} by ${assignedName}`,
-          actor_name:  user?.full_name || user?.email || 'Staff',
-          actor_role:  user?.role || '',
-        });
-      } catch (_) {}
-
-      toast.success(`${selected.business_name} closed! Invoices & commissions created.`);
-      onSuccess(selected.id);
+      toast.error(friendly);
     } catch (err) {
       console.error('[SoldActionForm]', err);
       toast.error('Failed to close deal. Please try again.');
