@@ -110,13 +110,22 @@ export interface MsaClient {
 }
 
 export interface MsaSigner {
+  // Identity
   full_name?: string;
   capacity?: string;
   id_number?: string;
   email?: string;
-  signature_data_url?: string;
   signed_at?: string;
   place?: string;
+  // Signature rendering — PR #125
+  signature_method?: 'typed' | 'drawn';
+  typed_signature?: string;                // rendered cursive-italic on page 19 when method='typed'
+  signature_data_url?: string;             // image embed on page 19 when method='drawn'
+  // Audit trail — PR #125. Populated by finalize-signed-contract and
+  // rendered into page 20's audit-trail block instead of the placeholder.
+  signed_ip_address?: string;
+  signed_user_agent?: string;              // expected pre-truncated to 200 chars by caller
+  document_hash?: string;                  // SHA-256 hex content fingerprint
 }
 
 export interface MsaContext {
@@ -1151,19 +1160,35 @@ function pageExecution1(doc: any, ctx: MsaContext) {
 function pageExecution2(doc: any, ctx: MsaContext) {
   let y = TOP;
   const signer = ctx.signer || {};
-  // Signature drawn box
+  // Signature box
   setMuted(doc, 7.5);
   doc.text('Signature', ML, y);
   doc.setDrawColor(BORDER);
   doc.rect(ML, y + 2, CONTENT_W, 30);
-  if (signer.signature_data_url) {
+
+  if (signer.signature_method === 'drawn' && signer.signature_data_url) {
     try {
-      // jspdf supports addImage with data URL
       doc.addImage(signer.signature_data_url, 'PNG', ML + 3, y + 4, 80, 26);
     } catch {
-      // ignore on render fail; leave blank
+      // ignore — leave blank
+    }
+  } else if (
+    (signer.signature_method === 'typed' || (!signer.signature_method && signer.typed_signature)) &&
+    signer.typed_signature
+  ) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(22);
+    doc.setTextColor(NAVY);
+    doc.text(String(signer.typed_signature), ML + 5, y + 22);
+  } else if (signer.signature_data_url) {
+    // Legacy fallback (PR #122 pre-method shape).
+    try {
+      doc.addImage(signer.signature_data_url, 'PNG', ML + 3, y + 4, 80, 26);
+    } catch {
+      // ignore — leave blank
     }
   }
+
   setMuted(doc, 7);
   doc.text('(e-signature)', ML, y + 35);
   y += 40;
@@ -1174,7 +1199,7 @@ function pageExecution2(doc: any, ctx: MsaContext) {
 
 // ── PAGE 20: WITNESSES + AUDIT TRAIL ────────────────────────────────────────
 
-function pageWitnesses(doc: any) {
+function pageWitnesses(doc: any, ctx: MsaContext) {
   let y = TOP;
   setBold(doc, 16);
   doc.text('Witnesses', ML, y);
@@ -1216,11 +1241,19 @@ function pageWitnesses(doc: any) {
   y = signatureBox(doc, ML, y, CONTENT_W, 'Date Signed', '');
   y += 6;
 
-  // E-Signature Audit Trail
+  // E-Signature Audit Trail — PR #125
+  // When ctx.signer has audit fields populated (finalize-signed-contract has
+  // run after the client signed), render a real audit table. Otherwise keep
+  // the legacy explainer + red placeholder so unsigned previews look correct.
+  const signer = ctx.signer || {};
+  const hasAudit = Boolean(
+    signer.signed_ip_address || signer.signed_at || signer.document_hash,
+  );
+
   doc.setDrawColor(NAVY);
   doc.setLineWidth(0.5);
   const auditY = y;
-  const auditH = 30;
+  const auditH = hasAudit ? 50 : 30;
   doc.rect(ML, auditY, CONTENT_W, auditH);
   setBold(doc, 9.5);
   doc.text('E-SIGNATURE AUDIT TRAIL', ML + 3, auditY + 5);
@@ -1229,9 +1262,33 @@ function pageWitnesses(doc: any) {
     'Where this Agreement is signed via an electronic signature platform (Documenso, OpenSign, DocuSign, or comparable), the platform-generated audit trail — including signer identity verification, IP address, timestamp, geolocation (where available), and document hash — shall form part of the executed Agreement and shall be admissible as evidence of execution in terms of the Electronic Communications and Transactions Act, 2002.',
     CONTENT_W - 6);
   doc.text(trail, ML + 3, auditY + 9);
-  setMuted(doc, 8);
-  doc.setTextColor(RED);
-  doc.text('[Will be populated upon e-signature]', ML + 3, auditY + auditH - 2);
+
+  if (hasAudit) {
+    let ay = auditY + 22;
+    const rows: Array<[string, string]> = [
+      ['Signer',           `${signer.full_name || ''} <${signer.email || ''}>`],
+      ['Capacity',         signer.capacity || ''],
+      ['Signature method', signer.signature_method || ''],
+      ['Timestamp (UTC)',  signer.signed_at || ''],
+      ['IP address',       signer.signed_ip_address || 'unknown'],
+      ['User agent',       String(signer.signed_user_agent || '').slice(0, 80)],
+      ['Document hash',    signer.document_hash || ''],
+    ];
+    setBody(doc, 7);
+    for (const [label, val] of rows) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(NAVY);
+      doc.text(`${label}:`, ML + 3, ay);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(DARK_GREY);
+      doc.text(String(val), ML + 35, ay);
+      ay += 3.5;
+    }
+  } else {
+    setMuted(doc, 8);
+    doc.setTextColor(RED);
+    doc.text('[Will be populated upon e-signature]', ML + 3, auditY + auditH - 2);
+  }
 }
 
 // ── PAGE 21: BLANK SPACER (chrome only) ─────────────────────────────────────
@@ -1322,7 +1379,7 @@ export function generateMsaPdf(
   doc.addPage();
   pageExecution2(doc, ctx);
   doc.addPage();
-  pageWitnesses(doc);
+  pageWitnesses(doc, ctx);
   doc.addPage();
   pageBlankSpacer(doc);
   doc.addPage();
