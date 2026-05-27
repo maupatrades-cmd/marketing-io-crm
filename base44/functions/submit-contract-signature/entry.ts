@@ -230,9 +230,9 @@ Deno.serve(async (req) => {
 
   // ── Step 11: invalidate cached PDF on Contract.document_url ─────────────
   // The next get-contract-for-signing call will regenerate the PDF with
-  // the just-captured signature data embedded (in a follow-up PR; today's
-  // re-render still produces the unsigned-state PDF until the signed-PDF
-  // generation lands).
+  // the just-captured signature data embedded. finalize-signed-contract
+  // (Step 11b below) also writes Contract.final_signed_pdf_url which is
+  // what the client portal surfaces post-signing.
   try {
     if (contract.document_url) {
       await base44.asServiceRole.entities.Contract.update(String(contract.id), {
@@ -241,6 +241,31 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     console.error('[submit-contract-signature] cache invalidation failed (non-fatal):', errMsg(err));
+  }
+
+  // ── Step 11b: kick off finalize-signed-contract (fire-and-forget) ───────
+  // PR #125 — generates the signed-state PDF (typed/drawn signature on page
+  // 19 + real audit trail on page 20), writes Contract.final_signed_pdf_url,
+  // and emails the signed PDF to the client. We DO NOT await this — signing
+  // UX must stay snappy. Failures inside finalize don't fail the sign; they
+  // surface as warnings in the ClientActivityLog row finalize itself writes.
+  // The .catch handler is required so an unhandled rejection doesn't crash
+  // the parent function.
+  try {
+    base44.asServiceRole.functions.invoke('finalize-signed-contract', {
+      contract_id: String(contract.id),
+    }).catch((err: unknown) => {
+      console.error(
+        `[submit-contract-signature] finalize-signed-contract invoke failed for ${String(contract.id)} (non-fatal):`,
+        errMsg(err),
+      );
+    });
+  } catch (err) {
+    // Synchronous-throw safety net — the .catch above handles async rejections.
+    console.error(
+      `[submit-contract-signature] finalize-signed-contract sync throw for ${String(contract.id)} (non-fatal):`,
+      errMsg(err),
+    );
   }
 
   // ── Step 12: activity log — non-fatal per workflow note ──────────────────
