@@ -293,35 +293,55 @@ Deno.serve(async (req) => {
   const document_hash = await sha256Hex(hashInput);
 
   // ── STEP 7 — Invoke generate-msa-pdf with signer payload ────────────────
+  // generate-msa-pdf requires either { signing_token } (public path) or
+  // { token, contract_id } (staff path) on the request body. We pass the
+  // signing_token already on the Contract row — even though we're invoking
+  // via asServiceRole, the inner function still parses req.json() and runs
+  // its own auth gate. Without signing_token the call returns 400
+  // missing_auth and PR #125 never wrote final_signed_pdf_url for any
+  // signed contract; that's the 400 fix.
+  //
+  // Defensive guard: paper-signed contracts (log-sale-on-behalf path) have
+  // signing_token = null. The Step 2 idempotency check already skips them
+  // (final_signed_pdf_url is set at paper-upload time), but this guard is
+  // belt-and-braces for manual re-invocations.
   let signedPdfUrl: string | null = null;
-  try {
-    const res = await base44.asServiceRole.functions.invoke('generate-msa-pdf', {
-      contract_id,
-      signer: {
-        full_name:           String(clientSig.signer_full_name || ''),
-        capacity:            signerCapacity,
-        id_number:           String(clientSig.signer_id_number || ''),
-        email:               String(clientSig.signer_email || ''),
-        signature_method:    String(clientSig.signature_method || 'typed'),
-        typed_signature:     String(clientSig.typed_signature || ''),
-        signature_data_url:  String(clientSig.drawn_signature_data_url || ''),
-        signed_at:           String(clientSig.signed_date || ''),
-        place:               '',
-        signed_ip_address:   String(clientSig.signed_ip_address || 'unknown'),
-        signed_user_agent:   String(clientSig.signed_user_agent || '').slice(0, 200),
-        document_hash,
-      },
-    });
-    const data = res?.data ?? res;
-    if (data?.success && data?.pdf_url) {
-      signedPdfUrl = String(data.pdf_url);
-    } else {
-      warnings.push(`generate_signed_pdf_failed: ${data?.error || 'unknown'}`);
-      console.error(`[finalize-signed-contract] generate-msa-pdf failed for ${contract_id}:`, data?.error);
+  const signingToken = String(contract.signing_token || '').trim();
+  if (!signingToken) {
+    warnings.push('no_signing_token');
+    console.warn(
+      `[finalize-signed-contract] ${contract_id} has no signing_token — skipping signed-PDF regeneration`,
+    );
+  } else {
+    try {
+      const res = await base44.asServiceRole.functions.invoke('generate-msa-pdf', {
+        signing_token: signingToken,
+        signer: {
+          full_name:           String(clientSig.signer_full_name || ''),
+          capacity:            signerCapacity,
+          id_number:           String(clientSig.signer_id_number || ''),
+          email:               String(clientSig.signer_email || ''),
+          signature_method:    String(clientSig.signature_method || 'typed'),
+          typed_signature:     String(clientSig.typed_signature || ''),
+          signature_data_url:  String(clientSig.drawn_signature_data_url || ''),
+          signed_at:           String(clientSig.signed_date || ''),
+          place:               '',
+          signed_ip_address:   String(clientSig.signed_ip_address || 'unknown'),
+          signed_user_agent:   String(clientSig.signed_user_agent || '').slice(0, 200),
+          document_hash,
+        },
+      });
+      const data = res?.data ?? res;
+      if (data?.success && data?.pdf_url) {
+        signedPdfUrl = String(data.pdf_url);
+      } else {
+        warnings.push(`generate_signed_pdf_failed: ${data?.error || 'unknown'}`);
+        console.error(`[finalize-signed-contract] generate-msa-pdf failed for ${contract_id}:`, data?.error);
+      }
+    } catch (err) {
+      warnings.push(`generate_signed_pdf_threw: ${errMsg(err)}`);
+      console.error(`[finalize-signed-contract] generate-msa-pdf threw for ${contract_id}:`, errMsg(err));
     }
-  } catch (err) {
-    warnings.push(`generate_signed_pdf_threw: ${errMsg(err)}`);
-    console.error(`[finalize-signed-contract] generate-msa-pdf threw for ${contract_id}:`, errMsg(err));
   }
 
   // ── STEP 8 — Write final_signed_pdf_url ─────────────────────────────────
