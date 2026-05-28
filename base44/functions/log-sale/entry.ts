@@ -143,6 +143,8 @@ async function validateActor(base44: any, token: string) {
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'use POST' }, { status: 405 });
 
+  try {
+
   const base44 = createClientFromRequest(req);
 
   let body: any;
@@ -706,4 +708,19 @@ Deno.serve(async (req) => {
     deliverables_created: deliverablesCreated,
     new_client_created: createdNewClient,
   });
+
+  } catch (err) {
+    // Top-level catch — any uncaught throw lands here. Returns the error
+    // message + stack so the frontend toast can show what actually broke
+    // instead of "Failed to log sale (unknown)".
+    const stack = (err as any)?.stack ? String((err as any).stack).split('\n').slice(0, 5).join(' | ') : '';
+    console.error('[log-sale] UNCAUGHT:', errMsg(err), stack);
+    return Response.json({
+      success: false,
+      error:   'unhandled_exception',
+      step:    'unknown',
+      detail:  errMsg(err),
+      stack,
+    }, { status: 500 });
+  }
 });
