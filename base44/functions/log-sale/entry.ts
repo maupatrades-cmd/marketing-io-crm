@@ -11,6 +11,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // the Client row was already persisted before the Deal.create failed —
 // leaving orphan Clients in the database.
 //
+// STEP 11.5 restores the autoCreateDeliverables behaviour from
+// src/lib/fulfilmentAutomation.js (dropped in PR #128) so head_of_tech
+// opens a populated queue for the new deal.
+//
 // This function bypasses all that by validating the session via auth-me and
 // running every write via asServiceRole. Sequential best-effort matching
 // log-sale-on-behalf (PR #119) and close-sales-opportunity (PR #124).
@@ -52,6 +56,18 @@ const PACKAGE_COMMISSIONS: Record<string, {
 const CPC_RATES   = { qualified_lead_fee: 87, closure_bonus: 250 };
 const ADMIN_RATES = { per_contract_loaded: 25 };
 
+// Maps LogSale add-on values → FulfilmentTemplate codes. Mirrors
+// ADD_ON_TO_TEMPLATE_CODE in src/lib/fulfilmentAutomation.js — most are 1:1,
+// the exceptions below need explicit remapping.
+const ADD_ON_TO_TEMPLATE_CODE: Record<string, string> = {
+  google_business_profile:      'gbp_optimisation',
+  staff_training_workshop:      'workshops',
+  crm_training_setup:           'crm_training',
+  print_signage:                'print_signage_coordination',
+  domain_hosting_email:         'domain_hosting_reselling',
+  business_plan_website_bundle: 'plan_website_bundle',
+};
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function unwrap(result: any): any[] {
@@ -84,6 +100,23 @@ function plusMonths(dateStr: string, n: number): string {
   const d = new Date(dateStr);
   d.setMonth(d.getMonth() + n);
   return d.toISOString().slice(0, 10);
+}
+
+// FulfilmentTemplate.setup_deliverables / recurring_deliverables is a JSON
+// string array. Defensively handle three shapes: actual array, JSON-encoded
+// array, or newline-delimited fallback for templates seeded pre-schema.
+function parseTitles(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map((s) => String(s).trim()).filter(Boolean);
+  const s = String(raw).trim();
+  if (!s) return [];
+  if (s.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) return parsed.map((x) => String(x).trim()).filter(Boolean);
+    } catch { /* fall through */ }
+  }
+  return s.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 }
 
 async function validateActor(base44: any, token: string) {
@@ -540,6 +573,88 @@ Deno.serve(async (req) => {
     console.error(`[log-sale] Task bulkCreate failed for deal ${dealId}:`, errMsg(err));
   }
 
+  // ── STEP 11.5 — Auto-provision Deliverables from FulfilmentTemplate ────
+  // Ports autoCreateDeliverables() from src/lib/fulfilmentAutomation.js. The
+  // old LogSale.jsx ran this after Deal.create so head_of_tech opened a
+  // populated queue for the new client; the orchestrator dropped it in PR
+  // #128, leaving deals with no provisioned work items.
+  //
+  // Core packages → `<package>_core_package` template code. Add-ons → the
+  // add_on_name value (or the explicit remap in ADD_ON_TO_TEMPLATE_CODE).
+  // Soft-failure throughout: no template, no parseable titles, or per-row
+  // create errors all just log — the deal itself is already committed.
+  const templateCode = pkg === 'add_on'
+    ? (ADD_ON_TO_TEMPLATE_CODE[String(add_on_name)] || String(add_on_name))
+    : `${String(pkg)}_core_package`;
+
+  let deliverablesCreated = 0;
+  let templateUsed: string | null = null;
+  try {
+    const template = unwrap(
+      await base44.asServiceRole.entities.FulfilmentTemplate.filter({ code: templateCode }),
+    )[0] || null;
+    if (!template) {
+      console.warn(`[log-sale] no FulfilmentTemplate for code=${templateCode} — deliverables skipped`);
+    } else {
+      templateUsed = String(template.code);
+      const setupTitles     = parseTitles(template.setup_deliverables);
+      const recurringTitles = parseTitles(template.recurring_deliverables);
+      const slaDays = Number.isFinite(Number(template.soft_sla_days)) && Number(template.soft_sla_days) > 0
+        ? Number(template.soft_sla_days) : 14;
+      const setupDue  = plusDays(slaDays);
+      const ownerRole = String(template.internal_owner_role || 'head_of_tech');
+
+      for (const title of setupTitles) {
+        try {
+          await base44.asServiceRole.entities.Deliverable.create({
+            client_id:   clientId,
+            client_name: clientName,
+            deal_id:     dealId,
+            title,
+            phase:       'setup',
+            product:     templateUsed,
+            owner_role:  ownerRole,
+            status:      'not_started',
+            due_date:    setupDue,
+            notes:       `Auto-created from FulfilmentTemplate ${templateUsed}`,
+          });
+          deliverablesCreated += 1;
+        } catch (err) {
+          console.error(`[log-sale] Deliverable.create (setup) "${title}" failed:`, errMsg(err));
+        }
+      }
+
+      if (recurringTitles.length > 0) {
+        const next = new Date();
+        next.setMonth(next.getMonth() + 1);
+        next.setDate(1);
+        const monthYear    = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+        const recurringDue = next.toISOString().slice(0, 10);
+        for (const title of recurringTitles) {
+          try {
+            await base44.asServiceRole.entities.Deliverable.create({
+              client_id:   clientId,
+              client_name: clientName,
+              deal_id:     dealId,
+              title,
+              phase:       'monthly_recurring',
+              product:     templateUsed,
+              owner_role:  ownerRole,
+              status:      'not_started',
+              month_year:  monthYear,
+              due_date:    recurringDue,
+              notes:       `Auto-created recurring from FulfilmentTemplate ${templateUsed}`,
+            });
+          } catch (err) {
+            console.error(`[log-sale] Deliverable.create (recurring) "${title}" failed:`, errMsg(err));
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error(`[log-sale] deliverable provisioning failed for deal ${dealId}:`, errMsg(err));
+  }
+
   // ── STEP 12 — Activity log (canonical LB-108-safe field names) ─────────
   try {
     await base44.asServiceRole.entities.ClientActivityLog.create({
@@ -568,6 +683,8 @@ Deno.serve(async (req) => {
         cpc_id:         cpc?.id || null,
         cpc_name:       cpcName || null,
         commission_rows_written: commissions.length,
+        deliverables_created: deliverablesCreated,
+        fulfilment_template:  templateUsed,
         new_client_created: createdNewClient,
         notes:          cleanNotes || null,
       },
@@ -586,6 +703,7 @@ Deno.serve(async (req) => {
     invoice_id:     invoiceId,
     invoice_number: invoiceNumber,
     commission_rows_written: commissions.length,
+    deliverables_created: deliverablesCreated,
     new_client_created: createdNewClient,
   });
 });
