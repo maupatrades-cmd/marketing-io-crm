@@ -177,19 +177,27 @@ Deno.serve(async (req) => {
     const saleAmount = Number(inv.total_amount ?? inv.amount ?? 0);
 
     return {
+      // PR — extra raw Invoice fields surfaced for callers like Invoices.jsx
+      // that render invoice_type / amount alongside the bucketed view.
+      // MyInvoices.jsx reads invoice_id / sale_amount as before — additive.
+      id:               String(inv.id || ''),
       invoice_id:       String(inv.id || ''),
       invoice_number:   inv.invoice_number || null,
+      invoice_type:     inv.invoice_type || null,
       client_id:        String(inv.client_id || ''),
       client_name:      client.business_name || inv.client_name || '',
       contact_person:   client.contact_person || '',
       phone:            client.phone || '',
       product_label:    productLabel,
       sale_amount:      Number.isFinite(saleAmount) ? saleAmount : 0,
+      amount:           Number.isFinite(saleAmount) ? saleAmount : 0,
+      total_amount:     Number.isFinite(saleAmount) ? saleAmount : 0,
       status:           inv.status || null,
       status_bucket:    bucket,
       days_outstanding: computeDaysOutstanding(inv, bucket, todayMs),
       issued_date:      issuedDate,
       due_date:         inv.due_date || null,
+      created_date:     inv.created_date || null,
       closer_id:        inv.closer_id || null,
       closer_name:      closer ? (closer.full_name || closer.email || null) : null,
     };

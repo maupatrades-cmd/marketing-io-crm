@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import AppLayout from '@/components/AppLayout';
-import { AlertTriangle, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, XCircle, Clock, RefreshCw } from 'lucide-react';
 
 const SUBTITLE_BY_ROLE = {
   owner:       'All invoices across the team',
@@ -90,10 +90,10 @@ export default function MyInvoices() {
   const [viewerRole, setViewerRole]   = useState(null);
   const [tab, setTab]                 = useState('unpaid');
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true);
     setErrored(false);
-    base44.functions
+    return base44.functions
       .invoke('list-my-invoices', { token: localStorage.getItem('mio_session_token') })
       .then((res) => {
         const data = res?.data ?? res;
@@ -114,6 +114,22 @@ export default function MyInvoices() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Initial load + auto-refresh when window regains focus (so closing a deal
+  // in another tab/flow and tabbing back here picks up the new invoice
+  // without a hard refresh). Also refreshes when the document becomes
+  // visible again on mobile.
+  useEffect(() => {
+    load();
+    const onFocus = () => load();
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [load]);
+
   const showCloserColumn = viewerRole === 'owner' || viewerRole === 'admin';
   const subtitle = SUBTITLE_BY_ROLE[viewerRole] || 'Your invoices';
   const visibleRows = invoices.filter((row) => row.status_bucket === tab);
@@ -124,8 +140,22 @@ export default function MyInvoices() {
   return (
     <AppLayout title="My Invoices" subtitle={subtitle}>
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-rose-600">My Invoices</h1>
-        <p className="text-sm text-gray-500 mb-5">{subtitle}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-rose-600">My Invoices</h1>
+            <p className="text-sm text-gray-500 mb-5">{subtitle}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => load()}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 bg-white hover:border-rose-300 transition disabled:opacity-50"
+            title="Refresh invoice list"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">

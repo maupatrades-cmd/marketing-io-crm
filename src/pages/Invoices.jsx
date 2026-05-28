@@ -63,21 +63,28 @@ export default function Invoices() {
   const [cancelTarget, setCancelTarget] = useState(null);
   const { toast } = useToast();
 
+  // Invoices are read via the list-my-invoices function (returns the full
+  // org-wide list for owner / admin, scoped to closer_id for cpc / field_agent).
+  // The previous base44.entities.Invoice.list() direct call + .subscribe()
+  // both failed RLS silently (LB-281) — page rendered "0 invoices" forever
+  // even when the data was there. The Client.list call below kept working
+  // because Client has no RLS block; we keep it as-is for the New Invoice
+  // modal's client dropdown.
   const load = () => Promise.all([
-    base44.entities.Invoice.list("-created_date", 200),
-    base44.entities.Client.list("-created_date", 200),
+    base44.functions.invoke("list-my-invoices", { token: localStorage.getItem("mio_session_token") })
+      .then((res) => {
+        const data = res?.data ?? res;
+        return Array.isArray(data?.invoices) ? data.invoices : [];
+      })
+      .catch((err) => {
+        console.error("[Invoices] list-my-invoices failed:", err);
+        return [];
+      }),
+    base44.entities.Client.list("-created_date", 200).catch(() => []),
   ]).then(([inv, c]) => { setInvoices(inv); setClients(c); setLoading(false); });
 
   useEffect(() => {
     load();
-    const unsubscribe = base44.entities.Invoice.subscribe(e => {
-      setInvoices(prev =>
-        e.type === 'create' ? [e.data, ...prev] :
-        e.type === 'update' ? prev.map(i => i.id === e.id ? e.data : i) :
-        prev.filter(i => i.id !== e.id)
-      );
-    });
-    return () => unsubscribe();
   }, []);
 
   const filtered = invoices.filter(i => {

@@ -142,7 +142,10 @@ Deno.serve(async (req) => {
       client_id,
       type: invoiceType,
       closer_id: actor.userId,
-      send_email: false,
+      // Fire the "your invoice is ready" email. create-invoice handles this
+      // via its existing send-invoice-issued-email chain; it no-ops cleanly
+      // when the client has no email on file.
+      send_email: true,
       line_items: [{
         product_id,
         product_name: product.name,
