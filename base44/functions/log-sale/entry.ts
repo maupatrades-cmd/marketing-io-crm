@@ -158,14 +158,34 @@ Deno.serve(async (req) => {
   const startDateStr = String(start_date || plusDays(7));
 
   // ── STEP 3 — Closer lookup (must be a real AppUser) ────────────────────
+  // LB-180: the frontend may pass a legacy User.id that doesn't match any
+  // AppUser row. Strategy:
+  //   (a) try AppUser.filter({id}) — happy path
+  //   (b) if empty AND closer_id === actor.userId, trust auth-me's identity
+  //   (c) last resort: scan AppUser.list and match by id OR actor.email
+  // None of these should 500 — empty result → 400 closer_not_found.
   let closer: any = null;
   try {
     closer = unwrap(await base44.asServiceRole.entities.AppUser.filter({ id: String(closer_id) }))[0] || null;
   } catch (err) {
-    console.error('[log-sale] closer lookup failed:', errMsg(err));
-    return Response.json({ success: false, error: 'closer_lookup_failed', detail: errMsg(err) }, { status: 500 });
+    console.warn('[log-sale] AppUser.filter({id}) threw — falling back:', errMsg(err));
   }
-  if (!closer) return e400('closer_not_found');
+  if (!closer && String(closer_id) === actor.userId) {
+    closer = { id: actor.userId, full_name: actor.name, email: actor.email, role: actor.role };
+  }
+  if (!closer) {
+    try {
+      const all = unwrap(await base44.asServiceRole.entities.AppUser.list('-created_date', 1000));
+      const wantEmail = (actor.email || '').toLowerCase();
+      closer = all.find((u: any) =>
+        String(u.id) === String(closer_id) ||
+        (wantEmail && String(u.email || '').toLowerCase() === wantEmail),
+      ) || null;
+    } catch (err) {
+      console.error('[log-sale] AppUser.list fallback failed:', errMsg(err));
+    }
+  }
+  if (!closer) return e400('closer_not_found', { closer_id: String(closer_id) });
   const closerRole = String(closer.role || 'field_agent');
   const closerName = String(closer.full_name || closer.email || 'Staff');
 
@@ -179,15 +199,26 @@ Deno.serve(async (req) => {
   const cpcName = cpc ? String(cpc.full_name || cpc.email || 'CPC') : '';
 
   // ── STEP 5 — Client lookup OR create ───────────────────────────────────
+  // Existing-client path: same resilience pattern as Step 3. If Client.filter
+  // by id throws or returns empty, fall back to scanning Client.list before
+  // surfacing client_not_found. Empty result → 400, never 500.
   let client: any = null;
   let createdNewClient = false;
   if (client_id) {
     try {
       client = unwrap(await base44.asServiceRole.entities.Client.filter({ id: String(client_id) }))[0] || null;
     } catch (err) {
-      return Response.json({ success: false, error: 'client_lookup_failed', detail: errMsg(err) }, { status: 500 });
+      console.warn('[log-sale] Client.filter({id}) threw — falling back:', errMsg(err));
     }
-    if (!client) return e400('client_not_found');
+    if (!client) {
+      try {
+        const all = unwrap(await base44.asServiceRole.entities.Client.list('-created_date', 5000));
+        client = all.find((c: any) => String(c.id) === String(client_id)) || null;
+      } catch (err) {
+        console.error('[log-sale] Client.list fallback failed:', errMsg(err));
+      }
+    }
+    if (!client) return e400('client_not_found', { client_id: String(client_id) });
   } else {
     const nc = new_client_data || {};
     if (!nc.business_name) return e400('new_client_data.business_name required');
