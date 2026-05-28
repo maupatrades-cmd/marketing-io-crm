@@ -258,6 +258,17 @@ Deno.serve(async (req) => {
           : {}),
       });
       setupInvoiceId = String(inv?.id || '') || null;
+      // Fire "your invoice is ready" email (non-fatal). create-invoice's
+      // built-in send_email path isn't available here because we write
+      // Invoice rows directly (SoldActionForm needs assigned_field_agent_id
+      // / assigned_cpc_id fields which create-invoice's API doesn't accept).
+      if (setupInvoiceId) {
+        base44.asServiceRole.functions.invoke('send-invoice-issued-email', {
+          invoice_id: setupInvoiceId,
+        }).catch((emailErr: any) => {
+          console.error('[close-sales-opportunity] setup invoice email failed (non-fatal):', emailErr?.message);
+        });
+      }
     } catch (err) {
       return Response.json({
         success: false, error: 'invoice_setup_create_failed', step: 2, detail: errMsg(err),
@@ -288,6 +299,14 @@ Deno.serve(async (req) => {
           : {}),
       });
       monthlyInvoiceId = String(inv?.id || '') || null;
+      // Email — same non-fatal pattern as the setup invoice above.
+      if (monthlyInvoiceId) {
+        base44.asServiceRole.functions.invoke('send-invoice-issued-email', {
+          invoice_id: monthlyInvoiceId,
+        }).catch((emailErr: any) => {
+          console.error('[close-sales-opportunity] monthly invoice email failed (non-fatal):', emailErr?.message);
+        });
+      }
     } catch (err) {
       return Response.json({
         success: false, error: 'invoice_monthly_create_failed', step: 3, detail: errMsg(err),

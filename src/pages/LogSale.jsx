@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { getCurrentUser } from '@/lib/customAuth';
-import { autoCreateDeliverables } from "@/lib/fulfilmentAutomation";
-import { notifyClient } from "@/lib/clientNotifier";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,213 +115,70 @@ export default function LogSale() {
     if (isNewClient && !newClient.business_name) { toast({ title: "Enter client name", variant: "destructive" }); return; }
 
     setSaving(true);
-    const d = today();
-    const payroll_month = d.slice(0, 7);
+    try {
+      // LB-281 fix: every entity write below (Deal/Commission/Contract/Invoice/
+      // ClientOnboarding/Task) used to be a direct base44.entities.X.create()
+      // from the browser session, which returned 403 because mio_session_token
+      // isn't a valid Base44 JWT for RLS create gates. The new log-sale
+      // backend function does all writes via asServiceRole, rolls back the
+      // orphan Client row if Deal.create fails, and routes the invoice
+      // through create-invoice so the issued-invoice email fires.
+      const payload = {
+        token:        localStorage.getItem("mio_session_token"),
+        package:      selectedPackage,
+        add_on_name:  selectedPackage === "add_on" ? selectedAddOn : "",
+        setup_fee:    setupFee,
+        monthly_fee:  monthlyFee,
+        term_months:  term,
+        start_date:   startDate,
+        notes:        notes || "",
+        closer_id:    closerId,
+        cpc_id:       cpcId || null,
+        ...(isNewClient
+          ? { new_client_data: {
+              business_name:  newClient.business_name,
+              contact_person: newClient.contact_person,
+              phone:          newClient.phone,
+              email:          newClient.email,
+              address:        newClient.address,
+            } }
+          : { client_id: selectedClientId }),
+      };
 
-    // 1. Create client if new
-    let clientId = selectedClientId;
-    let clientName = clients.find(c => c.id === selectedClientId)?.business_name || "";
+      const res = await base44.functions.invoke("log-sale", payload);
+      const data = res?.data ?? res;
 
-    if (isNewClient) {
-      const created = await base44.entities.Client.create({
-        business_name: newClient.business_name,
-        contact_person: newClient.contact_person,
-        phone: newClient.phone,
-        email: newClient.email,
-        address: newClient.address,
-        status: "onboarding",
+      if (data?.success) {
+        setDone(true);
+        toast({
+          title: "Sale logged!",
+          description: setupFee > 0 && data.invoice_number
+            ? `Setup invoice ${data.invoice_number} issued. Onboarding queue updated.`
+            : "Deal closed and onboarding queue updated.",
+        });
+      } else {
+        const code = String(data?.error || "log_sale_failed");
+        const friendly =
+          code === "invalid_session"          ? "Your session expired. Please log in again."
+        : code === "forbidden"                ? "You don't have permission to log a sale."
+        : code === "closer_not_found"         ? "Selected closer no longer exists. Refresh and try again."
+        : code === "client_not_found"         ? "Selected client no longer exists. Refresh and try again."
+        : code === "deal_create_failed"       ? `Could not create the deal (${data?.detail || 'unknown'}). Please try again.`
+        : code === "client_create_failed"     ? `Could not create the client (${data?.detail || 'unknown'}). Please try again.`
+        :                                       `Failed to log sale (${code}). Please try again.`;
+        console.error("[LogSale] backend rejected:", data);
+        toast({ title: "Error", description: friendly, variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("[LogSale]", err);
+      toast({
+        title: "Error",
+        description: "Could not log sale. Please try again.",
+        variant: "destructive",
       });
-      clientId = created.id;
-      clientName = created.business_name;
+    } finally {
+      setSaving(false);
     }
-
-    // 2. Create Deal
-    const deal = await base44.entities.Deal.create({
-      client_id: clientId,
-      client_name: clientName,
-      deal_type: selectedPackage === "add_on" ? "add_on" : "core_package",
-      package: selectedPackage !== "add_on" ? selectedPackage : "none",
-      add_on_name: selectedPackage === "add_on" ? selectedAddOn : "",
-      stage: "closed_won",
-      setup_fee: setupFee,
-      monthly_retainer: monthlyFee,
-      probability: 100,
-      closer_id: closerId,
-      closer_name: closerName,
-      notes,
-    });
-
-    // 3. Commission for closer
-    const commissions = [];
-    if (setupFee > 0) {
-      commissions.push({
-        staff_id: closerId,
-        staff_name: closerName,
-        staff_role: "field_agent",
-        commission_type: "setup_commission",
-        deal_id: deal.id,
-        client_id: clientId,
-        client_name: clientName,
-        package_or_addon: selectedPackage !== "add_on" ? selectedPackage : selectedAddOn,
-        base_amount: setupFee,
-        rate_percent: SETUP_RATE * 100,
-        commission_amount: Math.round(setupFee * SETUP_RATE),
-        qualifying_event: "Closed sale — setup fee commission",
-        qualifying_event_date: d,
-        payroll_month,
-        status: "pending",
-      });
-    }
-    if (monthlyFee > 0) {
-      commissions.push({
-        staff_id: closerId,
-        staff_name: closerName,
-        staff_role: "field_agent",
-        commission_type: "retainer_commission",
-        deal_id: deal.id,
-        client_id: clientId,
-        client_name: clientName,
-        package_or_addon: selectedPackage !== "add_on" ? selectedPackage : selectedAddOn,
-        base_amount: monthlyFee,
-        rate_percent: RETAINER_RATE * 100,
-        commission_amount: Math.round(monthlyFee * RETAINER_RATE),
-        qualifying_event: "Closed sale — retainer commission (month 1)",
-        qualifying_event_date: d,
-        payroll_month,
-        status: "pending",
-      });
-    }
-
-    // 4. CPC closure bonus R250
-    if (cpcId) {
-      commissions.push({
-        staff_id: cpcId,
-        staff_name: cpcName,
-        staff_role: "cpc",
-        commission_type: "cpc_closure_bonus",
-        deal_id: deal.id,
-        client_id: clientId,
-        client_name: clientName,
-        package_or_addon: selectedPackage !== "add_on" ? selectedPackage : selectedAddOn,
-        base_amount: 250,
-        rate_percent: 100,
-        commission_amount: 250,
-        qualifying_event: "CPC qualified lead — closure bonus",
-        qualifying_event_date: d,
-        payroll_month,
-        status: "pending",
-      });
-    }
-
-    if (commissions.length > 0) {
-      await base44.entities.Commission.bulkCreate(commissions);
-      await base44.entities.Deal.update(deal.id, { commission_generated: true });
-    }
-
-    // 5. Contract (draft)
-    await base44.entities.Contract.create({
-      client_id: clientId,
-      client_name: clientName,
-      deal_id: deal.id,
-      package: selectedPackage !== "add_on" ? selectedPackage : "add_on",
-      add_on_name: selectedPackage === "add_on" ? selectedAddOn : "",
-      setup_fee: setupFee,
-      monthly_retainer: monthlyFee,
-      initial_term_months: term,
-      contract_start_date: startDate,
-      contract_end_date: plusMonths(startDate, term),
-      status: "draft",
-      auto_renews: true,
-    });
-
-    // 6. Setup fee invoice
-    // closer_id + lead_source_user_id attribute this sale to the right
-    // salesperson so it appears in their My Sales tab and so calculate-commission
-    // can resolve the closer without falling back to the owner default (LB-097).
-    const invoice = await base44.entities.Invoice.create({
-      client_id: clientId,
-      client_name: clientName,
-      deal_id: deal.id,
-      invoice_type: "setup_fee",
-      description: `Setup fee — ${selectedPackage !== "add_on" ? selectedPackage.replace(/_/g, " ") : selectedAddOn.replace(/_/g, " ")}`,
-      amount: setupFee,
-      total_amount: setupFee,
-      issue_date: d,
-      due_date: plusDays(7),
-      status: "sent",
-      closer_id: closerId,
-      lead_source_user_id: cpcId || null,
-    });
-    // Notify client of new invoice
-    if (invoice?.id && clientId) {
-      const pkg = PACKAGE_DATA[selectedPackage];
-      notifyClient({
-        clientId,
-        type: "invoice_issued",
-        title: `Setup invoice issued — R${setupFee.toLocaleString()}`,
-        body: `Invoice for your ${pkg?.label || selectedPackage} package is ready. Click to view and pay.`,
-        relatedEntityType: "Invoice",
-        relatedEntityId: invoice.id,
-        actionUrl: "/client/invoices",
-      }).catch(() => {});
-    }
-
-    // 7. Auto-create ClientOnboarding record
-    const adminUsers = users.filter(u => u.role === "admin" || u.role === "owner");
-    const assignedAdmin = adminUsers[0] || null;
-    await base44.entities.ClientOnboarding.create({
-      deal_id: deal.id,
-      client_id: clientId,
-      client_name: clientName,
-      assigned_admin_id: assignedAdmin?.id || closerId,
-      assigned_admin_name: assignedAdmin?.full_name || closerName,
-      current_phase: "phase1_contract_signed",
-      overall_status: "in_progress",
-      p1_client_added_to_crm: true,
-      deal_won_date: d,
-    });
-
-    // 8. Auto tasks
-    const adminUser = adminUsers[0];
-    await base44.entities.Task.bulkCreate([
-      {
-        title: `Begin onboarding for ${clientName}`,
-        description: `New sale logged. Package: ${selectedPackage.replace(/_/g, " ")}. Start date: ${startDate}.`,
-        client_id: clientId,
-        client_name: clientName,
-        deal_id: deal.id,
-        assigned_to: adminUser?.id || closerId,
-        assigned_to_name: adminUser?.full_name || closerName,
-        status: "open",
-        priority: "high",
-        due_date: plusDays(1),
-        auto_generated: true,
-      },
-      ...(setupFee > 0 ? [{
-        title: `Follow up on setup fee payment with ${clientName}`,
-        description: `Setup invoice of R${setupFee.toLocaleString()} was issued. Follow up if not paid within 5 days.`,
-        client_id: clientId,
-        client_name: clientName,
-        deal_id: deal.id,
-        assigned_to: closerId,
-        assigned_to_name: closerName,
-        status: "open",
-        priority: "medium",
-        due_date: plusDays(5),
-        auto_generated: true,
-      }] : []),
-    ]);
-
-    // 9. Auto-create deliverables from FulfilmentTemplate
-    const client = clients.find(c => c.id === clientId) || { business_name: clientName };
-    await autoCreateDeliverables(deal, client, null);
-
-    setSaving(false);
-    setDone(true);
-    toast({
-      title: "Sale logged!",
-      description: `Setup invoice R${setupFee.toLocaleString()} issued. Onboarding queue updated.`,
-    });
   };
 
   if (loading) return (
