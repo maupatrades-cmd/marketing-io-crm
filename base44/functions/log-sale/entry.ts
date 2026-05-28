@@ -514,6 +514,30 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── STEP 9.5 — In-app client notification ──────────────────────────────
+  // Ports the notifyClient() call from the original LogSale.jsx (dropped in
+  // PR #128 as "duplicative with the invoice email"). The email and in-app
+  // push serve different surfaces — the portal Notifications bell needs the
+  // ClientNotification row to light up. Soft-failure: missing row doesn't
+  // break the deal.
+  if (invoiceId) {
+    try {
+      const pkgHuman = pkgLabel.replace(/_/g, ' ');
+      await base44.asServiceRole.entities.ClientNotification.create({
+        client_id:           clientId,
+        notification_type:   'invoice_issued',
+        title:               `Setup invoice issued — R${setupNum.toLocaleString('en-ZA')}`,
+        body:                `Invoice for your ${pkgHuman} package is ready. Click to view and pay.`,
+        related_entity_type: 'Invoice',
+        related_entity_id:   invoiceId,
+        action_url:          '/client/invoices',
+        is_read:             false,
+      });
+    } catch (err) {
+      console.error(`[log-sale] ClientNotification create failed for deal ${dealId}:`, errMsg(err));
+    }
+  }
+
   // ── STEP 10 — ClientOnboarding ─────────────────────────────────────────
   // Find an admin/owner to assign onboarding to.
   let assignedAdminId   = closer.id;
