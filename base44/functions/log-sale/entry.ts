@@ -158,14 +158,34 @@ Deno.serve(async (req) => {
   const startDateStr = String(start_date || plusDays(7));
 
   // ── STEP 3 — Closer lookup (must be a real AppUser) ────────────────────
+  // LB-180: the frontend may pass a legacy User.id that doesn't match any
+  // AppUser row. Strategy:
+  //   (a) try AppUser.filter({id}) — happy path
+  //   (b) if empty AND closer_id === actor.userId, trust auth-me's identity
+  //   (c) last resort: scan AppUser.list and match by id OR actor.email
+  // None of these should 500 — empty result → 400 closer_not_found.
   let closer: any = null;
   try {
     closer = unwrap(await base44.asServiceRole.entities.AppUser.filter({ id: String(closer_id) }))[0] || null;
   } catch (err) {
-    console.error('[log-sale] closer lookup failed:', errMsg(err));
-    return Response.json({ success: false, error: 'closer_lookup_failed', detail: errMsg(err) }, { status: 500 });
+    console.warn('[log-sale] AppUser.filter({id}) threw — falling back:', errMsg(err));
   }
-  if (!closer) return e400('closer_not_found');
+  if (!closer && String(closer_id) === actor.userId) {
+    closer = { id: actor.userId, full_name: actor.name, email: actor.email, role: actor.role };
+  }
+  if (!closer) {
+    try {
+      const all = unwrap(await base44.asServiceRole.entities.AppUser.list('-created_date', 1000));
+      const wantEmail = (actor.email || '').toLowerCase();
+      closer = all.find((u: any) =>
+        String(u.id) === String(closer_id) ||
+        (wantEmail && String(u.email || '').toLowerCase() === wantEmail),
+      ) || null;
+    } catch (err) {
+      console.error('[log-sale] AppUser.list fallback failed:', errMsg(err));
+    }
+  }
+  if (!closer) return e400('closer_not_found', { closer_id: String(closer_id) });
   const closerRole = String(closer.role || 'field_agent');
   const closerName = String(closer.full_name || closer.email || 'Staff');
 
