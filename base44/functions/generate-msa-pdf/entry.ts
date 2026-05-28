@@ -241,6 +241,11 @@ const MIO_DETAILS = {
   office:     'Polokwane, Limpopo, 0699, Republic of South Africa',
   website:    'www.marketingio.co.za',
   info_email: 'info@marketingio.co.za',
+  // PR 2 — pre-printed on every page footer (chrome) and the Witness 1 block.
+  // TODO: move to SystemSettings so future personnel changes don't require
+  // a code deploy.
+  initials:           'TNP',
+  witness_full_name:  'Riana du Plessis — Co-Founder and CFO',
 };
 
 // Marketing iO director signature. Source-of-truth lives in
@@ -309,6 +314,10 @@ interface MsaSigner {
   signed_ip_address?: string;
   signed_user_agent?: string;              // expected pre-truncated to 200 chars by caller
   document_hash?: string;                  // SHA-256 hex content fingerprint
+  // PR 2 — client's initials (rendered on every page footer); optional client
+  // witness name (rendered into page 20 Witness 2 block).
+  initials?: string;
+  witness_full_name?: string;
 }
 
 interface MsaContext {
@@ -443,7 +452,7 @@ function writeCallout(doc: any, label: string, text: string, y: number): number 
 
 // ── PER-PAGE CHROME (top band + bottom footer) ──────────────────────────────
 
-function drawChrome(doc: any, pageNum: number) {
+function drawChrome(doc: any, pageNum: number, ctx: MsaContext) {
   // Top band — navy thin bar with title.
   doc.setFillColor(NAVY);
   doc.rect(0, 0, PAGE_W, 14, 'F');
@@ -472,8 +481,15 @@ function drawChrome(doc: any, pageNum: number) {
   doc.text('TOO GOOD TO STAY HIDDEN', ML + 2, 287.5);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
+  // PR 2 — fill the initials slots when the signer payload has them, else
+  // keep the blank-line placeholder for the pre-signing / unsigned render.
+  // Marketing iO's initials are always pre-printed (MIO_DETAILS.initials).
+  const _signer = ctx.signer || {};
+  const _clientInits = _signer.initials
+    ? String(_signer.initials).toUpperCase()
+    : '_______';
   doc.text(
-    'Client Initials: _______ / Marketing iO Initials: _______',
+    `Client Initials: ${_clientInits}  /  Marketing iO Initials: ${MIO_DETAILS.initials}`,
     CONTENT_R, 287.5,
     { align: 'right' },
   );
@@ -1400,7 +1416,9 @@ function pageWitnesses(doc: any, ctx: MsaContext) {
   doc.setTextColor('#FFFFFF');
   doc.text('WITNESS 1 — ON BEHALF OF MARKETING iO', ML + 3, y + 4);
   y += 9;
-  y = signatureBox(doc, ML, y, CONTENT_W, 'Full Name',  '');
+  // PR 2 — pre-fill MIO witness name. ID / Signature / Date stay blank
+  // fill-in lines for Riana to manually sign on a printed copy if needed.
+  y = signatureBox(doc, ML, y, CONTENT_W, 'Full Name',  MIO_DETAILS.witness_full_name);
   y = signatureBox(doc, ML, y, CONTENT_W, 'ID Number',  '');
   y = signatureBox(doc, ML, y, CONTENT_W, 'Signature',  '', { italic: true });
   setMuted(doc, 7);
@@ -1417,7 +1435,10 @@ function pageWitnesses(doc: any, ctx: MsaContext) {
   doc.setTextColor('#FFFFFF');
   doc.text('WITNESS 2 — ON BEHALF OF THE CLIENT', ML + 3, y + 4);
   y += 9;
-  y = signatureBox(doc, ML, y, CONTENT_W, 'Full Name',  '');
+  // PR 2 — pre-fill client witness name from form. ID / Signature / Date
+  // stay blank fill-in lines (locked decision Option A — name only).
+  const _w2 = String((ctx.signer && ctx.signer.witness_full_name) || '').trim();
+  y = signatureBox(doc, ML, y, CONTENT_W, 'Full Name',  _w2);
   y = signatureBox(doc, ML, y, CONTENT_W, 'ID Number',  '');
   y = signatureBox(doc, ML, y, CONTENT_W, 'Signature',  '', { italic: true });
   setMuted(doc, 7);
@@ -1574,7 +1595,7 @@ function generateMsaPdf(
   const total = doc.getNumberOfPages();
   for (let i = 2; i <= total - 1; i++) {
     doc.setPage(i);
-    drawChrome(doc, i);
+    drawChrome(doc, i, ctx);
   }
 
   return new Uint8Array(doc.output('arraybuffer') as ArrayBuffer);

@@ -18,6 +18,8 @@ export default function ContractSigningPublic() {
   const [signerEmail, setSignerEmail] = useState("");
   const [capacity, setCapacity] = useState("");
   const [idNumber, setIdNumber] = useState("");
+  const [initials, setInitials] = useState("");
+  const [witnessName, setWitnessName] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [signatureMethod, setSignatureMethod] = useState("typed");
   const [typedSignature, setTypedSignature] = useState("");
@@ -127,6 +129,11 @@ export default function ContractSigningPublic() {
       toast.error("Please enter your ID number");
       return;
     }
+    const initialsClean = initials.trim().toUpperCase();
+    if (!initialsClean || !/^[A-Z0-9]{1,5}$/.test(initialsClean)) {
+      toast.error("Please enter 1-5 letters or numbers as your initials");
+      return;
+    }
     if (!agreed) {
       toast.error("You must confirm you have read and understood the agreement");
       return;
@@ -154,6 +161,8 @@ export default function ContractSigningPublic() {
         signer_email:             signerEmail.trim().toLowerCase(),
         signer_capacity:          capacity.trim(),
         signer_id_number:         idNumber.trim(),
+        signer_initials:          initialsClean,
+        witness_full_name:        witnessName.trim(),
         signature_method:         signatureMethod,
         typed_signature:          signatureMethod === "typed" ? typedSignature.trim() : "",
         drawn_signature_data_url: signatureMethod === "drawn" ? drawnSignature : "",
@@ -359,6 +368,35 @@ export default function ContractSigningPublic() {
                       placeholder="Enter your ID number"
                       disabled={signing}
                     />
+                  </div>
+
+                  {/* Initials — printed on every page footer of the signed PDF. */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Your Initials *</label>
+                    <Input
+                      value={initials}
+                      onChange={(e) => setInitials(e.target.value.toUpperCase().slice(0, 5))}
+                      placeholder="e.g. JD"
+                      maxLength={5}
+                      disabled={signing}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      1-5 letters or numbers. Appears on every page footer of your contract.
+                    </p>
+                  </div>
+
+                  {/* Witness Name — optional, pre-fills Witness 2 block on page 20. */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Witness Name (optional)</label>
+                    <Input
+                      value={witnessName}
+                      onChange={(e) => setWitnessName(e.target.value)}
+                      placeholder="Full name of your witness"
+                      disabled={signing}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Pre-fills the Witness 2 block on page 20 of your contract.
+                    </p>
                   </div>
 
                   {/* Signature Method */}
