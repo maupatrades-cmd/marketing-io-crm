@@ -174,7 +174,7 @@ const AuthenticatedApp = () => {
       <Route path="/mail" element={<InternalMail />} />
       <Route path="/owner/staff-hr" element={<RouteGuard allowedRoles={["owner"]} fallbackPath="/"><StaffHR /></RouteGuard>} />
       <Route path="/products" element={<Products />} />
-      <Route path="/log-sale" element={<RouteGuard allowedRoles={["owner","admin","cpc","field_agent"]} fallbackPath="/"><LogSale /></RouteGuard>} />
+      <Route path="/log-sale" element={<LogSale />} />
       <Route path="/onboarding" element={<ClientOnboarding />} />
       <Route path="/tasks" element={<Tasks />} />
       <Route path="/team-oversight" element={<TeamOversight />} />
