@@ -87,8 +87,15 @@ export default function LogSale() {
       setClients(c);
       setUsers(u);
       setCurrentUser(me);
-      setCloserId(me?.id || "");
-      setCloserName(me?.full_name || me?.email || "");
+      // LB-180: getCurrentUser() can return a legacy User.id that does not
+      // match any AppUser row, which makes the log-sale function 500 on
+      // closer lookup. Prefer the canonical AppUser id resolved by email.
+      const meEmail = (me?.email || "").toLowerCase();
+      const meAsAppUser = meEmail
+        ? u.find(au => String(au.email || "").toLowerCase() === meEmail)
+        : null;
+      setCloserId(meAsAppUser?.id || me?.id || "");
+      setCloserName(meAsAppUser?.full_name || me?.full_name || me?.email || "");
       setLoading(false);
     });
   }, []);
@@ -170,12 +177,25 @@ export default function LogSale() {
         toast({ title: "Error", description: friendly, variant: "destructive" });
       }
     } catch (err) {
-      console.error("[LogSale]", err);
-      toast({
-        title: "Error",
-        description: "Could not log sale. Please try again.",
-        variant: "destructive",
-      });
+      // Axios throws on 4xx/5xx. The backend body is on err.response.data and
+      // carries { error, detail, step }. Surface those so failures are
+      // diagnosable from the toast instead of devtools.
+      const body = err?.response?.data || {};
+      console.error("[LogSale] request failed:", { status: err?.response?.status, body, err });
+      const code   = String(body?.error || "log_sale_failed");
+      const detail = body?.detail ? ` (${body.detail})` : "";
+      const step   = body?.step ? ` [step ${body.step}]` : "";
+      const friendly =
+        code === "invalid_session"      ? "Your session expired. Please log in again."
+      : code === "forbidden"            ? "You don't have permission to log a sale."
+      : code === "closer_not_found"     ? "Selected closer no longer exists. Refresh and try again."
+      : code === "client_not_found"     ? "Selected client no longer exists. Refresh and try again."
+      : code === "closer_lookup_failed" ? `Could not look up the closer${detail}.`
+      : code === "client_lookup_failed" ? `Could not look up the client${detail}.`
+      : code === "client_create_failed" ? `Could not create the client${detail}.`
+      : code === "deal_create_failed"   ? `Could not create the deal${detail}.`
+      :                                   `Failed to log sale${step}: ${code}${detail}`;
+      toast({ title: "Error", description: friendly, variant: "destructive" });
     } finally {
       setSaving(false);
     }
