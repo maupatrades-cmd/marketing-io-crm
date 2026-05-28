@@ -104,6 +104,8 @@ Deno.serve(async (req) => {
   const typedSig     = String(body?.typed_signature ?? '').trim();
   const drawnSig     = String(body?.drawn_signature_data_url ?? '').trim();
   const place        = String(body?.place_of_signing ?? '').trim();
+  const initials     = String(body?.signer_initials ?? '').trim().toUpperCase();
+  const witnessName  = String(body?.witness_full_name ?? '').trim();
 
   // ── Token shape + rate limit (BEFORE any DB call) ────────────────────────
   if (!TOKEN_SHAPE.test(signingToken)) return notFound();
@@ -126,6 +128,13 @@ Deno.serve(async (req) => {
   if (!fullName)  return Response.json({ success: false, error: 'invalid_signature', detail: 'signer_full_name required' }, { status: 400 });
   if (!capacity)  return Response.json({ success: false, error: 'invalid_signature', detail: 'signer_capacity required' }, { status: 400 });
   if (!idNumber)  return Response.json({ success: false, error: 'invalid_signature', detail: 'signer_id_number required' }, { status: 400 });
+  if (!initials || !/^[A-Z0-9]{1,5}$/.test(initials)) {
+    return Response.json({
+      success: false, error: 'invalid_signature',
+      detail: 'signer_initials required (1-5 alphanumeric)',
+    }, { status: 400 });
+  }
+  // witness_full_name is optional — empty allowed.
   if (!email || !EMAIL_SHAPE.test(email)) {
     return Response.json({ success: false, error: 'invalid_signature', detail: 'signer_email invalid' }, { status: 400 });
   }
@@ -284,6 +293,8 @@ Deno.serve(async (req) => {
         signature_id:          signatureId,
         signer_full_name:      fullName,
         signer_capacity:       capacity,
+        signer_initials:       initials,
+        witness_full_name:     witnessName || null,
         signer_email:          email,
         signature_method:      method,
         signed_ip_address:     ip,

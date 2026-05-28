@@ -262,8 +262,15 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── STEP 5 — Capacity from activity log (PR #122 decision A) ────────────
-  let signerCapacity = 'Client';
+  // ── STEP 5 — Capacity + initials + witness from activity log ───────────
+  // ContractSignature.jsonc has no signer_capacity / signer_initials /
+  // witness_full_name fields (locked decision A from PR #122 keeps them
+  // form-only). submit-contract-signature writes them into event_metadata
+  // when the client signs; we re-read them here. Old signed contracts that
+  // pre-date this PR have empty metadata → defaults apply, no crash.
+  let signerCapacity   = 'Client';
+  let signerInitials   = '';
+  let witnessFullName  = '';
   try {
     const logs = unwrap(await base44.asServiceRole.entities.ClientActivityLog.filter({
       client_id: contract.client_id,
@@ -273,9 +280,10 @@ Deno.serve(async (req) => {
       const m = l?.event_metadata;
       return m && (m.contract_id === contract_id || m.signature_id === clientSig.id);
     });
-    if (match?.event_metadata?.signer_capacity) {
-      signerCapacity = String(match.event_metadata.signer_capacity);
-    }
+    const meta = match?.event_metadata;
+    if (meta?.signer_capacity)    signerCapacity  = String(meta.signer_capacity);
+    if (meta?.signer_initials)    signerInitials  = String(meta.signer_initials).toUpperCase();
+    if (meta?.witness_full_name)  witnessFullName = String(meta.witness_full_name);
   } catch (err) {
     console.error(`[finalize-signed-contract] capacity lookup failed (non-fatal) for ${contract_id}:`, errMsg(err));
   }
@@ -329,6 +337,8 @@ Deno.serve(async (req) => {
           signed_ip_address:   String(clientSig.signed_ip_address || 'unknown'),
           signed_user_agent:   String(clientSig.signed_user_agent || '').slice(0, 200),
           document_hash,
+          initials:            signerInitials,
+          witness_full_name:   witnessFullName,
         },
       });
       const data = res?.data ?? res;
