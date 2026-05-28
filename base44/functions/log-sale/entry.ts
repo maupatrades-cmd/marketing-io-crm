@@ -320,13 +320,18 @@ Deno.serve(async (req) => {
   const pkgLabel    = pkg === 'add_on' ? String(add_on_name) : String(pkg);
   const commissions: any[] = [];
 
+  // Commission.staff_role enum = ['field_agent','cpc','admin','founder','other'].
+  // AppUser.role can be 'owner' — map it to 'founder' (closest semantic) so
+  // bulkCreate doesn't silently reject the row.
+  const commissionRole = closerRole === 'owner' ? 'founder' : closerRole;
+
   // Closer's primary commission lines
   if (closerRole === 'cpc') {
     // CPC closer: flat lead fee + closure bonus
     commissions.push({
       staff_id:              closer.id,
       staff_name:            closerName,
-      staff_role:            closerRole,
+      staff_role:            commissionRole,
       commission_type:       'cpc_closure_bonus',
       deal_id:               dealId,
       client_id:             clientId,
@@ -344,7 +349,7 @@ Deno.serve(async (req) => {
     commissions.push({
       staff_id:              closer.id,
       staff_name:            closerName,
-      staff_role:            closerRole,
+      staff_role:            commissionRole,
       commission_type:       'admin_contract_load',
       deal_id:               dealId,
       client_id:             clientId,
@@ -364,7 +369,7 @@ Deno.serve(async (req) => {
       commissions.push({
         staff_id:              closer.id,
         staff_name:            closerName,
-        staff_role:            closerRole,
+        staff_role:            commissionRole,
         commission_type:       'setup_commission',
         deal_id:               dealId,
         client_id:             clientId,
@@ -383,7 +388,7 @@ Deno.serve(async (req) => {
         commissions.push({
           staff_id:              closer.id,
           staff_name:            closerName,
-          staff_role:            closerRole,
+          staff_role:            commissionRole,
           commission_type:       'setup_commission',
           deal_id:               dealId,
           client_id:             clientId,
@@ -402,7 +407,7 @@ Deno.serve(async (req) => {
         commissions.push({
           staff_id:              closer.id,
           staff_name:            closerName,
-          staff_role:            closerRole,
+          staff_role:            commissionRole,
           commission_type:       'retainer_commission',
           deal_id:               dealId,
           client_id:             clientId,
