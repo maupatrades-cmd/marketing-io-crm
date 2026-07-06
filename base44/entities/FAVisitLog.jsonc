@@ -4,7 +4,7 @@
   "properties": {
     "field_agent_id": {
       "type": "string",
-      "description": "AppUser.id of the field agent who logged the visit"
+      "description": "AppUser.id of the field agent"
     },
     "client_id": {
       "type": "string",
@@ -44,7 +44,8 @@
         "support",
         "cold"
       ],
-      "default": "discovery"
+      "default": "discovery",
+      "description": "Type of visit"
     },
     "outcome": {
       "type": "string",
@@ -55,22 +56,25 @@
         "deferred",
         "no_show"
       ],
-      "default": "interested"
+      "default": "interested",
+      "description": "Visit outcome"
     },
     "notes": {
-      "type": "string"
+      "type": "string",
+      "description": "Visit notes"
     },
     "next_step": {
-      "type": "string"
+      "type": "string",
+      "description": "Next action to take"
     },
     "next_step_due_date": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "description": "When the next step is due"
     }
   },
   "required": [
     "field_agent_id",
-    "visit_type",
-    "outcome"
+    "visit_type"
   ]
 }

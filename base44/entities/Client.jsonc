@@ -1,229 +1,31 @@
 {
   "name": "Client",
-  "type": "object",
   "properties": {
-    "business_name": {
-      "type": "string",
-      "description": "Client business name"
-    },
-    "contact_person": {
-      "type": "string",
-      "description": "Primary contact full name"
-    },
-    "email": {
-      "type": "string",
-      "description": "Business email address"
-    },
-    "phone": {
-      "type": "string",
-      "description": "WhatsApp / mobile number"
+    "acceleration_triggered": {
+      "default": false,
+      "description": "True if 3 failed debits triggered acceleration clause",
+      "type": "boolean"
     },
     "address": {
-      "type": "string",
-      "description": "Physical business address"
-    },
-    "industry": {
-      "type": "string",
-      "description": "Business industry / sector"
-    },
-    "id_reg_number": {
-      "type": "string",
-      "description": "ID number or CIPC registration number"
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "lead",
-        "prospect",
-        "onboarding",
-        "active",
-        "suspended",
-        "cancelled",
-        "churned"
-      ],
-      "default": "lead"
-    },
-    "source": {
-      "type": "string",
-      "enum": [
-        "cpc_outbound",
-        "field_agent_direct",
-        "fnc_referral",
-        "inbound",
-        "referral",
-        "checkout",
-        "other"
-      ],
-      "description": "Lead source path. 'checkout' = self-service prospect created by payfast-checkout-init when an anonymous buyer hits /checkout/:packageId."
-    },
-    "package": {
-      "type": "string",
-      "enum": [
-        "ignite",
-        "accelerate",
-        "dominate",
-        "street_pulse",
-        "township_pulse",
-        "none"
-      ],
-      "default": "none"
-    },
-    "monthly_retainer": {
-      "type": "number",
-      "description": "Monthly retainer amount in ZAR"
-    },
-    "setup_fee_amount": {
-      "type": "number",
-      "description": "Setup fee amount in ZAR"
-    },
-    "setup_fee_paid": {
-      "type": "boolean",
-      "default": false
-    },
-    "debit_order_date": {
-      "type": "string",
-      "enum": [
-        "1st",
-        "15th"
-      ],
-      "description": "Debit order date"
-    },
-    "debit_mandate_signed": {
-      "type": "boolean",
-      "default": false
-    },
-    "contract_start_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "contract_end_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "go_live_date": {
-      "type": "string",
-      "format": "date"
-    },
-    "go_live_acknowledged": {
-      "type": "boolean",
-      "default": false
-    },
-    "brand_assets_received": {
-      "type": "boolean",
-      "default": false
-    },
-    "onboarding_form_returned": {
-      "type": "boolean",
-      "default": false
-    },
-    "assigned_field_agent": {
-      "type": "string",
-      "description": "User ID of assigned Field Agent"
-    },
-    "client_user_id": {
-      "type": "string",
-      "description": "Reference to User \u2014 links to their portal login"
-    },
-    "portal_invitation_sent_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When portal access was invited"
-    },
-    "portal_last_active_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Last portal activity timestamp"
-    },
-    "first_portal_login_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp of first portal login"
-    },
-    "preferred_communication_channel": {
-      "type": "string",
-      "enum": [
-        "email",
-        "whatsapp",
-        "phone",
-        "sms"
-      ],
-      "default": "email",
-      "description": "Preferred way to contact this client"
-    },
-    "failed_debits_count": {
-      "type": "number",
-      "default": 0,
-      "description": "Number of failed debits in rolling 12 months"
-    },
-    "acceleration_triggered": {
-      "type": "boolean",
-      "default": false,
-      "description": "True if 3 failed debits triggered acceleration clause"
-    },
-    "notification_preferences": {
-      "type": "string",
-      "description": "JSON object with notification settings (email_deliverable_ready, email_invoice_issued, etc.)"
-    },
-    "notes": {
-      "type": "string",
-      "description": "Internal notes"
-    },
-    "deactivated_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Set when client is cancelled"
-    },
-    "archived_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Set when client moves to churned after grace period"
-    },
-    "cancellation_reason": {
-      "type": "string",
-      "description": "Free-form admin note explaining why client was cancelled"
-    },
-    "deletion_pending": {
-      "type": "boolean",
-      "default": false,
-      "description": "LB-024: True after the client requested permanent account deletion via ClientSettings. Cleared if cancelled within the 14-day grace window. The process-pending-deletions cron sweeps rows where this is true AND deletion_scheduled_at <= now()."
-    },
-    "deletion_scheduled_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "LB-024: Timestamp when this Client is eligible for permanent anonymisation. Set to deletion request time + 14 days. Cleared on cancel."
-    },
-    "deletion_cancel_token": {
-      "type": "string",
-      "description": "LB-024: Single-use UUID issued at deletion request time. Used by the cancel link in Email 1 to authenticate the cancel action without requiring login. Cleared on use or on permanent anonymisation."
+      "description": "Physical business address",
+      "type": "string"
     },
     "anonymised_at": {
-      "type": "string",
+      "description": "LB-024: Set when process-pending-deletions has anonymised this Client row. PII fields (business_name, contact_person, email, phone, address, id_reg_number, notes) are replaced with [deleted] placeholders. Row is kept (not deleted) so financial records (Invoice/Payment/Commission/Contract) retain a valid client_id reference for SARS 5-year retention.",
       "format": "date-time",
-      "description": "LB-024: Set when process-pending-deletions has anonymised this Client row. PII fields (business_name, contact_person, email, phone, address, id_reg_number, notes) are replaced with [deleted] placeholders. Row is kept (not deleted) so financial records (Invoice/Payment/Commission/Contract) retain a valid client_id reference for SARS 5-year retention."
+      "type": "string"
     },
-    "lifecycle_stage": {
-      "type": "string",
-      "enum": [
-        "lead",
-        "active",
-        "cancelled",
-        "churned",
-        "no_package"
-      ],
-      "default": "no_package",
-      "description": "Sales lifecycle stage of the client. Used to route them into Sales Opportunities (lead/no_package/cancelled/churned) vs Upsell (active) pages."
+    "archived_at": {
+      "description": "Set when client moves to churned after grace period",
+      "format": "date-time",
+      "type": "string"
     },
-    "signed_up_by_id": {
-      "type": "string",
-      "description": "AppUser.id of the staff member who signed up this client. Null if client signed up themselves via website self-service."
-    },
-    "signed_up_self": {
-      "type": "boolean",
-      "default": false,
-      "description": "True if client signed up via website self-service without a staff member attributed. Used by owner to identify clients needing manual allocation."
+    "assigned_field_agent": {
+      "description": "User ID of assigned Field Agent",
+      "type": "string"
     },
     "attribution_source": {
-      "type": "string",
+      "description": "Marketing source the client selected at signup ('How did you find us?'). Null when a staff member or self-signup was attributed instead.",
       "enum": [
         "source_friend",
         "source_google",
@@ -233,12 +35,210 @@
         "source_walkin",
         "source_other"
       ],
-      "description": "Marketing source the client selected at signup ('How did you find us?'). Null when a staff member or self-signup was attributed instead."
+      "type": "string"
+    },
+    "brand_assets_received": {
+      "default": false,
+      "type": "boolean"
+    },
+    "business_name": {
+      "description": "Client business name",
+      "type": "string"
+    },
+    "cancellation_reason": {
+      "description": "Free-form admin note explaining why client was cancelled",
+      "type": "string"
+    },
+    "client_user_id": {
+      "description": "Reference to User \u2014 links to their portal login",
+      "type": "string"
+    },
+    "contact_person": {
+      "description": "Primary contact full name",
+      "type": "string"
+    },
+    "contract_end_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "contract_start_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "deactivated_at": {
+      "description": "Set when client is cancelled",
+      "format": "date-time",
+      "type": "string"
+    },
+    "debit_mandate_signed": {
+      "default": false,
+      "type": "boolean"
+    },
+    "debit_order_date": {
+      "description": "Debit order date",
+      "enum": [
+        "1st",
+        "15th"
+      ],
+      "type": "string"
+    },
+    "deletion_cancel_token": {
+      "description": "LB-024: Single-use UUID issued at deletion request time. Used by the cancel link in Email 1 to authenticate the cancel action without requiring login. Cleared on use or on permanent anonymisation.",
+      "type": "string"
+    },
+    "deletion_pending": {
+      "default": false,
+      "description": "LB-024: True after the client requested permanent account deletion via ClientSettings. Cleared if cancelled within the 14-day grace window. The process-pending-deletions cron sweeps rows where this is true AND deletion_scheduled_at <= now().",
+      "type": "boolean"
+    },
+    "deletion_scheduled_at": {
+      "description": "LB-024: Timestamp when this Client is eligible for permanent anonymisation. Set to deletion request time + 14 days. Cleared on cancel.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "email": {
+      "description": "Business email address",
+      "type": "string"
+    },
+    "failed_debits_count": {
+      "default": 0,
+      "description": "Number of failed debits in rolling 12 months",
+      "type": "number"
+    },
+    "first_portal_login_at": {
+      "description": "Timestamp of first portal login",
+      "format": "date-time",
+      "type": "string"
+    },
+    "go_live_acknowledged": {
+      "default": false,
+      "type": "boolean"
+    },
+    "go_live_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "id_reg_number": {
+      "description": "ID number or CIPC registration number",
+      "type": "string"
+    },
+    "industry": {
+      "description": "Business industry / sector",
+      "type": "string"
+    },
+    "lifecycle_stage": {
+      "default": "no_package",
+      "description": "Sales lifecycle stage of the client. Used to route them into Sales Opportunities (lead/no_package/cancelled/churned) vs Upsell (active) pages.",
+      "enum": [
+        "lead",
+        "active",
+        "cancelled",
+        "churned",
+        "no_package"
+      ],
+      "type": "string"
+    },
+    "monthly_retainer": {
+      "description": "Monthly retainer amount in ZAR",
+      "type": "number"
+    },
+    "notes": {
+      "description": "Internal notes",
+      "type": "string"
+    },
+    "notification_preferences": {
+      "description": "JSON object with notification settings (email_deliverable_ready, email_invoice_issued, etc.)",
+      "type": "string"
+    },
+    "onboarding_form_returned": {
+      "default": false,
+      "type": "boolean"
+    },
+    "package": {
+      "default": "none",
+      "enum": [
+        "ignite",
+        "accelerate",
+        "dominate",
+        "street_pulse",
+        "township_pulse",
+        "none"
+      ],
+      "type": "string"
+    },
+    "phone": {
+      "description": "WhatsApp / mobile number",
+      "type": "string"
+    },
+    "portal_invitation_sent_at": {
+      "description": "When portal access was invited",
+      "format": "date-time",
+      "type": "string"
+    },
+    "portal_last_active_at": {
+      "description": "Last portal activity timestamp",
+      "format": "date-time",
+      "type": "string"
+    },
+    "preferred_communication_channel": {
+      "default": "email",
+      "description": "Preferred way to contact this client",
+      "enum": [
+        "email",
+        "whatsapp",
+        "phone",
+        "sms"
+      ],
+      "type": "string"
+    },
+    "setup_fee_amount": {
+      "description": "Setup fee amount in ZAR",
+      "type": "number"
+    },
+    "setup_fee_paid": {
+      "default": false,
+      "type": "boolean"
+    },
+    "signed_up_by_id": {
+      "description": "AppUser.id of the staff member who signed up this client. Null if client signed up themselves via website self-service.",
+      "type": "string"
+    },
+    "signed_up_self": {
+      "default": false,
+      "description": "True if client signed up via website self-service without a staff member attributed. Used by owner to identify clients needing manual allocation.",
+      "type": "boolean"
+    },
+    "source": {
+      "description": "Lead source path. 'checkout' = self-service prospect created by payfast-checkout-init when an anonymous buyer hits /checkout/:packageId.",
+      "enum": [
+        "cpc_outbound",
+        "field_agent_direct",
+        "fnc_referral",
+        "inbound",
+        "referral",
+        "checkout",
+        "other"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "default": "lead",
+      "enum": [
+        "lead",
+        "prospect",
+        "onboarding",
+        "active",
+        "suspended",
+        "cancelled",
+        "churned"
+      ],
+      "type": "string"
     }
   },
   "required": [
     "business_name",
     "contact_person",
     "email"
-  ]
+  ],
+  "type": "object"
 }

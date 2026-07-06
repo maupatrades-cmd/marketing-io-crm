@@ -1,0 +1,76 @@
+{
+  "name": "LeadHandoff",
+  "type": "object",
+  "properties": {
+    "lead_id": {
+      "type": "string",
+      "description": "Reference to Lead"
+    },
+    "cpc_id": {
+      "type": "string",
+      "description": "CPC who generated the lead"
+    },
+    "fa_id": {
+      "type": "string",
+      "description": "Field Agent receiving the handoff"
+    },
+    "handed_off_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When handoff occurred"
+    },
+    "fa_accepted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether FA accepted the lead"
+    },
+    "fa_accepted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When FA accepted, if applicable"
+    },
+    "fa_notes": {
+      "type": "string",
+      "description": "FA rejection or acceptance notes"
+    },
+    "rejected": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether FA rejected the lead"
+    },
+    "rejected_reason": {
+      "type": "string",
+      "description": "Reason for rejection if rejected"
+    },
+    "first_contact_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When FA first contacted prospect"
+    },
+    "closure_outcome": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "closed_won",
+        "closed_lost",
+        "stalled"
+      ],
+      "default": "pending",
+      "description": "Deal outcome"
+    },
+    "closure_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When deal closed"
+    },
+    "closure_value": {
+      "type": "number",
+      "description": "Deal value if won"
+    }
+  },
+  "required": [
+    "lead_id",
+    "cpc_id",
+    "fa_id"
+  ]
+}

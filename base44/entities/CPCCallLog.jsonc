@@ -1,0 +1,64 @@
+{
+  "name": "CPCCallLog",
+  "type": "object",
+  "properties": {
+    "cpc_id": {
+      "type": "string",
+      "description": "AppUser.id of the CPC who made the call"
+    },
+    "lead_id": {
+      "type": "string",
+      "description": "Optional reference to Lead if dialing known lead"
+    },
+    "prospect_phone": {
+      "type": "string",
+      "description": "Phone number dialed"
+    },
+    "prospect_business_name": {
+      "type": "string",
+      "description": "Optional business name if known"
+    },
+    "call_started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When call was initiated"
+    },
+    "call_duration_seconds": {
+      "type": "number",
+      "description": "Call duration in seconds"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "connected_qualified",
+        "connected_unqualified",
+        "connected_callback_scheduled",
+        "voicemail",
+        "no_answer",
+        "busy",
+        "disconnected",
+        "wrong_number",
+        "do_not_call"
+      ],
+      "description": "Call outcome"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes from the call"
+    },
+    "led_to_warm_lead": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this call led to warm lead creation"
+    },
+    "warm_lead_id": {
+      "type": "string",
+      "description": "Reference to Lead created from this call, if applicable"
+    }
+  },
+  "required": [
+    "cpc_id",
+    "prospect_phone",
+    "outcome"
+  ]
+}

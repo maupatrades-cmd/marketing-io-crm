@@ -21,7 +21,7 @@
     },
     "prompt_used": {
       "type": "string",
-      "description": "Imagen prompt that produced the image — stored for audit and re-generation if needed."
+      "description": "Imagen prompt that produced the image \u2014 stored for audit and re-generation if needed."
     },
     "generated_at": {
       "type": "string",
@@ -37,5 +37,6 @@
     "package_id",
     "email_stage",
     "image_url"
-  ]
+  ],
+  "rls": {}
 }

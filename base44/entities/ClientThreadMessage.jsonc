@@ -18,7 +18,12 @@
     },
     "sender_role": {
       "type": "string",
-      "enum": ["client", "consultant", "owner", "head_of_marketing"],
+      "enum": [
+        "client",
+        "consultant",
+        "owner",
+        "head_of_marketing"
+      ],
       "description": "Sender's role for UI display"
     },
     "sender_avatar_url": {
@@ -30,12 +35,16 @@
     },
     "attachments": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Array of file URLs (future use)"
     },
     "read_by": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "User IDs who have read this message"
     },
     "is_system_message": {
@@ -44,5 +53,9 @@
       "description": "True for auto-generated thread events"
     }
   },
-  "required": ["thread_id", "sender_id", "message"]
+  "required": [
+    "thread_id",
+    "sender_id",
+    "message"
+  ]
 }

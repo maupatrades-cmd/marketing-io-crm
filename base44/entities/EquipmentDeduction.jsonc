@@ -1,0 +1,77 @@
+{
+  "name": "EquipmentDeduction",
+  "type": "object",
+  "properties": {
+    "staff_id": {
+      "type": "string",
+      "description": "AppUser.id of CPC"
+    },
+    "staff_role": {
+      "type": "string",
+      "enum": [
+        "cpc",
+        "field_agent",
+        "admin",
+        "head_of_tech",
+        "owner"
+      ],
+      "description": "Role of staff member"
+    },
+    "deduction_period": {
+      "type": "string",
+      "description": "YYYY-MM format, e.g. 2026-07"
+    },
+    "pc_amount": {
+      "type": "number",
+      "default": 650,
+      "description": "PC/software deduction"
+    },
+    "phone_amount": {
+      "type": "number",
+      "default": 350,
+      "description": "Work phone deduction"
+    },
+    "airtime_amount": {
+      "type": "number",
+      "default": 250,
+      "description": "Airtime deduction"
+    },
+    "uniform_amount": {
+      "type": "number",
+      "default": 150,
+      "description": "Uniform deduction"
+    },
+    "total_deduction": {
+      "type": "number",
+      "description": "Sum of all deductions"
+    },
+    "applied_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When deduction was applied"
+    },
+    "is_training_period": {
+      "type": "boolean",
+      "default": false,
+      "description": "No deductions during training (25 May - 6 June)"
+    },
+    "is_waived": {
+      "type": "boolean",
+      "default": false,
+      "description": "Owner waived deduction for this month"
+    },
+    "waive_reason": {
+      "type": "string",
+      "description": "Reason for waiver"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "staff_id",
+    "deduction_period",
+    "staff_role"
+  ]
+}

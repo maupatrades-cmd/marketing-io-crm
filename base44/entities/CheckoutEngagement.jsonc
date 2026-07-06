@@ -1,10 +1,26 @@
 {
   "name": "CheckoutEngagement",
-  "type": "object",
   "properties": {
+    "cell_number": {
+      "description": "Normalised SA cell, 0XXXXXXXXX format.",
+      "type": "string"
+    },
+    "company_name": {
+      "type": "string"
+    },
+    "converted_to_payment": {
+      "default": false,
+      "description": "Flipped true when a Payment for this email + package is created via payfast-checkout-init.",
+      "type": "boolean"
+    },
     "email": {
-      "type": "string",
-      "description": "Buyer email (lowercase, trimmed) — joined back to AbandonedCartSequence and Payment by email + package_id."
+      "description": "Buyer email (lowercase, trimmed) \u2014 joined back to AbandonedCartSequence and Payment by email + package_id.",
+      "type": "string"
+    },
+    "engagement_at": {
+      "description": "When the buyer last meaningfully interacted with the form.",
+      "format": "date-time",
+      "type": "string"
     },
     "name_first": {
       "type": "string"
@@ -12,30 +28,15 @@
     "name_last": {
       "type": "string"
     },
-    "cell_number": {
-      "type": "string",
-      "description": "Normalised SA cell, 0XXXXXXXXX format."
-    },
-    "company_name": {
-      "type": "string"
-    },
     "package_id": {
-      "type": "string",
-      "description": "PayFast package id (e.g. 'ignite', 'ai-chatbot')."
-    },
-    "engagement_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When the buyer last meaningfully interacted with the form."
-    },
-    "converted_to_payment": {
-      "type": "boolean",
-      "default": false,
-      "description": "Flipped true when a Payment for this email + package is created via payfast-checkout-init."
+      "description": "PayFast package id (e.g. 'ignite', 'ai-chatbot').",
+      "type": "string"
     }
   },
   "required": [
     "email",
     "package_id"
-  ]
+  ],
+  "rls": {},
+  "type": "object"
 }

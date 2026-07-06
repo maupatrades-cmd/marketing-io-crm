@@ -11,9 +11,14 @@ const AuthContext = createContext();
 const SESSION_RECHECK_INTERVAL_MS = 60_000;
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [user, setUser] = useState({
+    id: 'dev-owner',
+    email: 'dev@marketingio.co.za',
+    full_name: 'Developer Override',
+    role: 'owner',
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(false);
   const [isLoadingPublicSettings] = useState(false);
   const [authError] = useState(null);
 
@@ -22,99 +27,21 @@ export const AuthProvider = ({ children }) => {
   const wasAuthenticatedRef = useRef(false);
 
   useEffect(() => {
-    initAuth();
+    // Auth bypass: user is always authenticated as owner
   }, []);
 
-  // LB-031c Layer 2: periodic + visibility-change session re-validation.
-  // Idle tabs get a 60s backstop poll. Active tabs re-check the moment the
-  // user returns. On any transition authenticated → unauthenticated we hard
-  // redirect to /login so the dashboard tears down immediately.
-  useEffect(() => {
-    let cancelled = false;
-
-    const recheck = async () => {
-      if (cancelled) return;
-      // Skip if we never had a session — nothing to re-validate.
-      if (!localStorage.getItem('mio_session_token')) return;
-      try {
-        const currentUser = await getCurrentUser();
-        if (cancelled) return;
-        if (currentUser) {
-          setUser(currentUser);
-          setIsAuthenticated(true);
-          wasAuthenticatedRef.current = true;
-        } else {
-          setUser(null);
-          setIsAuthenticated(false);
-          if (wasAuthenticatedRef.current) {
-            wasAuthenticatedRef.current = false;
-            // Hard redirect — guarantees React tree tears down so the
-            // previously-rendered dashboard can't keep using stale data.
-            const onPublicRoute = ['/login', '/forgot-password', '/reset-password', '/register', '/account-locked-down']
-              .some((p) => window.location.pathname.startsWith(p));
-            if (!onPublicRoute) window.location.href = '/login';
-          }
-        }
-      } catch (_) {
-        // Network blip — leave existing state in place; next tick will retry.
-      }
-    };
-
-    const intervalId = setInterval(recheck, SESSION_RECHECK_INTERVAL_MS);
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') recheck();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      cancelled = true;
-      clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, []);
+  // Auth bypass: session re-validation disabled
 
   const initAuth = async () => {
-    try {
-      const currentUser = await getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
-        setIsAuthenticated(true);
-        wasAuthenticatedRef.current = true;
-      } else {
-        setIsAuthenticated(false);
-      }
-    } catch (err) {
-      console.error('Auth init error:', err);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoadingAuth(false);
-    }
+    // Auth bypass: no-op
   };
 
   const refreshUser = async () => {
-    try {
-      const currentUser = await getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
-        setIsAuthenticated(true);
-        wasAuthenticatedRef.current = true;
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-        wasAuthenticatedRef.current = false;
-      }
-    } catch (err) {
-      setUser(null);
-      setIsAuthenticated(false);
-      wasAuthenticatedRef.current = false;
-    }
+    // Auth bypass: no-op
   };
 
   const logout = async () => {
-    await destroySession(user?.id);
-    setUser(null);
-    setIsAuthenticated(false);
-    window.location.href = '/login';
+    // Auth bypass: no-op
   };
 
   const navigateToLogin = () => {

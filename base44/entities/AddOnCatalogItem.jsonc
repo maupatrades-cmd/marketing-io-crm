@@ -1,0 +1,122 @@
+{
+  "name": "AddOnCatalogItem",
+  "type": "object",
+  "properties": {
+    "catalog_id": {
+      "type": "string",
+      "description": "Unique catalog identifier"
+    },
+    "name": {
+      "type": "string",
+      "description": "Add-on name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "setup_recurring",
+        "pure_recurring",
+        "once_off",
+        "special"
+      ],
+      "description": "Category"
+    },
+    "bucket": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "description": "Commission bucket"
+    },
+    "setup_fee": {
+      "type": "number",
+      "description": "Setup fee (null if no setup)"
+    },
+    "monthly_fee": {
+      "type": "number",
+      "description": "Monthly fee (null if not recurring)"
+    },
+    "once_off_fee": {
+      "type": "number",
+      "description": "Once-off fee (null if recurring)"
+    },
+    "pricing_note": {
+      "type": "string",
+      "description": "Additional pricing notes"
+    },
+    "commission_rate": {
+      "type": "number",
+      "description": "Commission percentage"
+    },
+    "commission_type": {
+      "type": "string",
+      "enum": [
+        "setup_pct",
+        "retainer_pct",
+        "closer_bonus_pct",
+        "none"
+      ],
+      "description": "How commission is calculated"
+    },
+    "commission_note": {
+      "type": "string",
+      "description": "Commission details"
+    },
+    "soft_sla_days": {
+      "type": "number",
+      "description": "Soft SLA target (days)"
+    },
+    "hard_sla_days": {
+      "type": "number",
+      "description": "Hard SLA deadline (days)"
+    },
+    "owner_role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "head_of_tech",
+        "founder",
+        "freelancer",
+        "field_agent"
+      ],
+      "description": "Default owner role"
+    },
+    "short_description": {
+      "type": "string",
+      "description": "1-2 sentence description"
+    },
+    "full_deliverables": {
+      "type": "string",
+      "description": "Full deliverables list"
+    },
+    "client_obligations": {
+      "type": "string",
+      "description": "What the client must provide"
+    },
+    "scope_exclusions": {
+      "type": "string",
+      "description": "What is NOT included"
+    },
+    "tools_used": {
+      "type": "string",
+      "description": "Tools and systems required"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this add-on is available"
+    },
+    "display_order": {
+      "type": "number",
+      "description": "Order for display"
+    }
+  },
+  "required": [
+    "name",
+    "category",
+    "bucket"
+  ]
+}
